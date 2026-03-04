@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,8 @@ import {
   ScrollView,
   Modal,
   FlatList,
-  ActivityIndicator,
+  StyleSheet,
+  TouchableOpacity,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -15,8 +16,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useCreateStyles } from "@/hooks/useCreateStyles";
 import { useHaptics } from "@/hooks/useHaptics";
 import {
   getConversation,
@@ -26,188 +25,33 @@ import {
   removeMember,
   getCompanyUsers,
 } from "@/api/chat";
-import AnimatedPressable from "@/components/ui/AnimatedPressable";
-import AnimatedFadeIn from "@/components/ui/AnimatedFadeIn";
 import Avatar from "@/components/ui/Avatar";
+import type { Conversation, ConversationMember } from "@/types/chat";
 
+// ── WhatsApp Dark palette ─────────────────────────────────
+const C = {
+  bg: "#0b1014",
+  card: "#111820",
+  textPrimary: "#ffffff",
+  textSecondary: "rgba(255,255,255,0.5)",
+  accent: "#3b82f6",
+  danger: "#ef4444",
+  success: "#22c55e",
+  divider: "rgba(255,255,255,0.06)",
+  actionBg: "rgba(255,255,255,0.08)",
+};
+
+
+// ── Component ─────────────────────────────────────────────
 export default function ChatInfoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
-  const { colors } = useTheme();
   const haptics = useHaptics();
   const queryClient = useQueryClient();
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const [showAddMember, setShowAddMember] = useState(false);
   const [addSearch, setAddSearch] = useState("");
-
-  const styles = useCreateStyles((c, t, s, r) => ({
-    container: { flex: 1, backgroundColor: c.bg },
-    header: {
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      paddingHorizontal: s.lg,
-      paddingVertical: s.md,
-      gap: s.md,
-    },
-    backBtn: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: c.bgTertiary,
-      justifyContent: "center" as const,
-      alignItems: "center" as const,
-    },
-    headerTitle: { ...t.heading, color: c.textPrimary, flex: 1 },
-    profileSection: {
-      alignItems: "center" as const,
-      paddingVertical: s.xxxl,
-      gap: s.md,
-    },
-    profileName: { ...t.heading, color: c.textPrimary },
-    profileType: { ...t.caption, color: c.textMuted },
-    card: {
-      marginHorizontal: s.lg,
-      marginBottom: s.lg,
-      backgroundColor: c.bgSecondary,
-      borderRadius: r.lg,
-      borderWidth: 1,
-      borderColor: c.border,
-      overflow: "hidden" as const,
-    },
-    cardTitle: {
-      ...t.caption,
-      color: c.textMuted,
-      paddingHorizontal: s.lg,
-      paddingTop: s.md,
-      paddingBottom: s.sm,
-      textTransform: "uppercase" as const,
-      letterSpacing: 1,
-    },
-    actionRow: {
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      paddingHorizontal: s.lg,
-      paddingVertical: s.md + 2,
-      gap: s.md,
-      borderBottomWidth: 1,
-      borderBottomColor: c.border,
-    },
-    actionRowLast: { borderBottomWidth: 0 },
-    actionIcon: {
-      width: 36,
-      height: 36,
-      borderRadius: 10,
-      justifyContent: "center" as const,
-      alignItems: "center" as const,
-    },
-    actionText: { ...t.body, color: c.textPrimary, flex: 1 },
-    memberItem: {
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      paddingHorizontal: s.lg,
-      paddingVertical: s.md,
-      gap: s.md,
-      borderBottomWidth: 1,
-      borderBottomColor: c.border,
-    },
-    memberName: { ...t.bodyMedium, color: c.textPrimary, flex: 1 },
-    memberRole: {
-      ...t.tiny,
-      color: c.primary,
-      backgroundColor: c.primaryBg,
-      paddingHorizontal: s.sm,
-      paddingVertical: 2,
-      borderRadius: r.sm,
-      overflow: "hidden" as const,
-    },
-    editInput: {
-      backgroundColor: c.bgInput,
-      borderRadius: r.md,
-      paddingHorizontal: s.lg,
-      paddingVertical: s.md,
-      ...t.body,
-      color: c.textPrimary,
-      borderWidth: 1,
-      borderColor: c.primary,
-      marginHorizontal: s.lg,
-      marginBottom: s.md,
-    },
-    editActions: {
-      flexDirection: "row" as const,
-      justifyContent: "flex-end" as const,
-      gap: s.md,
-      paddingHorizontal: s.lg,
-      marginBottom: s.lg,
-    },
-    editBtn: {
-      paddingHorizontal: s.lg,
-      paddingVertical: s.sm,
-      borderRadius: r.sm,
-      backgroundColor: c.primary,
-    },
-    editBtnCancel: {
-      paddingHorizontal: s.lg,
-      paddingVertical: s.sm,
-      borderRadius: r.sm,
-      backgroundColor: c.bgTertiary,
-    },
-    editBtnText: { ...t.caption, color: "#fff" },
-    editBtnCancelText: { ...t.caption, color: c.textSecondary },
-    removeBtn: {
-      paddingHorizontal: s.sm,
-      paddingVertical: 2,
-      borderRadius: r.sm,
-      backgroundColor: `${c.error}15`,
-    },
-    removeBtnText: { ...t.tiny, color: c.error },
-    // Add member modal styles
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: c.bg,
-    },
-    modalHeader: {
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      paddingHorizontal: s.lg,
-      paddingVertical: s.md,
-      gap: s.md,
-      borderBottomWidth: 1,
-      borderBottomColor: c.border,
-    },
-    modalTitle: { ...t.heading, color: c.textPrimary, flex: 1 },
-    modalSearch: {
-      backgroundColor: c.bgInput,
-      borderRadius: r.md,
-      paddingHorizontal: s.lg,
-      paddingVertical: s.md,
-      ...t.body,
-      color: c.textPrimary,
-      borderWidth: 1,
-      borderColor: c.border,
-      marginHorizontal: s.lg,
-      marginVertical: s.md,
-    },
-    userItem: {
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      paddingHorizontal: s.lg,
-      paddingVertical: s.md,
-      gap: s.md,
-      borderBottomWidth: 1,
-      borderBottomColor: c.border,
-    },
-    userName: { ...t.bodyMedium, color: c.textPrimary, flex: 1 },
-    userEmail: { ...t.small, color: c.textMuted },
-    addBtn: {
-      paddingHorizontal: s.md,
-      paddingVertical: s.xs,
-      borderRadius: r.sm,
-      backgroundColor: c.primary,
-    },
-    addBtnText: { ...t.caption, color: "#fff" },
-    alreadyMember: { ...t.small, color: c.textMuted },
-  }));
 
   const { data: conv } = useQuery({
     queryKey: ["conversation", id],
@@ -228,26 +72,29 @@ export default function ChatInfoScreen() {
   });
 
   const isGroup = conv?.type === "CHANNEL" || conv?.type === "CONTEXTUAL";
+  const isOrvitBot = (conv as any)?._isOrvitBot === true;
   const isAdmin = members?.some(
     (m) => m.userId === user?.id && m.role === "admin"
   );
 
-  const displayName = (() => {
+  const displayName = useMemo(() => {
+    if (isOrvitBot) return "Orvit";
     if (conv?.type === "DIRECT") {
       const other = conv.members?.find((m) => m.userId !== user?.id);
       return other?.user?.name || "Chat directo";
     }
     return conv?.name || "Chat";
-  })();
+  }, [conv, user?.id, isOrvitBot]);
 
-  const typeLabel =
-    conv?.type === "DIRECT"
-      ? "Chat directo"
-      : conv?.type === "CHANNEL"
-      ? "Grupo"
-      : "Chat contextual";
+  const subtitle = useMemo(() => {
+    if (isOrvitBot) return "Asistente de IA · Siempre disponible";
+    if (conv?.type === "DIRECT") return "en línea";
+    const count = members?.length ?? 0;
+    return `${count} miembro${count !== 1 ? "s" : ""} · Grupo`;
+  }, [conv?.type, members?.length, isOrvitBot]);
 
-  const handleToggleMute = useCallback(async () => {
+  // ── Handlers ────────────────────────────────────────────
+  const handleToggleMute = useCallback(() => {
     haptics.selection();
     Alert.alert("Próximamente", "Esta función estará disponible pronto");
   }, [haptics]);
@@ -330,6 +177,14 @@ export default function ChatInfoScreen() {
     [id, user?.id, refetchMembers, haptics]
   );
 
+  const handleDangerAction = useCallback(() => {
+    if (isGroup) {
+      handleRemoveMember(user!.id, user!.name);
+    } else {
+      Alert.alert("Próximamente", "Esta función estará disponible pronto");
+    }
+  }, [isGroup, handleRemoveMember, user]);
+
   // Filter users for add member modal
   const memberIds = members?.map((m) => m.userId) ?? [];
   const availableUsers = (allUsers ?? [])
@@ -340,295 +195,362 @@ export default function ChatInfoScreen() {
         u.email.toLowerCase().includes(addSearch.toLowerCase())
     );
 
+  // ── Quick action buttons config ─────────────────────────
+  const quickActions = useMemo(() => {
+    if (isOrvitBot) {
+      return [
+        { icon: "mic" as const, label: "Audio", onPress: () => Alert.alert("Tip", "Mandá un audio desde el chat y Orvit lo procesa automáticamente") },
+        { icon: "search" as const, label: "Buscar", onPress: () => Alert.alert("Próximamente", "Búsqueda dentro del chat") },
+        { icon: "notifications-off" as const, label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
+        { icon: "help-circle" as const, label: "Ayuda", onPress: () => Alert.alert("Orvit AI", "Podés mandarme:\n\n🎤 Audios para crear fallas, tareas o consultas\n✍️ Texto con instrucciones\n📊 Pedidos de reportes y resúmenes\n\nEjemplos:\n• \"La máquina 5 tiene una falla\"\n• \"Creame una tarea para mañana\"\n• \"Cómo viene la producción?\"") },
+      ];
+    }
+    if (isGroup) {
+      return [
+        ...(isAdmin
+          ? [{ icon: "person-add" as const, label: "Agregar", onPress: () => setShowAddMember(true) }]
+          : []),
+        { icon: "search" as const, label: "Buscar", onPress: () => Alert.alert("Próximamente", "Búsqueda dentro del chat") },
+        { icon: "notifications-off" as const, label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
+        { icon: "ellipsis-horizontal" as const, label: "Más", onPress: handleToggleArchive },
+      ];
+    }
+    return [
+      { icon: "call" as const, label: "Audio", onPress: () => Alert.alert("Próximamente", "Llamadas de voz") },
+      { icon: "videocam" as const, label: "Video", onPress: () => Alert.alert("Próximamente", "Videollamadas") },
+      { icon: "search" as const, label: "Buscar", onPress: () => Alert.alert("Próximamente", "Búsqueda dentro del chat") },
+      { icon: "notifications-off" as const, label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
+    ];
+  }, [isGroup, isAdmin, isOrvitBot, conv?.muted, handleToggleMute, handleToggleArchive]);
+
+  if (!conv) {
+    return (
+      <SafeAreaView style={s.container} edges={["top"]}>
+        <View style={s.header}>
+          <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={22} color={C.textPrimary} />
+          </TouchableOpacity>
+          <Text style={s.headerTitle}>Info</Text>
+        </View>
+        <View style={s.emptyCenter}>
+          <Text style={s.emptyText}>Cargando...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <AnimatedPressable
-          onPress={() => router.back()}
-          style={styles.backBtn}
-          haptic="light"
-        >
-          <Ionicons name="chevron-back" size={20} color={colors.primary} />
-        </AnimatedPressable>
-        <Text style={styles.headerTitle}>Info</Text>
+    <SafeAreaView style={s.container} edges={["top"]}>
+      {/* ── Header ─────────────────────────────────────── */}
+      <View style={s.header}>
+        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
+          <Ionicons name="arrow-back" size={22} color={C.textPrimary} />
+        </TouchableOpacity>
+        <Text style={s.headerTitle}>Info</Text>
       </View>
 
-      <ScrollView>
-        {/* Profile section */}
-        <AnimatedFadeIn delay={0}>
-          <View style={styles.profileSection}>
+      <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent}>
+        {/* ── Profile ────────────────────────────────────── */}
+        <View style={s.profileSection}>
+          {isOrvitBot ? (
+            <View style={[s.avatarLarge, { backgroundColor: C.accent }]}>
+              <Ionicons name="sparkles" size={36} color="#fff" />
+            </View>
+          ) : isGroup ? (
+            <View style={s.avatarLarge}>
+              <Ionicons
+                name={(conv.iconName as keyof typeof Ionicons.glyphMap) || "people"}
+                size={36}
+                color={C.textPrimary}
+              />
+            </View>
+          ) : (
             <Avatar name={displayName} size="xl" />
-            <Text style={styles.profileName}>{displayName}</Text>
-            <Text style={styles.profileType}>{typeLabel}</Text>
-          </View>
-        </AnimatedFadeIn>
+          )}
+          <Text style={s.profileName}>{displayName}</Text>
+          <Text style={s.profileSubtitle}>{subtitle}</Text>
+        </View>
 
-        {/* Edit name (group only) */}
+        {/* ── Edit name (inline) ─────────────────────────── */}
         {editingName && (
-          <Animated.View entering={FadeInDown.duration(200)}>
+          <Animated.View entering={FadeInDown.duration(200)} style={s.editContainer}>
             <TextInput
-              style={styles.editInput}
+              style={s.editInput}
               value={newName}
               onChangeText={setNewName}
               placeholder="Nombre del grupo"
-              placeholderTextColor={colors.textMuted}
+              placeholderTextColor={C.textSecondary}
               autoFocus
             />
-            <View style={styles.editActions}>
-              <AnimatedPressable
-                style={styles.editBtnCancel}
+            <View style={s.editActions}>
+              <TouchableOpacity
+                style={s.editBtnCancel}
                 onPress={() => setEditingName(false)}
-                haptic="light"
+                activeOpacity={0.7}
               >
-                <Text style={styles.editBtnCancelText}>Cancelar</Text>
-              </AnimatedPressable>
-              <AnimatedPressable
-                style={styles.editBtn}
+                <Text style={s.editBtnCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={s.editBtnSave}
                 onPress={handleSaveName}
-                haptic="medium"
+                activeOpacity={0.7}
               >
-                <Text style={styles.editBtnText}>Guardar</Text>
-              </AnimatedPressable>
+                <Text style={s.editBtnSaveText}>Guardar</Text>
+              </TouchableOpacity>
             </View>
           </Animated.View>
         )}
 
-        {/* Actions */}
-        <AnimatedFadeIn delay={100}>
-          <Text style={styles.cardTitle}>Acciones</Text>
-          <View style={styles.card}>
-            {isGroup && isAdmin && (
-              <AnimatedPressable
-                style={styles.actionRow}
-                onPress={() => {
-                  setNewName(conv?.name || "");
-                  setEditingName(true);
-                }}
-                haptic="light"
-              >
-                <View
-                  style={[
-                    styles.actionIcon,
-                    { backgroundColor: colors.primaryBg },
-                  ]}
-                >
-                  <Ionicons name="pencil" size={18} color={colors.primary} />
-                </View>
-                <Text style={styles.actionText}>Editar nombre</Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={18}
-                  color={colors.textMuted}
-                />
-              </AnimatedPressable>
-            )}
-
-            <AnimatedPressable
-              style={styles.actionRow}
-              onPress={handleToggleMute}
-              haptic="light"
+        {/* ── Quick actions ──────────────────────────────── */}
+        <View style={s.quickActions}>
+          {quickActions.map((action) => (
+            <TouchableOpacity
+              key={action.label}
+              style={s.quickActionBtn}
+              onPress={action.onPress}
+              activeOpacity={0.7}
             >
-              <View
-                style={[
-                  styles.actionIcon,
-                  { backgroundColor: `${colors.warning}15` },
-                ]}
-              >
-                <Ionicons
-                  name={conv?.muted ? "notifications" : "notifications-off"}
-                  size={18}
-                  color={colors.warning}
-                />
+              <View style={s.quickActionCircle}>
+                <Ionicons name={action.icon} size={20} color={C.textPrimary} />
               </View>
-              <Text style={styles.actionText}>
-                {conv?.muted ? "Activar notificaciones" : "Silenciar"}
-              </Text>
-            </AnimatedPressable>
+              <Text style={s.quickActionLabel}>{action.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-            <AnimatedPressable
-              style={[styles.actionRow, !isGroup && styles.actionRowLast]}
-              onPress={handleToggleArchive}
-              haptic="light"
-            >
-              <View
-                style={[
-                  styles.actionIcon,
-                  { backgroundColor: `${colors.textMuted}15` },
-                ]}
-              >
-                <Ionicons
-                  name={conv?.isArchived ? "arrow-undo" : "archive"}
-                  size={18}
-                  color={colors.textMuted}
-                />
-              </View>
-              <Text style={styles.actionText}>
-                {conv?.isArchived ? "Desarchivar" : "Archivar"}
-              </Text>
-            </AnimatedPressable>
-
-            {isGroup && (
-              <AnimatedPressable
-                style={[styles.actionRow, styles.actionRowLast]}
-                onPress={() => handleRemoveMember(user!.id, user!.name)}
-                haptic="light"
-              >
-                <View
-                  style={[
-                    styles.actionIcon,
-                    { backgroundColor: `${colors.error}15` },
-                  ]}
-                >
-                  <Ionicons
-                    name="exit-outline"
-                    size={18}
-                    color={colors.error}
-                  />
-                </View>
-                <Text style={[styles.actionText, { color: colors.error }]}>
-                  Salir del grupo
-                </Text>
-              </AnimatedPressable>
-            )}
+        {/* ── Description (group or Orvit bot) ─────────────── */}
+        {(isGroup || isOrvitBot) && conv.description && (
+          <View style={s.card}>
+            <Text style={s.cardDescription}>{conv.description}</Text>
           </View>
-        </AnimatedFadeIn>
+        )}
 
-        {/* Members (group only) */}
-        {isGroup && members && (
-          <AnimatedFadeIn delay={200}>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                paddingRight: 16,
-              }}
+        {/* ── Edit name row (admin) ──────────────────────── */}
+        {isGroup && isAdmin && !editingName && (
+          <TouchableOpacity
+            style={s.card}
+            onPress={() => {
+              setNewName(conv?.name || "");
+              setEditingName(true);
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={s.rowItem}>
+              <Ionicons name="pencil" size={18} color={C.accent} />
+              <Text style={[s.rowText, { color: C.accent }]}>Editar nombre del grupo</Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* ── Media placeholder ──────────────────────────── */}
+        <TouchableOpacity
+          style={s.card}
+          onPress={() => Alert.alert("Próximamente", "Archivos multimedia")}
+          activeOpacity={0.7}
+        >
+          <View style={s.rowItem}>
+            <Ionicons name="image" size={18} color={C.textSecondary} />
+            <Text style={[s.rowText, { flex: 1 }]}>Archivos, enlaces y documentos</Text>
+            <Ionicons name="chevron-forward" size={16} color={C.textSecondary} />
+          </View>
+        </TouchableOpacity>
+
+        {/* ── Parent group link ──────────────────────────── */}
+        {conv.parent && (
+          <>
+            <Text style={s.sectionTitle}>Grupo padre</Text>
+            <TouchableOpacity
+              style={s.card}
+              onPress={() => router.push(`/chat/${conv.parent!.id}`)}
+              activeOpacity={0.7}
             >
-              <Text style={styles.cardTitle}>
-                Miembros ({members.length})
-              </Text>
-              {isAdmin && (
-                <AnimatedPressable
-                  onPress={() => setShowAddMember(true)}
-                  haptic="light"
-                >
+              <View style={s.rowItem}>
+                <View style={s.rowIconCircle}>
                   <Ionicons
-                    name="person-add"
-                    size={20}
-                    color={colors.primary}
+                    name={(conv.parent.iconName as keyof typeof Ionicons.glyphMap) || "people"}
+                    size={16}
+                    color={C.accent}
                   />
-                </AnimatedPressable>
+                </View>
+                <Text style={[s.rowText, { flex: 1 }]}>{conv.parent.name || "Sin nombre"}</Text>
+                <Ionicons name="chevron-forward" size={16} color={C.textSecondary} />
+              </View>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {/* ── Members ────────────────────────────────────── */}
+        {members && members.length > 0 && (
+          <>
+            <View style={s.sectionHeader}>
+              <Text style={s.sectionTitle}>
+                {isGroup ? `${members.length} miembros` : "Participantes"}
+              </Text>
+              {isGroup && isAdmin && (
+                <TouchableOpacity onPress={() => setShowAddMember(true)} activeOpacity={0.7}>
+                  <Ionicons name="search" size={18} color={C.textSecondary} />
+                </TouchableOpacity>
               )}
             </View>
-            <View style={styles.card}>
+            <View style={s.card}>
+              {/* Add member row (admin only) */}
+              {isGroup && isAdmin && (
+                <TouchableOpacity
+                  style={[s.memberRow, s.memberRowBorder]}
+                  onPress={() => setShowAddMember(true)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[s.memberAvatar, { backgroundColor: C.success }]}>
+                    <Ionicons name="person-add" size={16} color="#fff" />
+                  </View>
+                  <Text style={[s.memberName, { color: C.textPrimary }]}>Agregar miembro</Text>
+                </TouchableOpacity>
+              )}
+
               {members.map((member, index) => (
                 <View
                   key={member.userId}
                   style={[
-                    styles.memberItem,
-                    index === members.length - 1 && { borderBottomWidth: 0 },
+                    s.memberRow,
+                    index < members.length - 1 && s.memberRowBorder,
                   ]}
                 >
-                  <Avatar name={member.user.name} size="sm" />
-                  <Text style={styles.memberName}>{member.user.name}</Text>
+                  <Avatar name={member.user?.name || "?"} size="sm" />
+                  <View style={s.memberInfo}>
+                    <Text style={s.memberName}>{member.user?.name || "Usuario"}</Text>
+                  </View>
                   {member.role === "admin" && (
-                    <Text style={styles.memberRole}>Admin</Text>
+                    <View style={s.badge}>
+                      <Text style={s.badgeText}>Admin</Text>
+                    </View>
                   )}
                   {member.userId === user?.id && (
-                    <Text
-                      style={[
-                        styles.memberRole,
-                        {
-                          backgroundColor: `${colors.success}15`,
-                          color: colors.success,
-                        },
-                      ]}
-                    >
-                      Tú
-                    </Text>
+                    <View style={[s.badge, { backgroundColor: `${C.success}20` }]}>
+                      <Text style={[s.badgeText, { color: C.success }]}>Tú</Text>
+                    </View>
                   )}
-                  {isAdmin &&
-                    member.userId !== user?.id &&
-                    member.role !== "admin" && (
-                      <AnimatedPressable
-                        style={styles.removeBtn}
-                        onPress={() =>
-                          handleRemoveMember(member.userId, member.user.name)
-                        }
-                        haptic="light"
-                      >
-                        <Text style={styles.removeBtnText}>Remover</Text>
-                      </AnimatedPressable>
-                    )}
+                  {isAdmin && member.userId !== user?.id && member.role !== "admin" && (
+                    <TouchableOpacity
+                      style={s.removeBadge}
+                      onPress={() => handleRemoveMember(member.userId, member.user?.name || "")}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={s.removeBadgeText}>Remover</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               ))}
             </View>
-          </AnimatedFadeIn>
+          </>
         )}
 
-        {/* Direct chat participants */}
-        {conv?.type === "DIRECT" && members && (
-          <AnimatedFadeIn delay={200}>
-            <Text style={styles.cardTitle}>Participantes</Text>
-            <View style={styles.card}>
-              {members.map((member, index) => (
-                <View
-                  key={member.userId}
-                  style={[
-                    styles.memberItem,
-                    index === members.length - 1 && { borderBottomWidth: 0 },
-                  ]}
+        {/* ── Subgroups ──────────────────────────────────── */}
+        {isGroup && conv.type === "CHANNEL" && (conv.depth ?? 0) < 4 && (
+          <>
+            <View style={s.sectionHeader}>
+              <Text style={s.sectionTitle}>
+                Subgrupos{conv.children && conv.children.length > 0 ? ` (${conv.children.length})` : ""}
+              </Text>
+              {isAdmin && (
+                <TouchableOpacity
+                  onPress={() => router.push(`/new-chat?parentId=${conv.id}`)}
+                  activeOpacity={0.7}
                 >
-                  <Avatar name={member.user.name} size="sm" />
-                  <Text style={styles.memberName}>{member.user.name}</Text>
-                  {member.userId === user?.id && (
-                    <Text
-                      style={[
-                        styles.memberRole,
-                        {
-                          backgroundColor: `${colors.success}15`,
-                          color: colors.success,
-                        },
-                      ]}
-                    >
-                      Tú
-                    </Text>
-                  )}
-                </View>
-              ))}
+                  <Ionicons name="add-circle" size={22} color={C.accent} />
+                </TouchableOpacity>
+              )}
             </View>
-          </AnimatedFadeIn>
+            <View style={s.card}>
+              {(!conv.children || conv.children.length === 0) ? (
+                <View style={s.emptyCard}>
+                  <Ionicons name="folder-open-outline" size={24} color={C.textSecondary} />
+                  <Text style={s.emptyCardText}>No hay subgrupos</Text>
+                </View>
+              ) : (
+                conv.children.map((child, index) => (
+                  <TouchableOpacity
+                    key={child.id}
+                    style={[
+                      s.memberRow,
+                      index < (conv.children?.length ?? 0) - 1 && s.memberRowBorder,
+                    ]}
+                    onPress={() => router.push(`/chat/${child.id}`)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={s.rowIconCircle}>
+                      <Ionicons
+                        name={(child.iconName as keyof typeof Ionicons.glyphMap) || "people"}
+                        size={16}
+                        color={C.accent}
+                      />
+                    </View>
+                    <View style={s.memberInfo}>
+                      <Text style={s.memberName}>{child.name || "Sin nombre"}</Text>
+                      <Text style={s.memberSub}>
+                        {child.memberCount} miembro{child.memberCount !== 1 ? "s" : ""}
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={C.textSecondary} />
+                  </TouchableOpacity>
+                ))
+              )}
+
+              {isAdmin && (
+                <TouchableOpacity
+                  style={[s.memberRow, { justifyContent: "center" }]}
+                  onPress={() => router.push(`/new-chat?parentId=${conv.id}`)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="add" size={18} color={C.accent} />
+                  <Text style={[s.memberName, { color: C.accent, flex: 0, marginLeft: 6 }]}>
+                    Crear subgrupo
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </>
         )}
+
+        {/* ── Danger zone ────────────────────────────────── */}
+        <TouchableOpacity style={s.dangerCard} onPress={handleDangerAction} activeOpacity={0.7}>
+          <Ionicons
+            name={isGroup ? "exit-outline" : "trash-outline"}
+            size={18}
+            color={C.danger}
+          />
+          <Text style={s.dangerText}>
+            {isGroup ? "Salir del grupo" : "Eliminar chat"}
+          </Text>
+        </TouchableOpacity>
 
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {/* Add member modal */}
+      {/* ── Add member modal ─────────────────────────────── */}
       <Modal
         visible={showAddMember}
         animationType="slide"
         onRequestClose={() => setShowAddMember(false)}
       >
-        <SafeAreaView style={styles.modalOverlay} edges={["top", "bottom"]}>
-          <View style={styles.modalHeader}>
-            <AnimatedPressable
+        <SafeAreaView style={s.modalContainer} edges={["top", "bottom"]}>
+          <View style={s.modalHeader}>
+            <TouchableOpacity
               onPress={() => {
                 setShowAddMember(false);
                 setAddSearch("");
               }}
-              style={styles.backBtn}
-              haptic="light"
+              style={s.backBtn}
+              activeOpacity={0.7}
             >
-              <Ionicons name="chevron-back" size={20} color={colors.primary} />
-            </AnimatedPressable>
-            <Text style={styles.modalTitle}>Agregar miembro</Text>
+              <Ionicons name="arrow-back" size={22} color={C.textPrimary} />
+            </TouchableOpacity>
+            <Text style={s.headerTitle}>Agregar miembro</Text>
           </View>
 
           <TextInput
-            style={styles.modalSearch}
+            style={s.modalSearch}
             placeholder="Buscar por nombre o email..."
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={C.textSecondary}
             value={addSearch}
             onChangeText={setAddSearch}
             autoCapitalize="none"
@@ -640,30 +562,30 @@ export default function ChatInfoScreen() {
             renderItem={({ item }) => {
               const isMember = memberIds.includes(item.id);
               return (
-                <View style={styles.userItem}>
+                <View style={[s.memberRow, s.memberRowBorder, { paddingHorizontal: 16 }]}>
                   <Avatar name={item.name} size="md" />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.userName}>{item.name}</Text>
-                    <Text style={styles.userEmail}>{item.email}</Text>
+                  <View style={s.memberInfo}>
+                    <Text style={s.memberName}>{item.name}</Text>
+                    <Text style={s.memberSub}>{item.email}</Text>
                   </View>
                   {isMember ? (
-                    <Text style={styles.alreadyMember}>Ya es miembro</Text>
+                    <Text style={s.alreadyText}>Ya es miembro</Text>
                   ) : (
-                    <AnimatedPressable
-                      style={styles.addBtn}
+                    <TouchableOpacity
+                      style={s.addMemberBtn}
                       onPress={() => handleAddMember(item.id)}
-                      haptic="medium"
+                      activeOpacity={0.7}
                     >
-                      <Text style={styles.addBtnText}>Agregar</Text>
-                    </AnimatedPressable>
+                      <Text style={s.addMemberBtnText}>Agregar</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
               );
             }}
             keyboardShouldPersistTaps="handled"
             ListEmptyComponent={
-              <View style={{ paddingTop: 40, alignItems: "center" }}>
-                <Text style={{ color: colors.textMuted }}>
+              <View style={s.emptyCenter}>
+                <Text style={s.emptyText}>
                   {addSearch ? "Sin resultados" : "Cargando..."}
                 </Text>
               </View>
@@ -674,3 +596,327 @@ export default function ChatInfoScreen() {
     </SafeAreaView>
   );
 }
+
+// ── Styles ──────────────────────────────────────────────────
+const s = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: C.bg,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+
+  // Header
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: C.card,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: C.textPrimary,
+    flex: 1,
+  },
+
+  // Profile
+  profileSection: {
+    alignItems: "center",
+    paddingVertical: 28,
+    gap: 8,
+  },
+  avatarLarge: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: C.actionBg,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  profileName: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: C.textPrimary,
+    textAlign: "center",
+    paddingHorizontal: 20,
+  },
+  profileSubtitle: {
+    fontSize: 13,
+    color: C.textSecondary,
+  },
+
+  // Edit name
+  editContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  editInput: {
+    backgroundColor: C.card,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: C.textPrimary,
+    borderWidth: 1,
+    borderColor: C.accent,
+  },
+  editActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 10,
+    marginTop: 10,
+  },
+  editBtnCancel: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: C.actionBg,
+  },
+  editBtnCancelText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: C.textSecondary,
+  },
+  editBtnSave: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: C.accent,
+  },
+  editBtnSaveText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#fff",
+  },
+
+  // Quick actions
+  quickActions: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 24,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  quickActionBtn: {
+    alignItems: "center",
+    gap: 6,
+  },
+  quickActionCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: C.actionBg,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  quickActionLabel: {
+    fontSize: 11,
+    color: C.textSecondary,
+  },
+
+  // Cards
+  card: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: C.card,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: C.textPrimary,
+    padding: 14,
+    lineHeight: 20,
+  },
+
+  // Row item (media, edit, parent)
+  rowItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    gap: 12,
+  },
+  rowText: {
+    fontSize: 14,
+    color: C.textPrimary,
+  },
+  rowIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: C.actionBg,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  // Section headers
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    marginBottom: 6,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: C.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+
+  // Member rows
+  memberRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 12,
+  },
+  memberRowBorder: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: C.divider,
+  },
+  memberAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  memberInfo: {
+    flex: 1,
+  },
+  memberName: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: C.textPrimary,
+  },
+  memberSub: {
+    fontSize: 12,
+    color: C.textSecondary,
+    marginTop: 1,
+  },
+
+  // Badges
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: `${C.accent}20`,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: C.accent,
+  },
+  removeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: `${C.danger}15`,
+  },
+  removeBadgeText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: C.danger,
+  },
+
+  // Danger
+  dangerCard: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 12,
+    backgroundColor: C.card,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    gap: 8,
+  },
+  dangerText: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: C.danger,
+  },
+
+  // Empty states
+  emptyCenter: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 40,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: C.textSecondary,
+  },
+  emptyCard: {
+    alignItems: "center",
+    paddingVertical: 24,
+    gap: 8,
+  },
+  emptyCardText: {
+    fontSize: 13,
+    color: C.textSecondary,
+  },
+
+  // Modal
+  modalContainer: {
+    flex: 1,
+    backgroundColor: C.bg,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: C.card,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: C.divider,
+  },
+  modalSearch: {
+    backgroundColor: C.card,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 15,
+    color: C.textPrimary,
+    marginHorizontal: 16,
+    marginVertical: 12,
+  },
+  alreadyText: {
+    fontSize: 12,
+    color: C.textSecondary,
+  },
+  addMemberBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: C.accent,
+  },
+  addMemberBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#fff",
+  },
+});

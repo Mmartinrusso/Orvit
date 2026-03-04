@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
-import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { JWT_SECRET } from '@/lib/auth';
+import { invalidateUserPermissions } from '@/lib/permissions-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -294,6 +296,14 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    // Invalidar cache Redis del usuario afectado
+    await invalidateUserPermissions(userIdInt, companyId);
+
+    // Notificar vía Pusher para actualización instantánea
+    triggerCompanyEvent(companyId, 'permissions', 'permissions:updated', {
+      userId: userIdInt, permissionName: permission.name, isGranted,
+    });
+
     return NextResponse.json({
       success: true,
       message: `Permiso específico ${isGranted ? 'otorgado' : 'revocado'} exitosamente`
@@ -349,9 +359,18 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (result.count === 0) {
-      return NextResponse.json({ 
-        error: 'Permiso específico no encontrado' 
+      return NextResponse.json({
+        error: 'Permiso específico no encontrado'
       }, { status: 404 });
+    }
+
+    // Invalidar cache Redis del usuario afectado
+    const { companyId } = checkAdminAccess(user);
+    if (companyId) {
+      await invalidateUserPermissions(parseInt(userId), companyId);
+      triggerCompanyEvent(companyId, 'permissions', 'permissions:updated', {
+        userId: parseInt(userId), deleted: true,
+      });
     }
 
     return NextResponse.json({

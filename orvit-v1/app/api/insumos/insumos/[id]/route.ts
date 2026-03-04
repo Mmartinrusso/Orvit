@@ -65,22 +65,22 @@ export async function PUT(
     }
 
     const updatedSupply = await prisma.$queryRaw`
-      UPDATE supplies 
-      SET 
-        name = ${name}, 
-        unit_measure = ${unitMeasure}, 
+      UPDATE supplies
+      SET
+        name = ${name},
+        unit_measure = ${unitMeasure},
         supplier_id = ${supplierId ? parseInt(supplierId) : null},
         is_active = ${isActive !== undefined ? isActive : true},
         updated_at = NOW()
       WHERE id = ${supplyId}
-      RETURNING 
-        id, 
-        name, 
-        unit_measure as "unitMeasure", 
-        supplier_id as "supplierId", 
-        company_id as "companyId", 
-        is_active as "isActive", 
-        created_at as "createdAt", 
+      RETURNING
+        id,
+        name,
+        unit_measure as "unitMeasure",
+        supplier_id as "supplierId",
+        company_id as "companyId",
+        is_active as "isActive",
+        created_at as "createdAt",
         updated_at as "updatedAt"
     `;
 
@@ -89,6 +89,32 @@ export async function PUT(
         { error: 'Insumo no encontrado' },
         { status: 404 }
       );
+    }
+
+    // Auto-crear SupplierItem si se asignó un proveedor y no existe
+    if (supplierId) {
+      const parsedSupplierId = parseInt(supplierId);
+      const existingItem = await prisma.supplierItem.findUnique({
+        where: {
+          supplierId_supplyId: {
+            supplierId: parsedSupplierId,
+            supplyId,
+          },
+        },
+      });
+
+      if (!existingItem) {
+        await prisma.supplierItem.create({
+          data: {
+            supplierId: parsedSupplierId,
+            supplyId,
+            nombre: name,
+            unidad: unitMeasure || 'UN',
+            activo: true,
+            companyId: user!.companyId,
+          },
+        });
+      }
     }
 
     return NextResponse.json((updatedSupply as any[])[0]);

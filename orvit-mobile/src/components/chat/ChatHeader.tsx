@@ -1,97 +1,157 @@
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useCreateStyles } from "@/hooks/useCreateStyles";
 import AnimatedPressable from "@/components/ui/AnimatedPressable";
 import Avatar from "@/components/ui/Avatar";
 
 interface Props {
   title: string;
   conversationId: string;
+  subtitle?: string;
+  isGroup?: boolean;
+  isOrvitBot?: boolean;
+  memberCount?: number;
+  typingNames?: string[];
+  onSearchPress?: () => void;
 }
 
-export default function ChatHeader({ title, conversationId }: Props) {
-  const { colors } = useTheme();
-  const styles = useCreateStyles((c, t, s) => ({
-    container: {
-      paddingHorizontal: s.lg,
-      paddingVertical: s.md,
-    },
-    row: {
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      gap: s.md,
-    },
-    backButton: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
-      backgroundColor: c.bgTertiary,
-      justifyContent: "center" as const,
-      alignItems: "center" as const,
-    },
-    titleRow: {
-      flex: 1,
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      gap: s.md,
-    },
-    titleContainer: { flex: 1 },
-    title: { ...t.subheading, color: c.textPrimary },
-    subtitle: { ...t.tiny, color: c.textMuted, marginTop: 1 },
-    infoBtn: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: c.bgTertiary,
-      justifyContent: "center" as const,
-      alignItems: "center" as const,
-    },
-  }));
+export default function ChatHeader({
+  title,
+  conversationId,
+  subtitle,
+  isGroup,
+  isOrvitBot,
+  memberCount,
+  typingNames,
+  onSearchPress,
+}: Props) {
+  const { colors, isDark } = useTheme();
+
+  const headerBg = "#111820";
+  const headerText = "#ffffff";
+  const headerSubtext = "rgba(255,255,255,0.5)";
+
+  const hasTyping = typingNames && typingNames.length > 0;
+  let statusText: string;
+  if (hasTyping) {
+    statusText =
+      typingNames.length === 1
+        ? `${typingNames[0]} escribiendo...`
+        : `${typingNames[0]} y ${typingNames.length - 1} más escribiendo...`;
+  } else {
+    statusText =
+      subtitle || (isGroup && memberCount ? `${memberCount} miembros` : "en línea");
+  }
 
   return (
-    <LinearGradient
-      colors={[colors.headerGradientStart, colors.headerGradientEnd]}
+    <View
+      style={{
+        backgroundColor: headerBg,
+        paddingTop: 4,
+        paddingBottom: 8,
+        paddingHorizontal: 6,
+        flexDirection: "row",
+        alignItems: "center",
+      }}
     >
-      <View style={styles.container}>
-        <View style={styles.row}>
-          <AnimatedPressable
-            onPress={() => router.back()}
-            style={styles.backButton}
-            haptic="light"
-          >
-            <Ionicons name="chevron-back" size={20} color={colors.primary} />
-          </AnimatedPressable>
+      {/* Back button */}
+      <AnimatedPressable
+        onPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace("/(tabs)/inbox");
+          }
+        }}
+        haptic="light"
+        style={{
+          width: 36,
+          height: 44,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Ionicons name="arrow-back" size={22} color={headerText} />
+      </AnimatedPressable>
 
-          <AnimatedPressable
-            style={styles.titleRow}
-            onPress={() => router.push(`/chat-info/${conversationId}`)}
-            haptic="light"
+      {/* Avatar + Title — takes all remaining space */}
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => router.push(`/chat-info/${conversationId}`)}
+        style={{
+          flex: 1,
+          flexDirection: "row",
+          alignItems: "center",
+          marginLeft: 2,
+          gap: 10,
+        }}
+      >
+        {isOrvitBot ? (
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "#3b82f6",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
-            <Avatar name={title} size="sm" />
-            <View style={styles.titleContainer}>
-              <Text style={styles.title} numberOfLines={1}>
-                {title}
-              </Text>
-              <Text style={styles.subtitle}>en linea</Text>
-            </View>
-          </AnimatedPressable>
-
-          <AnimatedPressable
-            style={styles.infoBtn}
-            onPress={() => router.push(`/chat-info/${conversationId}`)}
-            haptic="light"
+            <Ionicons name="sparkles" size={20} color="#fff" />
+          </View>
+        ) : isGroup ? (
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: "rgba(255,255,255,0.15)",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
           >
-            <Ionicons
-              name="ellipsis-vertical"
-              size={18}
-              color={colors.textSecondary}
-            />
-          </AnimatedPressable>
+            <Ionicons name="people" size={20} color={headerText} />
+          </View>
+        ) : (
+          <Avatar name={title} size="sm" />
+        )}
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{ fontSize: 15, fontWeight: "600", color: headerText }}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+          <Text
+            style={{
+              fontSize: 11,
+              color: hasTyping ? "#25D366" : headerSubtext,
+              fontStyle: hasTyping ? "italic" : "normal",
+            }}
+            numberOfLines={1}
+          >
+            {statusText}
+          </Text>
         </View>
-      </View>
-    </LinearGradient>
+      </TouchableOpacity>
+
+      {/* Search — always at far right */}
+      <TouchableOpacity
+        onPress={onSearchPress}
+        disabled={!onSearchPress}
+        activeOpacity={0.6}
+        style={{
+          width: 44,
+          height: 44,
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        {onSearchPress && (
+          <Ionicons name="search" size={20} color={headerText} />
+        )}
+      </TouchableOpacity>
+    </View>
   );
 }

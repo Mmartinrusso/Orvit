@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { View, Text, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Alert } from "react-native";
 import { Audio } from "expo-av";
 import Animated, {
   useSharedValue,
@@ -14,15 +14,10 @@ import Animated, {
   FadeOut,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useCreateStyles } from "@/hooks/useCreateStyles";
-import { useHaptics } from "@/hooks/useHaptics";
+import * as Haptics from "expo-haptics";
 import AnimatedPressable from "@/components/ui/AnimatedPressable";
 import { API_URL } from "@/api/client";
 import { getAccessToken } from "@/lib/storage";
-import type { ColorPalette, Typography, Spacing, Radius } from "@/lib/theme";
-
-// ─── Types ────────────────────────────────────────────────────
 
 interface AudioRecorderProps {
   onAudioReady: (data: {
@@ -32,31 +27,89 @@ interface AudioRecorderProps {
     fileDuration: number;
   }) => void;
   disabled?: boolean;
+  onRecordingChange?: (recording: boolean) => void;
+  /** When true, automatically start recording on mount */
+  autoStart?: boolean;
 }
 
-// ─── Waveform Bar ─────────────────────────────────────────────
+// ── Waveform dots (WhatsApp-style) ──
+const DOT_COUNT = 40;
 
+function WaveformDots({ isRecording }: { isRecording: boolean }) {
+  const dots = [];
+  for (let i = 0; i < DOT_COUNT; i++) {
+    dots.push(
+      <WaveformDot key={i} index={i} isRecording={isRecording} />
+    );
+  }
+  return (
+    <View
+      style={{
+        flex: 1,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 2,
+        height: 20,
+      }}
+    >
+      {dots}
+    </View>
+  );
+}
+
+function WaveformDot({ index, isRecording }: { index: number; isRecording: boolean }) {
+  const opacity = useSharedValue(0.3);
+
+  useEffect(() => {
+    if (isRecording) {
+      const delay = (index * 60) % 800;
+      opacity.value = withDelay(
+        delay,
+        withRepeat(
+          withSequence(
+            withTiming(1, { duration: 400, easing: Easing.inOut(Easing.sin) }),
+            withTiming(0.3, { duration: 400, easing: Easing.inOut(Easing.sin) })
+          ),
+          -1,
+          true
+        )
+      );
+    } else {
+      cancelAnimation(opacity);
+      opacity.value = withTiming(0.3, { duration: 200 });
+    }
+  }, [isRecording]);
+
+  const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width: 3,
+          height: 3,
+          borderRadius: 1.5,
+          backgroundColor: "#ffffff",
+        },
+        style,
+      ]}
+    />
+  );
+}
+
+// ── Animated waveform bars (for inline preview) ──
 const BAR_COUNT = 12;
 
-function WaveformBar({
-  index,
-  isRecording,
-  color,
-}: {
-  index: number;
-  isRecording: boolean;
-  color: string;
-}) {
+function WaveformBar({ index, isRecording, color }: { index: number; isRecording: boolean; color: string }) {
   const height = useSharedValue(4);
 
   useEffect(() => {
     if (isRecording) {
-      // Each bar gets a different min/max height and delay to look organic
       const minH = 4 + (index % 3) * 2;
       const maxH = 12 + ((index * 7) % 14);
       const duration = 300 + ((index * 53) % 250);
       const delay = (index * 40) % 200;
-
       height.value = withDelay(
         delay,
         withRepeat(
@@ -74,51 +127,40 @@ function WaveformBar({
     }
   }, [isRecording]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    height: height.value,
-  }));
+  const animatedStyle = useAnimatedStyle(() => ({ height: height.value }));
 
   return (
     <Animated.View
-      style={[
-        {
-          width: 3,
-          borderRadius: 1.5,
-          backgroundColor: color,
-        },
-        animatedStyle,
-      ]}
+      style={[{ width: 3, borderRadius: 1.5, backgroundColor: color }, animatedStyle]}
     />
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────
+// ── Main Component ──
 
 export default function AudioRecorder({
   onAudioReady,
   disabled,
+  onRecordingChange,
+  autoStart,
 }: AudioRecorderProps) {
-  const { colors } = useTheme();
-  const styles = useCreateStyles(createStyles);
-  const haptics = useHaptics();
-
   const [isRecording, setIsRecording] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [duration, setDuration] = useState(0);
 
   const recordingRef = useRef<Audio.Recording | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ─── Recording Logic ─────────────────────────────────────
+  const setRecording = (val: boolean) => {
+    setIsRecording(val);
+    onRecordingChange?.(val);
+  };
 
   const startRecording = useCallback(async () => {
     try {
       const { granted } = await Audio.requestPermissionsAsync();
       if (!granted) {
-        Alert.alert(
-          "Permiso denegado",
-          "Se necesita acceso al micrófono para grabar audio."
-        );
+        Alert.alert("Permiso denegado", "Se necesita acceso al micrófono para grabar audio.");
         return;
       }
 
@@ -132,9 +174,10 @@ export default function AudioRecorder({
       );
 
       recordingRef.current = recording;
-      setIsRecording(true);
+      setRecording(true);
+      setIsPaused(false);
       setDuration(0);
-      haptics.heavy();
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
       timerRef.current = setInterval(() => {
         setDuration((d) => d + 1);
@@ -143,15 +186,45 @@ export default function AudioRecorder({
       console.error("[AudioRecorder] Failed to start:", error);
       Alert.alert("Error", "No se pudo iniciar la grabación");
     }
-  }, [haptics]);
+  }, []);
 
-  const stopRecording = useCallback(async () => {
+  const cancelRecording = useCallback(async () => {
+    if (!recordingRef.current) return;
+    if (timerRef.current) clearInterval(timerRef.current);
+    try {
+      await recordingRef.current.stopAndUnloadAsync();
+    } catch {}
+    recordingRef.current = null;
+    setRecording(false);
+    setIsPaused(false);
+    setDuration(0);
+    await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
+
+  const togglePause = useCallback(async () => {
+    if (!recordingRef.current) return;
+    try {
+      if (isPaused) {
+        await recordingRef.current.startAsync();
+        setIsPaused(false);
+        timerRef.current = setInterval(() => {
+          setDuration((d) => d + 1);
+        }, 1000);
+      } else {
+        await recordingRef.current.pauseAsync();
+        setIsPaused(true);
+        if (timerRef.current) clearInterval(timerRef.current);
+      }
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch {}
+  }, [isPaused]);
+
+  const stopAndSend = useCallback(async () => {
     if (!recordingRef.current) return;
 
-    haptics.medium();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (timerRef.current) clearInterval(timerRef.current);
-    setIsRecording(false);
-    setIsUploading(true);
 
     try {
       await recordingRef.current.stopAndUnloadAsync();
@@ -165,7 +238,10 @@ export default function AudioRecorder({
 
       const durationSec = (status.durationMillis || 0) / 1000;
 
-      // Upload to S3
+      // Hide recording UI immediately — upload in background
+      setRecording(false);
+      setIsPaused(false);
+
       const formData = new FormData();
       formData.append("file", {
         uri,
@@ -193,12 +269,10 @@ export default function AudioRecorder({
     } catch (error) {
       console.error("[AudioRecorder] Failed to upload:", error);
       Alert.alert("Error", "No se pudo enviar el audio");
-    } finally {
-      setIsUploading(false);
+      setRecording(false);
+      setIsPaused(false);
     }
-  }, [onAudioReady, haptics]);
-
-  // ─── Helpers ──────────────────────────────────────────────
+  }, [onAudioReady]);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -206,123 +280,127 @@ export default function AudioRecorder({
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  // ─── Uploading State ─────────────────────────────────────
+  // Auto-start recording when mounted with autoStart prop
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (autoStart && !autoStarted.current) {
+      autoStarted.current = true;
+      startRecording();
+    }
+  }, [autoStart]);
 
-  if (isUploading) {
-    return (
-      <Animated.View
-        entering={FadeIn.duration(150)}
-        exiting={FadeOut.duration(150)}
-        style={styles.uploadingContainer}
-      >
-        <ActivityIndicator size="small" color={colors.primary} />
-      </Animated.View>
-    );
-  }
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (recordingRef.current) {
+        recordingRef.current.stopAndUnloadAsync().catch(() => {});
+        recordingRef.current = null;
+      }
+    };
+  }, []);
 
-  // ─── Recording State ─────────────────────────────────────
-
-  if (isRecording) {
+  // ── Recording (or autoStart pending): full-width WhatsApp-style UI ──
+  if (isRecording || autoStart) {
     return (
       <Animated.View
         entering={FadeIn.duration(200)}
         exiting={FadeOut.duration(150)}
-        style={[styles.recordingContainer, { backgroundColor: colors.bgSecondary }]}
+        style={{ flex: 1 }}
       >
-        {/* Waveform bars */}
-        <View style={styles.waveformContainer}>
-          {Array.from({ length: BAR_COUNT }).map((_, i) => (
-            <WaveformBar
-              key={i}
-              index={i}
-              isRecording={isRecording}
-              color={colors.recording}
-            />
-          ))}
+        {/* Top: timer + waveform dots */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            paddingTop: 10,
+            paddingBottom: 8,
+            gap: 12,
+          }}
+        >
+          <Text style={{ fontSize: 18, fontWeight: "600", color: "#fff", minWidth: 44 }}>
+            {formatTime(duration)}
+          </Text>
+          <WaveformDots isRecording={isRecording && !isPaused} />
         </View>
 
-        {/* Timer */}
-        <Text style={[styles.timerText, { color: colors.textPrimary }]}>
-          {formatTime(duration)}
-        </Text>
-
-        {/* Stop button */}
-        <AnimatedPressable
-          style={[styles.stopButton, { backgroundColor: colors.recording }]}
-          onPress={stopRecording}
-          haptic="none"
+        {/* Bottom: delete / pause / send */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 24,
+            paddingBottom: 14,
+          }}
         >
-          <Ionicons name="stop-circle" size={20} color="#fff" />
-        </AnimatedPressable>
+          {/* Delete */}
+          <AnimatedPressable onPress={cancelRecording} haptic="light">
+            <Ionicons name="trash-outline" size={26} color="rgba(255,255,255,0.6)" />
+          </AnimatedPressable>
+
+          {/* Pause / Resume */}
+          <AnimatedPressable
+            onPress={togglePause}
+            haptic="medium"
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 24,
+              borderWidth: 2.5,
+              borderColor: "#ef4444",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Ionicons
+              name={isPaused ? "play" : "pause"}
+              size={22}
+              color="#ef4444"
+            />
+          </AnimatedPressable>
+
+          {/* Send */}
+          <AnimatedPressable
+            onPress={stopAndSend}
+            haptic="medium"
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 24,
+              backgroundColor: "#3b82f6",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Ionicons name="send" size={20} color="#fff" />
+          </AnimatedPressable>
+        </View>
       </Animated.View>
     );
   }
 
-  // ─── Idle State ───────────────────────────────────────────
-
+  // ── Idle: mic icon ──
   return (
     <Animated.View entering={FadeIn.duration(150)}>
       <AnimatedPressable
-        style={[
-          styles.micButton,
-          { backgroundColor: colors.bgTertiary },
-          disabled && styles.disabled,
-        ]}
-        onPress={startRecording}
+        style={{
+          width: 36,
+          height: 36,
+          justifyContent: "center",
+          alignItems: "center",
+          ...(disabled && { opacity: 0.4 }),
+        }}
+        onPress={() => {
+          // Notify parent immediately so it renders the full-width AudioRecorder with autoStart
+          onRecordingChange?.(true);
+        }}
         disabled={disabled}
         haptic="none"
       >
-        <Ionicons name="mic" size={20} color={colors.textMuted} />
+        <Ionicons name="mic-outline" size={24} color="#ffffff" />
       </AnimatedPressable>
     </Animated.View>
   );
 }
-
-// ─── Styles ─────────────────────────────────────────────────
-
-const createStyles = (colors: ColorPalette, t: Typography, s: Spacing, r: Radius) => ({
-  uploadingContainer: {
-    width: 38,
-    height: 38,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-  },
-  recordingContainer: {
-    flex: 1,
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    borderRadius: r.xl,
-    paddingHorizontal: s.lg,
-    paddingVertical: s.sm + 2,
-    marginRight: s.sm,
-    gap: s.md,
-  },
-  waveformContainer: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 3,
-    height: 26,
-  },
-  timerText: {
-    fontSize: t.body.fontSize,
-    fontWeight: "600" as const,
-    flex: 1,
-  },
-  stopButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-  },
-  micButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    justifyContent: "center" as const,
-    alignItems: "center" as const,
-  },
-  disabled: {
-    opacity: 0.4,
-  },
-});

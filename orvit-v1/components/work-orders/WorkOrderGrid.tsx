@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { WorkOrder, WorkOrderStatus, Priority, MaintenanceType } from '@/lib/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   FileText, 
@@ -67,6 +66,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 import { Separator } from '@/components/ui/separator';
 import { formatHours, cn } from '@/lib/utils';
+import {
+  WO_STATUS_CHIP,
+  WO_PRIORITY_CHIP,
+  WO_TYPE_CHIP,
+  WO_STATUS_BAR_COLOR,
+} from './workOrders.helpers';
 
 interface WorkOrderGridProps {
   workOrders: WorkOrder[];
@@ -105,50 +110,70 @@ export default function WorkOrderGrid({
     return isCreator || hasDeletePermission;
   };
 
-  const getStatusBadge = (status: WorkOrderStatus) => {
-    switch (status) {
-      case WorkOrderStatus.PENDING:
-        return <Badge variant="outline" className="border-warning-muted text-warning-muted-foreground bg-warning-muted">Pendiente</Badge>;
-      case WorkOrderStatus.IN_PROGRESS:
-        return <Badge variant="outline" className="border-info-muted text-info-muted-foreground bg-info-muted">En Proceso</Badge>;
-      case WorkOrderStatus.COMPLETED:
-        return <Badge variant="outline" className="border-success-muted text-success bg-success-muted">Completada</Badge>;
-      case WorkOrderStatus.CANCELLED:
-        return <Badge variant="outline" className="border-destructive/20 text-destructive bg-destructive/10">Cancelada</Badge>;
-      case WorkOrderStatus.ON_HOLD:
-        return <Badge variant="outline" className="border-border text-muted-foreground bg-muted">En Espera</Badge>;
-      default:
-        return null;
-    }
+  const getStatusChip = (status: WorkOrderStatus) => {
+    const chip = WO_STATUS_CHIP[status] || WO_STATUS_CHIP.PENDING;
+    return (
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: '4px',
+        fontSize: '11px', fontWeight: 600,
+        padding: '2px 10px', borderRadius: '6px',
+        background: chip.bg, color: chip.text,
+      }}>
+        <span style={{ height: '5px', width: '5px', borderRadius: '50%', background: chip.dot }} />
+        {chip.label}
+      </span>
+    );
   };
 
-  const getPriorityBadge = (priority: Priority) => {
-    switch (priority) {
-      case Priority.URGENT:
-        return <Badge className="bg-destructive text-destructive-foreground border-0">Urgente</Badge>;
-      case Priority.HIGH:
-        return <Badge className="bg-warning text-warning-foreground border-0">Alta</Badge>;
-      case Priority.MEDIUM:
-        return <Badge className="bg-warning-muted text-warning-muted-foreground border-0">Media</Badge>;
-      case Priority.LOW:
-        return <Badge className="bg-success-muted text-success border-0">Baja</Badge>;
-      default:
-        return null;
-    }
+  const getPriorityChip = (priority: Priority) => {
+    const chip = WO_PRIORITY_CHIP[priority] || WO_PRIORITY_CHIP.MEDIUM;
+    return (
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: '4px',
+        fontSize: '11px', fontWeight: 600,
+        padding: '2px 10px', borderRadius: '6px',
+        background: chip.bg, color: chip.text,
+        ...(priority === Priority.URGENT ? { border: `1.5px solid ${chip.text}`, fontWeight: 700 } : {}),
+      }}>
+        {chip.label}
+      </span>
+    );
+  };
+
+  const getTypeChip = (type: MaintenanceType) => {
+    const chip = WO_TYPE_CHIP[type] || WO_TYPE_CHIP.CORRECTIVE;
+    return (
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: '4px',
+        fontSize: '11px', fontWeight: 600,
+        padding: '2px 10px', borderRadius: '6px',
+        background: chip.bg, color: chip.text,
+      }}>
+        <span style={{ height: '5px', width: '5px', borderRadius: '50%', background: chip.dot }} />
+        {chip.label}
+      </span>
+    );
   };
 
   const getMaintenanceTypeIcon = (type: MaintenanceType) => {
+    const colors: Record<string, string> = {
+      PREVENTIVE: '#059669',
+      CORRECTIVE: '#D97706',
+      PREDICTIVE: '#2563EB',
+      EMERGENCY: '#DC2626',
+    };
+    const color = colors[type] || '#6B7280';
     switch (type) {
       case MaintenanceType.PREVENTIVE:
-        return <Shield className="h-5 w-5 text-success" />;
+        return <Shield className="h-5 w-5" style={{ color }} />;
       case MaintenanceType.CORRECTIVE:
-        return <Wrench className="h-5 w-5 text-warning-muted-foreground" />;
+        return <Wrench className="h-5 w-5" style={{ color }} />;
       case MaintenanceType.PREDICTIVE:
-        return <Activity className="h-5 w-5 text-info-muted-foreground" />;
+        return <Activity className="h-5 w-5" style={{ color }} />;
       case MaintenanceType.EMERGENCY:
-        return <Zap className="h-5 w-5 text-destructive" />;
+        return <Zap className="h-5 w-5" style={{ color }} />;
       default:
-        return <Settings className="h-5 w-5 text-muted-foreground" />;
+        return <Settings className="h-5 w-5" style={{ color: '#6B7280' }} />;
     }
   };
 
@@ -293,7 +318,7 @@ export default function WorkOrderGrid({
       return {
         name: workOrder.assignedTo.name,
         type: 'user',
-        color: 'text-info-muted-foreground',
+        hexColor: '#1E40AF',
         icon: User
       };
     }
@@ -303,7 +328,7 @@ export default function WorkOrderGrid({
       return {
         name: workOrder.assignedWorker.name,
         type: 'worker',
-        color: 'text-success',
+        hexColor: '#059669',
         icon: User
       };
     }
@@ -360,10 +385,15 @@ export default function WorkOrderGrid({
                         <div className="font-medium">{workOrder.title}</div>
                         <div className="text-xs text-muted-foreground">#{workOrder.id}</div>
                         {isOverdue(workOrder) && workOrder.status !== WorkOrderStatus.COMPLETED && (
-                          <Badge variant="destructive" className="text-xs">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '3px',
+                            fontSize: '10px', fontWeight: 700,
+                            padding: '1px 8px', borderRadius: '6px',
+                            background: '#FEE2E2', color: '#DC2626',
+                          }}>
+                            <AlertTriangle className="h-3 w-3" />
                             Vencida
-                          </Badge>
+                          </span>
                         )}
                       </div>
                     </TableCell>
@@ -376,26 +406,23 @@ export default function WorkOrderGrid({
                     </TableCell>
                     
                     <TableCell>
-                      {getPriorityBadge(workOrder.priority)}
+                      {getPriorityChip(workOrder.priority)}
                     </TableCell>
                     
                     <TableCell>
-                      {getStatusBadge(workOrder.status)}
+                      {getStatusChip(workOrder.status)}
                     </TableCell>
                     
                     <TableCell>
                       {assignedInfo ? (
                         <div className="flex items-center gap-2">
                           <assignedInfo.icon className="h-4 w-4 text-muted-foreground" />
-                          <span className={cn('font-medium', assignedInfo.color)}>
+                          <span className="font-medium" style={{ color: assignedInfo.hexColor }}>
                             {assignedInfo.name}
                           </span>
-                          <Badge variant="outline" className="text-xs">
-                            
-                          </Badge>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">Sin asignar</span>
+                        <span style={{ color: '#9CA3AF', fontSize: '13px' }}>Sin asignar</span>
                       )}
                     </TableCell>
                     
@@ -404,7 +431,7 @@ export default function WorkOrderGrid({
                     </TableCell>
                     
                     <TableCell>
-                      <span className={isOverdue(workOrder) ? "text-destructive font-medium" : ""}>
+                      <span className={isOverdue(workOrder) ? "font-medium" : ""} style={isOverdue(workOrder) ? { color: '#DC2626' } : undefined}>
                         {formatDate(workOrder.scheduledDate)}
                       </span>
                     </TableCell>
@@ -519,13 +546,18 @@ export default function WorkOrderGrid({
                   </DialogTitle>
                   <DialogDescription>
                     <div className="flex items-center gap-2 mt-2">
-                      {getPriorityBadge(selectedWorkOrder.priority)}
-                      {getStatusBadge(selectedWorkOrder.status)}
+                      {getPriorityChip(selectedWorkOrder.priority)}
+                      {getStatusChip(selectedWorkOrder.status)}
                       {isOverdue(selectedWorkOrder) && selectedWorkOrder.status !== WorkOrderStatus.COMPLETED && (
-                        <Badge variant="destructive">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
+                        <span style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '3px',
+                          fontSize: '10px', fontWeight: 700,
+                          padding: '2px 8px', borderRadius: '6px',
+                          background: '#FEE2E2', color: '#DC2626',
+                        }}>
+                          <AlertTriangle className="h-3 w-3" />
                           Vencida
-                        </Badge>
+                        </span>
                       )}
                     </div>
                   </DialogDescription>
@@ -553,7 +585,7 @@ export default function WorkOrderGrid({
                           <Calendar className="h-5 w-5 text-muted-foreground" />
                           <div>
                             <div className="text-sm text-muted-foreground">Fecha programada</div>
-                            <div className={cn('font-medium', isOverdue(selectedWorkOrder) && 'text-destructive')}>
+                            <div className="font-medium" style={isOverdue(selectedWorkOrder) ? { color: '#DC2626' } : undefined}>
                               {formatDate(selectedWorkOrder.scheduledDate)}
                             </div>
                           </div>
@@ -591,9 +623,14 @@ export default function WorkOrderGrid({
                               <div className={cn('font-medium', getAssignedInfo(selectedWorkOrder)?.color)}>
                                 {getAssignedInfo(selectedWorkOrder)?.name}
                               </div>
-                              <Badge variant="outline" className="text-xs mt-1">
+                              <span style={{
+                                display: 'inline-block', marginTop: '4px',
+                                fontSize: '10px', fontWeight: 500,
+                                padding: '1px 8px', borderRadius: '6px',
+                                background: '#F3F4F6', color: '#6B7280',
+                              }}>
                                 {getAssignedInfo(selectedWorkOrder)?.type === 'user' ? 'Usuario del Sistema' : 'Operario'}
-                              </Badge>
+                              </span>
                             </div>
                           </div>
                         ) : (
@@ -681,8 +718,8 @@ export default function WorkOrderGrid({
                         {getMaintenanceTypeLabel(workOrder.type)}
                       </span>
                       <div className="flex items-center gap-2 mt-1">
-                        {getPriorityBadge(workOrder.priority)}
-                        {getStatusBadge(workOrder.status)}
+                        {getPriorityChip(workOrder.priority)}
+                        {getStatusChip(workOrder.status)}
                       </div>
                     </div>
                   </div>
@@ -690,10 +727,16 @@ export default function WorkOrderGrid({
                   <div className="flex items-center gap-2">
                     {/* Indicador de vencimiento */}
                     {isOverdue(workOrder) && workOrder.status !== WorkOrderStatus.COMPLETED && (
-                      <Badge variant="destructive" className="animate-pulse">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '3px',
+                        fontSize: '10px', fontWeight: 700,
+                        padding: '2px 8px', borderRadius: '6px',
+                        background: '#FEE2E2', color: '#DC2626',
+                        animation: 'pulse 2s infinite',
+                      }}>
+                        <AlertTriangle className="h-3 w-3" />
                         Vencida
-                      </Badge>
+                      </span>
                     )}
                     
                     {/* Botón eliminar integrado en el header */}
@@ -750,7 +793,7 @@ export default function WorkOrderGrid({
                   
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className={isOverdue(workOrder) ? "text-destructive font-medium" : "text-foreground"}>
+                    <span style={{ color: isOverdue(workOrder) ? '#DC2626' : '#111827', fontWeight: isOverdue(workOrder) ? 500 : 400 }}>
                       {formatDate(workOrder.scheduledDate)}
                     </span>
                   </div>
@@ -758,12 +801,16 @@ export default function WorkOrderGrid({
                   {assignedInfo && (
                     <div className="flex items-center gap-2 text-sm">
                       <assignedInfo.icon className="h-4 w-4 text-muted-foreground" />
-                      <span className={cn('font-medium', assignedInfo.color)}>
+                      <span className="font-medium" style={{ color: assignedInfo.hexColor }}>
                         {assignedInfo.name}
                       </span>
-                      <Badge variant="outline" className="text-xs">
+                      <span style={{
+                        fontSize: '10px', fontWeight: 500,
+                        padding: '1px 8px', borderRadius: '6px',
+                        background: '#F3F4F6', color: '#6B7280',
+                      }}>
                         {assignedInfo.type === 'user' ? 'Usuario' : 'Operario'}
-                      </Badge>
+                      </span>
                     </div>
                   )}
 
@@ -847,13 +894,18 @@ export default function WorkOrderGrid({
                 </DialogTitle>
                 <DialogDescription>
                   <div className="flex items-center gap-2 mt-2">
-                    {getPriorityBadge(selectedWorkOrder.priority)}
-                    {getStatusBadge(selectedWorkOrder.status)}
+                    {getPriorityChip(selectedWorkOrder.priority)}
+                    {getStatusChip(selectedWorkOrder.status)}
                     {isOverdue(selectedWorkOrder) && selectedWorkOrder.status !== WorkOrderStatus.COMPLETED && (
-                      <Badge variant="destructive">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '3px',
+                        fontSize: '10px', fontWeight: 700,
+                        padding: '2px 8px', borderRadius: '6px',
+                        background: '#FEE2E2', color: '#DC2626',
+                      }}>
+                        <AlertTriangle className="h-3 w-3" />
                         Vencida
-                      </Badge>
+                      </span>
                     )}
                   </div>
                 </DialogDescription>
@@ -933,7 +985,7 @@ export default function WorkOrderGrid({
                             <div className="flex items-center gap-2">
                               <assignedInfo.icon className="h-5 w-5 text-muted-foreground" />
                               <div>
-                                <div className={cn('font-medium', assignedInfo.color)}>
+                                <div className="font-medium" style={{ color: assignedInfo.hexColor }}>
                                   {assignedInfo.name}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
@@ -969,7 +1021,7 @@ export default function WorkOrderGrid({
                          <Calendar className="h-4 w-4 text-muted-foreground" />
                          <span className="text-sm font-medium">Programada</span>
                        </div>
-                       <div className={isOverdue(selectedWorkOrder) ? "text-destructive font-medium" : ""}>
+                       <div className={isOverdue(selectedWorkOrder) ? "font-medium" : ""} style={isOverdue(selectedWorkOrder) ? { color: '#DC2626' } : undefined}>
                          {selectedWorkOrder.scheduledDate ? (
                            <>
                              {new Date(selectedWorkOrder.scheduledDate).toLocaleDateString('es-ES', {

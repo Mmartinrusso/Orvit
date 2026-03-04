@@ -3,7 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Columns, AlignJustify, BarChart2, CheckSquare, Download, Square, LayoutGrid } from 'lucide-react';
+import { Plus, Columns, AlignJustify, BarChart2, CheckSquare, Download, Square, LayoutGrid, Repeat, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,7 +24,6 @@ import { FilterChips } from '@/components/corrective/failures/FilterChips';
 import { AdvancedFiltersSheet } from '@/components/corrective/failures/AdvancedFiltersSheet';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { FailuresViewSelector, useFailuresView } from '@/components/corrective/failures/FailuresViewSelector';
 import { useFailurePresetFilters } from '@/components/corrective/failures/FailuresSavedViewsBar';
 import { FailuresBulkBar } from '@/components/corrective/failures/FailuresBulkBar';
 
@@ -149,8 +148,6 @@ export default function IncidentesPage() {
   const { currentSector } = useCompany();
   const { hasAnyPermission, user } = useAuth();
 
-  // V2: Vista actual desde URL
-  const currentView = useFailuresView();
   const presetFilters = useFailurePresetFilters();
 
   // Permissions
@@ -184,27 +181,10 @@ export default function IncidentesPage() {
     return combined;
   }, [filters, presetFilters]);
 
-  // Incident type tab (Fallas / Roturas)
-  const incidentTab = (searchParams.get('type') || 'falla') as 'falla' | 'rotura';
-  const incidentTypeFilter = incidentTab === 'rotura' ? 'ROTURA' : 'FALLA';
-
-  const handleIncidentTabChange = useCallback((value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value === 'falla') {
-      params.delete('type');
-    } else {
-      params.set('type', value);
-    }
-    const newUrl = params.toString()
-      ? `/mantenimiento/incidentes?${params.toString()}`
-      : '/mantenimiento/incidentes';
-    router.push(newUrl, { scroll: false });
-  }, [router, searchParams]);
-
+  // No incident type filter — show all, cards indicate type
   const filtersWithIncidentType = useMemo(() => ({
     ...effectiveFilters,
-    incidentType: incidentTypeFilter,
-  }), [effectiveFilters, incidentTypeFilter]);
+  }), [effectiveFilters]);
 
   // UI state
   const [createIncidentOpen, setCreateIncidentOpen] = useState(false);
@@ -218,7 +198,7 @@ export default function IncidentesPage() {
   const [failureToEdit, setFailureToEdit] = useState<number | null>(null);
   const [failureToDelete, setFailureToDelete] = useState<{ id: number; title?: string } | null>(null);
   const [initialTab, setInitialTab] = useState<string | undefined>(undefined);
-  const [viewMode, setViewMode] = useState<'kanban' | 'lista' | 'cronograma'>('kanban');
+  const [viewMode, setViewMode] = useState<'kanban' | 'lista' | 'cronograma' | 'reincidencias' | 'duplicados'>('kanban');
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
@@ -383,13 +363,13 @@ export default function IncidentesPage() {
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `incidentes_${incidentTab}_${new Date().toISOString().split('T')[0]}.csv`;
+      link.download = `incidentes_${new Date().toISOString().split('T')[0]}.csv`;
       link.click();
       toast.success(`${data.length} registros exportados`, { id: 'csv-export' });
     } catch {
       toast.error('Error al exportar', { id: 'csv-export' });
     }
-  }, [filtersWithIncidentType, incidentTab]);
+  }, [filtersWithIncidentType]);
 
   // Machine query
   const { data: machines } = useQuery({
@@ -421,157 +401,72 @@ export default function IncidentesPage() {
       const json = await res.json();
       return json.data || json || [];
     },
-    enabled: currentView === 'reportes',
+    enabled: viewMode === 'kanban' || viewMode === 'lista' || viewMode === 'cronograma',
     staleTime: 30000,
   });
 
   return (
     <div className="h-screen sidebar-shell flex flex-col min-h-0">
-      <style>{`
-        @keyframes header-slide-in {
-          from { opacity: 0; transform: translateY(-8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .incidents-header { animation: header-slide-in 450ms cubic-bezier(0.22,1,0.36,1) both; }
-        .inc-action-btn {
-          height: 32px;
-          padding: 0 12px;
-          font-size: 13px;
-          font-weight: 500;
-          border-radius: 8px;
-          border: 1.5px solid #E4E4E8;
-          background: #FFFFFF;
-          color: #374151;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          transition: all 120ms ease;
-          white-space: nowrap;
-        }
-        .inc-action-btn:hover { border-color: #D1D5DB; background: #F9FAFB; }
-        .inc-action-btn-primary {
-          background: #111827;
-          color: #FFFFFF;
-          border-color: #111827;
-        }
-        .inc-action-btn-primary:hover { background: #1F2937; border-color: #1F2937; }
-      `}</style>
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="px-4 md:px-6 py-3 md:py-4 space-y-3 md:space-y-4">
 
-      {/* Header */}
-      <div className="incidents-header" style={{
-        position: 'sticky', top: 0, zIndex: 20,
-        background: 'rgba(255,255,255,0.92)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-      }}>
-        {/* Row 1: Title + actions */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '14px 20px 0',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Header row — inside content flow */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
             <h1 style={{
               fontSize: 20, fontWeight: 700, color: '#111827',
-              letterSpacing: '-0.025em', margin: 0,
+              letterSpacing: '-0.02em', margin: 0,
             }}>
               Incidentes
             </h1>
-            {gridData && (
-              <span style={{
-                fontSize: 11, fontWeight: 600,
-                padding: '2px 8px', borderRadius: 10,
-                background: '#F3F4F6', color: '#9CA3AF',
-              }}>
-                {gridData.length}
-              </span>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {currentView === 'reportes' && (
-              <button className="inc-action-btn" onClick={handleExportCSV}>
-                <Download className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">CSV</span>
-              </button>
-            )}
-            {canCreate && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button
-                className="inc-action-btn inc-action-btn-primary"
-                onClick={() => setCreateIncidentOpen(true)}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Nuevo</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Row 2: Tabs — type + view */}
-        <div style={{
-          display: 'flex', alignItems: 'flex-end', gap: 0,
-          padding: '0 20px',
-          borderBottom: '1px solid #E4E4E8',
-          marginTop: 10,
-        }}>
-          {/* Fallas / Roturas tabs */}
-          {(['falla', 'rotura'] as const).map((tab) => {
-            const isActive = incidentTab === tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => handleIncidentTabChange(tab)}
+                onClick={handleExportCSV}
                 style={{
-                  padding: '8px 16px',
-                  fontSize: 13, fontWeight: isActive ? 600 : 500,
-                  color: isActive ? '#111827' : '#9CA3AF',
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: isActive ? '2px solid #111827' : '2px solid transparent',
+                  height: 32, padding: '0 12px',
+                  fontSize: 12, fontWeight: 500,
+                  borderRadius: 7,
+                  border: '1.5px solid #E4E4E8',
+                  background: '#FAFAFA',
+                  color: '#374151',
                   cursor: 'pointer',
-                  transition: 'all 150ms ease',
-                  marginBottom: -1,
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  transition: 'all 150ms',
                 }}
               >
-                {tab === 'falla' ? 'Fallas' : 'Roturas'}
+                <Download style={{ width: 14, height: 14 }} />
+                CSV
               </button>
-            );
-          })}
-
-          {/* Separator */}
-          <div style={{
-            width: 1, height: 20, background: '#E4E4E8',
-            margin: '0 8px', alignSelf: 'center', marginBottom: 5,
-          }} />
-
-          {/* View selector tabs — desktop */}
-          <div className="hidden md:flex" style={{ alignItems: 'flex-end' }}>
-            <FailuresViewSelector />
+              {canCreate && (
+                <button
+                  onClick={() => setCreateIncidentOpen(true)}
+                  style={{
+                    height: 32, padding: '0 12px',
+                    fontSize: 12, fontWeight: 600,
+                    borderRadius: 7,
+                    border: '1.5px solid #111827',
+                    background: '#111827',
+                    color: '#FFFFFF',
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    transition: 'all 150ms',
+                  }}
+                >
+                  <Plus style={{ width: 14, height: 14 }} />
+                  Nuevo
+                </button>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* View selector móvil */}
-        <div className="md:hidden" style={{
-          padding: '0 20px', borderBottom: '1px solid #E4E4E8',
-          overflowX: 'auto',
-        }}>
-          <FailuresViewSelector className="w-full" />
-        </div>
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="px-4 md:px-6 py-3 md:py-4 space-y-3 md:space-y-4">
-          <div className="border-t border-border" />
-
-          {/* Vista Reportes: KPIs, filtros y grid/tabla */}
-          {currentView === 'reportes' && (
+          {/* KPIs, filtros y vistas */}
+          {(
             <>
               {/* KPIs */}
               <FailureKPIs
                 activeFilter={effectiveFilters}
                 onFilterChange={handleFiltersChange}
-                incidentType={incidentTypeFilter}
               />
 
               <div className="border-t border-border" />
@@ -591,15 +486,24 @@ export default function IncidentesPage() {
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{
-                      fontSize: 14, fontWeight: 600, color: '#111827',
+                      fontSize: 15, fontWeight: 600, color: '#111827',
                       letterSpacing: '-0.01em',
                     }}>
-                      {incidentTab === 'rotura' ? 'Todas las roturas' : 'Todas las fallas'}
+                      Todos los incidentes
                     </span>
+                    {gridData && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 600,
+                        padding: '2px 7px', borderRadius: 8,
+                        background: '#F3F4F6', color: '#9CA3AF',
+                      }}>
+                        {gridData.length}
+                      </span>
+                    )}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     {/* Select button */}
-                    {canDelete && (
+                    {canDelete && (viewMode === 'kanban' || viewMode === 'lista' || viewMode === 'cronograma') && (
                       <button
                         title="Seleccionar"
                         onClick={() => { setSelectionMode(!selectionMode); setSelectedIds([]); }}
@@ -622,16 +526,18 @@ export default function IncidentesPage() {
                       overflow: 'hidden', background: '#FAFAFA',
                     }}>
                       {([
+                        { key: 'kanban' as const, icon: LayoutGrid, label: 'Kanban' },
                         { key: 'lista' as const, icon: AlignJustify, label: 'Lista' },
                         { key: 'cronograma' as const, icon: BarChart2, label: 'Cronograma' },
-                        { key: 'kanban' as const, icon: LayoutGrid, label: 'Kanban' },
+                        { key: 'reincidencias' as const, icon: Repeat, label: 'Reincidencias' },
+                        { key: 'duplicados' as const, icon: Copy, label: 'Duplicados' },
                       ]).map(({ key, icon: VIcon, label }, i, arr) => (
                         <button
                           key={key}
                           onClick={() => setViewMode(key)}
                           style={{
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            padding: '7px 14px',
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            padding: '7px 12px',
                             borderTop: 'none', borderBottom: 'none', borderLeft: 'none',
                             borderRight: i < arr.length - 1 ? '1px solid #E4E4E8' : 'none',
                             background: viewMode === key ? '#FFFFFF' : 'transparent',
@@ -641,30 +547,33 @@ export default function IncidentesPage() {
                             cursor: 'pointer',
                             boxShadow: viewMode === key ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
                             transition: '150ms',
+                            whiteSpace: 'nowrap',
                           }}
                         >
                           <VIcon className="h-3.5 w-3.5" />
-                          {label}
+                          <span className="hidden lg:inline">{label}</span>
                         </button>
                       ))}
                     </div>
                   </div>
                 </div>
 
-                {/* Filters inside card */}
-                <div style={{ padding: '12px 20px', borderBottom: '1px solid #F0F0F4' }}>
-                  <FailureFiltersBar
-                    filters={effectiveFilters}
-                    onFiltersChange={handleFiltersChange}
-                    onAdvancedFiltersOpen={() => setAdvancedFiltersOpen(true)}
-                  />
-                  <FilterChips
-                    filters={effectiveFilters}
-                    onRemoveFilter={handleRemoveFilter}
-                    onClearAll={handleClearAll}
-                    machineName={machineName}
-                  />
-                </div>
+                {/* Filters inside card — only for main views */}
+                {(viewMode === 'kanban' || viewMode === 'lista' || viewMode === 'cronograma') && (
+                  <div style={{ padding: '12px 20px', borderBottom: '1px solid #F0F0F4' }}>
+                    <FailureFiltersBar
+                      filters={effectiveFilters}
+                      onFiltersChange={handleFiltersChange}
+                      onAdvancedFiltersOpen={() => setAdvancedFiltersOpen(true)}
+                    />
+                    <FilterChips
+                      filters={effectiveFilters}
+                      onRemoveFilter={handleRemoveFilter}
+                      onClearAll={handleClearAll}
+                      machineName={machineName}
+                    />
+                  </div>
+                )}
 
                 {/* View content */}
                 {viewMode === 'kanban' && (
@@ -709,22 +618,24 @@ export default function IncidentesPage() {
                     onSelectFailure={handleSelectFailure}
                   />
                 )}
+
+                {viewMode === 'reincidencias' && (
+                  <div style={{ padding: '16px' }}>
+                    <FailuresReincidenciasView
+                      onSelectFailure={handleSelectFailure}
+                    />
+                  </div>
+                )}
+
+                {viewMode === 'duplicados' && (
+                  <div style={{ padding: '16px' }}>
+                    <FailuresDuplicadosView
+                      onSelectFailure={handleSelectFailure}
+                    />
+                  </div>
+                )}
               </div>
             </>
-          )}
-
-          {/* Vista Reincidencias */}
-          {currentView === 'reincidencias' && (
-            <FailuresReincidenciasView
-              onSelectFailure={handleSelectFailure}
-            />
-          )}
-
-          {/* Vista Duplicados */}
-          {currentView === 'duplicados' && (
-            <FailuresDuplicadosView
-              onSelectFailure={handleSelectFailure}
-            />
           )}
         </div>
       </div>

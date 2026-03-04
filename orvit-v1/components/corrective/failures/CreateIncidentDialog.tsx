@@ -26,7 +26,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -469,12 +468,13 @@ export function CreateIncidentDialog({
         {step !== 'form' && (
           <>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-lg">
+              <DialogTitle style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: 600, color: '#111827' }}>
                 {step !== 'type' && (
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 -ml-1"
+                    style={{ height: '28px', width: '28px', borderRadius: '6px' }}
+                    className="-ml-1"
                     onClick={() => setStep('type')}
                   >
                     <ArrowLeft className="h-4 w-4" />
@@ -483,7 +483,7 @@ export function CreateIncidentDialog({
                 {step === 'type' && 'Crear Incidencia'}
                 {step === 'path' && `Nueva ${typeLabel}`}
               </DialogTitle>
-              <DialogDescription className="text-sm">
+              <DialogDescription style={{ fontSize: '13px', color: '#6B7280' }}>
                 {step === 'type' && '¿Qué tipo de incidente ocurrió?'}
                 {step === 'path' && '¿Cómo se va a resolver?'}
               </DialogDescription>
@@ -494,38 +494,34 @@ export function CreateIncidentDialog({
               <DialogBody>
                 <div className="grid grid-cols-2 gap-3">
                   <button
-                    className={cn(
-                      'flex flex-col items-center gap-3 p-6 rounded-xl border-2 transition-all',
-                      'hover:border-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20',
-                      'focus:outline-none focus:ring-2 focus:ring-orange-400'
-                    )}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '24px', borderRadius: '8px', border: '1.5px solid #E4E4E8', background: '#FFFFFF', cursor: 'pointer', transition: 'all 0.15s ease' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#D97706'; e.currentTarget.style.background = '#FEF3C7'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E4E4E8'; e.currentTarget.style.background = '#FFFFFF'; }}
                     onClick={() => handleSelectType('FALLA')}
                   >
-                    <div className="h-12 w-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                      <AlertTriangle className="h-6 w-6 text-orange-500" />
+                    <div style={{ height: '48px', width: '48px', borderRadius: '50%', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <AlertTriangle style={{ height: '24px', width: '24px', color: '#D97706' }} />
                     </div>
                     <div className="text-center">
-                      <p className="font-semibold text-sm">Falla</p>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p style={{ fontWeight: 600, fontSize: '14px', color: '#111827' }}>Falla</p>
+                      <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
                         Mal funcionamiento o desperfecto
                       </p>
                     </div>
                   </button>
 
                   <button
-                    className={cn(
-                      'flex flex-col items-center gap-3 p-6 rounded-xl border-2 transition-all',
-                      'hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-950/20',
-                      'focus:outline-none focus:ring-2 focus:ring-red-400'
-                    )}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '24px', borderRadius: '8px', border: '1.5px solid #E4E4E8', background: '#FFFFFF', cursor: 'pointer', transition: 'all 0.15s ease' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#DC2626'; e.currentTarget.style.background = '#FEE2E2'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E4E4E8'; e.currentTarget.style.background = '#FFFFFF'; }}
                     onClick={() => handleSelectType('ROTURA')}
                   >
-                    <div className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                      <Unlink className="h-6 w-6 text-red-500" />
+                    <div style={{ height: '48px', width: '48px', borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Unlink style={{ height: '24px', width: '24px', color: '#DC2626' }} />
                     </div>
                     <div className="text-center">
-                      <p className="font-semibold text-sm">Rotura</p>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p style={{ fontWeight: 600, fontSize: '14px', color: '#111827' }}>Rotura</p>
+                      <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '4px' }}>
                         Rotura física de componente o pieza
                       </p>
                     </div>
@@ -539,38 +535,34 @@ export function CreateIncidentDialog({
               <DialogBody>
                 <div className="grid grid-cols-1 gap-3">
                   <button
-                    className={cn(
-                      'flex items-center gap-4 p-5 rounded-xl border-2 transition-all text-left',
-                      'hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-950/20',
-                      'focus:outline-none focus:ring-2 focus:ring-green-400'
-                    )}
+                    style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', borderRadius: '8px', border: '1.5px solid #E4E4E8', background: '#FFFFFF', cursor: 'pointer', transition: 'all 0.15s ease', textAlign: 'left' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#059669'; e.currentTarget.style.background = '#ECFDF5'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E4E4E8'; e.currentTarget.style.background = '#FFFFFF'; }}
                     onClick={() => handleSelectPath('resolved')}
                   >
-                    <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0">
-                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <div style={{ height: '40px', width: '40px', borderRadius: '50%', background: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <CheckCircle2 style={{ height: '20px', width: '20px', color: '#059669' }} />
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">Ya fue resuelta</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p style={{ fontWeight: 600, fontSize: '14px', color: '#111827' }}>Ya fue resuelta</p>
+                      <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
                         Se solucionó en el momento — registrar lo que se hizo
                       </p>
                     </div>
                   </button>
 
                   <button
-                    className={cn(
-                      'flex items-center gap-4 p-5 rounded-xl border-2 transition-all text-left',
-                      'hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20',
-                      'focus:outline-none focus:ring-2 focus:ring-blue-400'
-                    )}
+                    style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', borderRadius: '8px', border: '1.5px solid #E4E4E8', background: '#FFFFFF', cursor: 'pointer', transition: 'all 0.15s ease', textAlign: 'left' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.background = '#EFF6FF'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E4E4E8'; e.currentTarget.style.background = '#FFFFFF'; }}
                     onClick={() => handleSelectPath('requires-ot')}
                   >
-                    <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-                      <ClipboardList className="h-5 w-5 text-blue-600" />
+                    <div style={{ height: '40px', width: '40px', borderRadius: '50%', background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <ClipboardList style={{ height: '20px', width: '20px', color: '#2563EB' }} />
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">Requiere OT</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p style={{ fontWeight: 600, fontSize: '14px', color: '#111827' }}>Requiere OT</p>
+                      <p style={{ fontSize: '12px', color: '#6B7280', marginTop: '2px' }}>
                         Necesita orden de trabajo para resolverse
                       </p>
                     </div>
@@ -592,26 +584,27 @@ export function CreateIncidentDialog({
               className="flex-1 flex flex-col min-h-0 overflow-hidden"
             >
               {/* ── Sticky header: título + stepper ── */}
-              <div className="flex-shrink-0 bg-background border-b">
+              <div style={{ flexShrink: 0, background: '#FFFFFF', borderBottom: '1px solid #E4E4E8' }}>
                 <div className="px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 -ml-1"
+                      style={{ height: '28px', width: '28px', borderRadius: '6px' }}
+                      className="-ml-1"
                       onClick={handlePrevFormStep}
                     >
                       <ArrowLeft className="h-4 w-4" />
                     </Button>
                     <div>
-                      <h2 className="text-base font-semibold flex items-center gap-2">
+                      <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {typeLabel} — Ya resuelta
-                        <Badge variant={incidentType === 'ROTURA' ? 'destructive' : 'outline'} className="text-[10px] px-1.5 py-0">
+                        <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: incidentType === 'ROTURA' ? '#FEE2E2' : '#FEF3C7', color: incidentType === 'ROTURA' ? '#DC2626' : '#D97706' }}>
                           {typeLabel}
-                        </Badge>
+                        </span>
                       </h2>
-                      <p className="text-xs text-muted-foreground">
+                      <p style={{ fontSize: '12px', color: '#9CA3AF' }}>
                         Paso {currentFormStepIndex + 1} de {formStepIds.length}
                       </p>
                     </div>
@@ -620,7 +613,7 @@ export function CreateIncidentDialog({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7"
+                    style={{ height: '28px', width: '28px', borderRadius: '6px' }}
                     onClick={() => handleClose(false)}
                   >
                     <X className="h-4 w-4" />
@@ -647,20 +640,17 @@ export function CreateIncidentDialog({
                   {formStep === 'incident' && (
                     <div className="space-y-5">
                       <div className="flex items-center gap-2.5 pb-1">
-                        <div className={cn(
-                          'h-8 w-8 rounded-lg flex items-center justify-center',
-                          incidentType === 'ROTURA' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-orange-100 dark:bg-orange-900/30'
-                        )}>
+                        <div style={{ height: '32px', width: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: incidentType === 'ROTURA' ? '#FEE2E2' : '#FEF3C7' }}>
                           {incidentType === 'ROTURA'
-                            ? <Unlink className="h-4 w-4 text-red-600" />
-                            : <AlertTriangle className="h-4 w-4 text-orange-600" />
+                            ? <Unlink style={{ height: '16px', width: '16px', color: '#DC2626' }} />
+                            : <AlertTriangle style={{ height: '16px', width: '16px', color: '#D97706' }} />
                           }
                         </div>
                         <div>
-                          <h3 className="text-sm font-semibold">
+                          <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>
                             {incidentType === 'ROTURA' ? '¿Qué se rompió y por qué?' : '¿Qué sucedió y por qué?'}
                           </h3>
-                          <p className="text-xs text-muted-foreground">Describí el incidente con certeza — ya sabés qué pasó</p>
+                          <p style={{ fontSize: '12px', color: '#6B7280' }}>Describí el incidente con certeza — ya sabés qué pasó</p>
                         </div>
                       </div>
 
@@ -670,20 +660,22 @@ export function CreateIncidentDialog({
                         name="machineId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium">Máquina *</FormLabel>
+                            <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Máquina *</FormLabel>
                             <FormControl>
-                              <ComponentTreeSelector
-                                value={{
-                                  machineId: field.value,
-                                  componentIds: form.watch('componentIds'),
-                                  subcomponentIds: form.watch('subcomponentIds'),
-                                }}
-                                onChange={(selection) => {
-                                  field.onChange(selection.machineId);
-                                  form.setValue('componentIds', selection.componentIds);
-                                  form.setValue('subcomponentIds', selection.subcomponentIds);
-                                }}
-                              />
+                              <div style={{ border: '1px solid #E4E4E8', borderRadius: '8px', padding: '8px 12px' }}>
+                                <ComponentTreeSelector
+                                  value={{
+                                    machineId: field.value,
+                                    componentIds: form.watch('componentIds'),
+                                    subcomponentIds: form.watch('subcomponentIds'),
+                                  }}
+                                  onChange={(selection) => {
+                                    field.onChange(selection.machineId);
+                                    form.setValue('componentIds', selection.componentIds);
+                                    form.setValue('subcomponentIds', selection.subcomponentIds);
+                                  }}
+                                />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -696,7 +688,7 @@ export function CreateIncidentDialog({
                         name="title"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium">¿Qué sucedió? *</FormLabel>
+                            <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>¿Qué sucedió? *</FormLabel>
                             <FormControl>
                               <Input
                                 placeholder={incidentType === 'ROTURA'
@@ -704,6 +696,7 @@ export function CreateIncidentDialog({
                                   : 'Ej: Motor no arranca correctamente'
                                 }
                                 className="text-sm"
+                                style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}
                                 {...field}
                               />
                             </FormControl>
@@ -718,16 +711,17 @@ export function CreateIncidentDialog({
                         name="description"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium">¿Por qué sucedió?</FormLabel>
+                            <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>¿Por qué sucedió?</FormLabel>
                             <FormControl>
                               <Textarea
                                 placeholder="Causa confirmada, condiciones del equipo, contexto..."
                                 rows={3}
                                 className="text-sm resize-none"
+                                style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}
                                 {...field}
                               />
                             </FormControl>
-                            <p className="text-[11px] text-muted-foreground">
+                            <p style={{ fontSize: '11px', color: '#9CA3AF' }}>
                               Ya se resolvió — contá lo que efectivamente pasó, no lo que creés
                             </p>
                           </FormItem>
@@ -739,12 +733,12 @@ export function CreateIncidentDialog({
                         control={form.control}
                         name="causedDowntime"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <FormItem className="flex flex-row items-center justify-between" style={{ border: '1px solid #E4E4E8', borderRadius: '8px', padding: '12px' }}>
                             <div>
-                              <FormLabel className="text-sm font-medium cursor-pointer">
+                              <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151', cursor: 'pointer' }}>
                                 ¿Causó parada de producción?
                               </FormLabel>
-                              <p className="text-[11px] text-muted-foreground">Se detuvo la línea o máquina</p>
+                              <p style={{ fontSize: '11px', color: '#9CA3AF' }}>Se detuvo la línea o máquina</p>
                             </div>
                             <FormControl>
                               <Switch
@@ -765,12 +759,12 @@ export function CreateIncidentDialog({
                     <div className="space-y-5">
                       <div className="flex items-center justify-between pb-1">
                         <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                            <Wrench className="h-4 w-4 text-green-600" />
+                          <div style={{ height: '32px', width: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ECFDF5' }}>
+                            <Wrench style={{ height: '16px', width: '16px', color: '#059669' }} />
                           </div>
                           <div>
-                            <h3 className="text-sm font-semibold">¿Cómo se resolvió?</h3>
-                            <p className="text-xs text-muted-foreground">Detallá la intervención y el resultado</p>
+                            <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>¿Cómo se resolvió?</h3>
+                            <p style={{ fontSize: '12px', color: '#6B7280' }}>Detallá la intervención y el resultado</p>
                           </div>
                         </div>
                         <Button
@@ -779,7 +773,7 @@ export function CreateIncidentDialog({
                           size="sm"
                           onClick={handleImproveWithAI}
                           disabled={isImproving}
-                          className="text-xs"
+                          style={{ fontSize: '12px', borderRadius: '6px', border: '1px solid #E4E4E8' }}
                         >
                           {isImproving ? (
                             <Loader2 className="h-3 w-3 mr-1 animate-spin" />
@@ -798,13 +792,13 @@ export function CreateIncidentDialog({
                             name="repairAction"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel className="text-sm font-medium">Tipo de intervención *</FormLabel>
+                                <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Tipo de intervención *</FormLabel>
                                 <Select
                                   onValueChange={field.onChange}
                                   value={field.value || ''}
                                 >
                                   <FormControl>
-                                    <SelectTrigger className="h-10">
+                                    <SelectTrigger className="h-10" style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}>
                                       <SelectValue placeholder="¿Se cambió o se reparó?" />
                                     </SelectTrigger>
                                   </FormControl>
@@ -834,7 +828,7 @@ export function CreateIncidentDialog({
                               name="repairDetail"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel className="text-sm font-medium">
+                                  <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>
                                     {watchRepairAction === 'CAMBIO'
                                       ? '¿Qué pieza se cambió?'
                                       : '¿Cómo se reparó? Explicá el procedimiento'
@@ -846,12 +840,14 @@ export function CreateIncidentDialog({
                                         placeholder="Describí paso a paso cómo se reparó..."
                                         rows={3}
                                         className="text-sm resize-none"
+                                        style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}
                                         {...field}
                                       />
                                     ) : (
                                       <Input
                                         placeholder="Ej: Correa de distribución modelo X-200"
                                         className="text-sm"
+                                        style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}
                                         {...field}
                                       />
                                     )}
@@ -869,12 +865,13 @@ export function CreateIncidentDialog({
                         name="diagnosis"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium">Diagnóstico — ¿Qué encontraste? *</FormLabel>
+                            <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Diagnóstico — ¿Qué encontraste? *</FormLabel>
                             <FormControl>
                               <Textarea
                                 placeholder="Describí lo que encontraste al revisar..."
                                 rows={2}
                                 className="text-sm resize-none"
+                                style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}
                                 {...field}
                               />
                             </FormControl>
@@ -889,12 +886,13 @@ export function CreateIncidentDialog({
                         name="immediateSolution"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium">Solución aplicada — ¿Qué hiciste? *</FormLabel>
+                            <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Solución aplicada — ¿Qué hiciste? *</FormLabel>
                             <FormControl>
                               <Textarea
                                 placeholder="Describí la solución que aplicaste..."
                                 rows={2}
                                 className="text-sm resize-none"
+                                style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}
                                 {...field}
                               />
                             </FormControl>
@@ -910,10 +908,10 @@ export function CreateIncidentDialog({
                           name="fixType"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs font-medium">Tipo de fix</FormLabel>
+                              <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Tipo de fix</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                  <SelectTrigger className="h-9 text-xs">
+                                  <SelectTrigger className="h-9 text-xs" style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}>
                                     <SelectValue />
                                   </SelectTrigger>
                                 </FormControl>
@@ -931,10 +929,10 @@ export function CreateIncidentDialog({
                           name="outcome"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs font-medium">Resultado *</FormLabel>
+                              <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Resultado *</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
-                                  <SelectTrigger className="h-9 text-xs">
+                                  <SelectTrigger className="h-9 text-xs" style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}>
                                     <SelectValue />
                                   </SelectTrigger>
                                 </FormControl>
@@ -953,13 +951,14 @@ export function CreateIncidentDialog({
                           name="actualMinutes"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-xs font-medium">Tiempo (min)</FormLabel>
+                              <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Tiempo (min)</FormLabel>
                               <FormControl>
                                 <Input
                                   type="number"
                                   placeholder="Ej: 30"
                                   min={1}
                                   className="h-9 text-xs"
+                                  style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}
                                   {...field}
                                   onChange={(e) =>
                                     field.onChange(e.target.value ? parseInt(e.target.value) : undefined)
@@ -979,7 +978,7 @@ export function CreateIncidentDialog({
                           <p className="text-sm font-medium flex items-center gap-1.5">
                             <Wrench className="h-3.5 w-3.5 text-muted-foreground" /> Herramientas
                             {toolsUsed.length > 0 && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{toolsUsed.length}</Badge>
+                              <span style={{ fontSize: '10px', fontWeight: 600, padding: '1px 6px', borderRadius: '6px', background: '#F3F4F6', color: '#374151' }}>{toolsUsed.length}</span>
                             )}
                           </p>
 
@@ -991,6 +990,7 @@ export function CreateIncidentDialog({
                                 role="combobox"
                                 aria-expanded={toolComboOpen}
                                 className="w-full justify-between h-9 text-xs font-normal"
+                                style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}
                               >
                                 <span className="flex items-center gap-1.5 text-muted-foreground">
                                   <Search className="h-3 w-3" />
@@ -1064,9 +1064,9 @@ export function CreateIncidentDialog({
                           {toolsUsed.length > 0 && (
                             <div className="flex flex-wrap gap-1.5">
                               {toolsUsed.map((item) => (
-                                <div key={item.id} className="flex items-center gap-1 text-[10px] bg-muted/60 rounded-md px-2 py-1 border">
-                                  <span className="truncate max-w-[100px]">{item.name}</span>
-                                  <span className="text-muted-foreground">×</span>
+                                <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', background: '#F3F4F6', borderRadius: '6px', padding: '3px 8px', border: '1px solid #E4E4E8' }}>
+                                  <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{item.name}</span>
+                                  <span style={{ color: '#9CA3AF' }}>×</span>
                                   <input
                                     type="number"
                                     inputMode="numeric"
@@ -1074,9 +1074,9 @@ export function CreateIncidentDialog({
                                     min={1}
                                     value={item.quantity}
                                     onChange={(e) => updateItemQty(toolsUsed, setToolsUsed, item.id, parseInt(e.target.value) || 1)}
-                                    className="h-5 w-8 text-[10px] text-center rounded border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                                    style={{ height: '20px', width: '32px', fontSize: '10px', textAlign: 'center' as const, borderRadius: '4px', border: '1px solid #E4E4E8', background: '#FFFFFF', outline: 'none' }}
                                   />
-                                  <button type="button" className="text-muted-foreground hover:text-destructive ml-0.5" onClick={() => removeItem(toolsUsed, setToolsUsed, item.id)}>
+                                  <button type="button" style={{ color: '#9CA3AF', marginLeft: '2px' }} onClick={() => removeItem(toolsUsed, setToolsUsed, item.id)}>
                                     <X className="h-3 w-3" />
                                   </button>
                                 </div>
@@ -1090,7 +1090,7 @@ export function CreateIncidentDialog({
                           <p className="text-sm font-medium flex items-center gap-1.5">
                             <Package className="h-3.5 w-3.5 text-muted-foreground" /> Repuestos
                             {sparePartsUsed.length > 0 && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{sparePartsUsed.length}</Badge>
+                              <span style={{ fontSize: '10px', fontWeight: 600, padding: '1px 6px', borderRadius: '6px', background: '#F3F4F6', color: '#374151' }}>{sparePartsUsed.length}</span>
                             )}
                           </p>
 
@@ -1102,6 +1102,7 @@ export function CreateIncidentDialog({
                                 role="combobox"
                                 aria-expanded={sparePartComboOpen}
                                 className="w-full justify-between h-9 text-xs font-normal"
+                                style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}
                               >
                                 <span className="flex items-center gap-1.5 text-muted-foreground">
                                   <Search className="h-3 w-3" />
@@ -1175,9 +1176,9 @@ export function CreateIncidentDialog({
                           {sparePartsUsed.length > 0 && (
                             <div className="flex flex-wrap gap-1.5">
                               {sparePartsUsed.map((item) => (
-                                <div key={item.id} className="flex items-center gap-1 text-[10px] bg-muted/60 rounded-md px-2 py-1 border">
-                                  <span className="truncate max-w-[100px]">{item.name}</span>
-                                  <span className="text-muted-foreground">×</span>
+                                <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', background: '#F3F4F6', borderRadius: '6px', padding: '3px 8px', border: '1px solid #E4E4E8' }}>
+                                  <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{item.name}</span>
+                                  <span style={{ color: '#9CA3AF' }}>×</span>
                                   <input
                                     type="number"
                                     inputMode="numeric"
@@ -1185,9 +1186,9 @@ export function CreateIncidentDialog({
                                     min={1}
                                     value={item.quantity}
                                     onChange={(e) => updateItemQty(sparePartsUsed, setSparePartsUsed, item.id, parseInt(e.target.value) || 1)}
-                                    className="h-5 w-8 text-[10px] text-center rounded border bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                                    style={{ height: '20px', width: '32px', fontSize: '10px', textAlign: 'center' as const, borderRadius: '4px', border: '1px solid #E4E4E8', background: '#FFFFFF', outline: 'none' }}
                                   />
-                                  <button type="button" className="text-muted-foreground hover:text-destructive ml-0.5" onClick={() => removeItem(sparePartsUsed, setSparePartsUsed, item.id)}>
+                                  <button type="button" style={{ color: '#9CA3AF', marginLeft: '2px' }} onClick={() => removeItem(sparePartsUsed, setSparePartsUsed, item.id)}>
                                     <X className="h-3 w-3" />
                                   </button>
                                 </div>
@@ -1205,12 +1206,12 @@ export function CreateIncidentDialog({
                   {formStep === 'team' && (
                     <div className="space-y-5">
                       <div className="flex items-center gap-2.5 pb-1">
-                        <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                          <Users className="h-4 w-4 text-blue-600" />
+                        <div style={{ height: '32px', width: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#EFF6FF' }}>
+                          <Users style={{ height: '16px', width: '16px', color: '#2563EB' }} />
                         </div>
                         <div>
-                          <h3 className="text-sm font-semibold">¿Quiénes participaron?</h3>
-                          <p className="text-xs text-muted-foreground">Indicá los operadores y el supervisor a cargo</p>
+                          <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>¿Quiénes participaron?</h3>
+                          <p style={{ fontSize: '12px', color: '#6B7280' }}>Indicá los operadores y el supervisor a cargo</p>
                         </div>
                       </div>
 
@@ -1220,13 +1221,13 @@ export function CreateIncidentDialog({
                         name="supervisorId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium">Supervisor a cargo</FormLabel>
+                            <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Supervisor a cargo</FormLabel>
                             <Select
                               onValueChange={(v) => field.onChange(v ? parseInt(v) : undefined)}
                               value={field.value?.toString() || ''}
                             >
                               <FormControl>
-                                <SelectTrigger className="h-10">
+                                <SelectTrigger className="h-10" style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}>
                                   <SelectValue placeholder="Seleccionar supervisor..." />
                                 </SelectTrigger>
                               </FormControl>
@@ -1239,7 +1240,7 @@ export function CreateIncidentDialog({
                                 ))}
                               </SelectContent>
                             </Select>
-                            <p className="text-[11px] text-muted-foreground">
+                            <p style={{ fontSize: '11px', color: '#9CA3AF' }}>
                               Quien supervisó o autorizó la intervención
                             </p>
                           </FormItem>
@@ -1252,7 +1253,7 @@ export function CreateIncidentDialog({
                         name="performedByIds"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium">Operadores que trabajaron</FormLabel>
+                            <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Operadores que trabajaron</FormLabel>
                             <FormControl>
                               <MultiSelect
                                 options={employeeOptions}
@@ -1263,7 +1264,7 @@ export function CreateIncidentDialog({
                                 maxCount={5}
                               />
                             </FormControl>
-                            <p className="text-[11px] text-muted-foreground">
+                            <p style={{ fontSize: '11px', color: '#9CA3AF' }}>
                               Todos los que participaron en la resolución
                             </p>
                           </FormItem>
@@ -1278,12 +1279,12 @@ export function CreateIncidentDialog({
                   {formStep === 'controls' && (
                     <div className="space-y-5">
                       <div className="flex items-center gap-2.5 pb-1">
-                        <div className="h-8 w-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                          <Shield className="h-4 w-4 text-purple-600" />
+                        <div style={{ height: '32px', width: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F5F3FF' }}>
+                          <Shield style={{ height: '16px', width: '16px', color: '#7C3AED' }} />
                         </div>
                         <div>
-                          <h3 className="text-sm font-semibold">Controles de seguimiento</h3>
-                          <p className="text-xs text-muted-foreground">Verificaciones programadas después de la resolución</p>
+                          <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>Controles de seguimiento</h3>
+                          <p style={{ fontSize: '12px', color: '#6B7280' }}>Verificaciones programadas después de la resolución</p>
                         </div>
                       </div>
 
@@ -1291,18 +1292,12 @@ export function CreateIncidentDialog({
                       {controlPlan.length > 0 && (
                         <div className="space-y-2">
                           {controlPlan.map((ctrl) => (
-                            <div key={ctrl.order} className="flex items-center gap-2 text-sm bg-muted/50 rounded-lg px-3 py-2.5 border">
-                              <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5">
+                            <div key={ctrl.order} className="flex items-center gap-2" style={{ fontSize: '13px', background: '#FAFAFA', borderRadius: '8px', padding: '10px 12px', border: '1px solid #E4E4E8' }}>
+                              <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: 600, padding: '2px 6px', borderRadius: '6px', background: '#F3F4F6', color: '#374151' }}>
                                 #{ctrl.order}
-                              </Badge>
+                              </span>
                               <span className="flex-1 text-xs">{ctrl.description}</span>
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  'shrink-0 text-[10px]',
-                                  ctrl.type === 'from_previous' ? 'border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400' : ''
-                                )}
-                              >
+                              <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', fontSize: '10px', fontWeight: 500, padding: '2px 8px', borderRadius: '6px', border: ctrl.type === 'from_previous' ? '1px solid #93C5FD' : '1px solid #E4E4E8', background: ctrl.type === 'from_previous' ? '#EFF6FF' : '#FFFFFF', color: ctrl.type === 'from_previous' ? '#1D4ED8' : '#374151' }}>
                                 {ctrl.type === 'from_previous' ? (
                                   <>
                                     <Clock className="h-2.5 w-2.5 mr-0.5" />
@@ -1320,7 +1315,7 @@ export function CreateIncidentDialog({
                                     } desde resolución
                                   </>
                                 )}
-                              </Badge>
+                              </span>
                               <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => removeControl(ctrl.order)}>
                                 <X className="h-3 w-3" />
                               </button>
@@ -1330,7 +1325,7 @@ export function CreateIncidentDialog({
                       )}
 
                       {controlPlan.length === 0 && (
-                        <div className="text-center py-6 text-muted-foreground border rounded-lg border-dashed">
+                        <div style={{ textAlign: 'center', padding: '24px', border: '1.5px dashed #E4E4E8', borderRadius: '8px', color: '#9CA3AF' }}>
                           <Shield className="h-8 w-8 mx-auto mb-2 opacity-30" />
                           <p className="text-sm">No hay controles programados</p>
                           <p className="text-xs">Agregá verificaciones para asegurar que la solución funciona</p>
@@ -1338,7 +1333,7 @@ export function CreateIncidentDialog({
                       )}
 
                       {/* Agregar control */}
-                      <div className="space-y-3 rounded-lg border p-3 bg-muted/20">
+                      <div className="space-y-3" style={{ borderRadius: '8px', border: '1px solid #E4E4E8', padding: '12px', background: '#FAFAFA' }}>
                         <p className="text-xs font-medium">Agregar control</p>
 
                         {/* Descripción */}
@@ -1347,6 +1342,7 @@ export function CreateIncidentDialog({
                           value={newControlDesc}
                           onChange={(e) => setNewControlDesc(e.target.value)}
                           className="text-xs h-9"
+                          style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -1362,7 +1358,7 @@ export function CreateIncidentDialog({
                             value={newControlType}
                             onValueChange={(v) => setNewControlType(v as 'from_resolution' | 'from_previous')}
                           >
-                            <SelectTrigger className="h-9 text-xs w-auto min-w-[180px]">
+                            <SelectTrigger className="h-9 text-xs w-auto min-w-[180px]" style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1390,6 +1386,7 @@ export function CreateIncidentDialog({
                               value={newControlDelay}
                               onChange={(e) => setNewControlDelay(e.target.value)}
                               className="text-xs h-9 w-16"
+                              style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}
                               min={1}
                             />
                             <span className="text-[11px] text-muted-foreground">min</span>
@@ -1408,7 +1405,7 @@ export function CreateIncidentDialog({
                           </Button>
                         </div>
 
-                        <p className="text-[11px] text-muted-foreground">
+                        <p style={{ fontSize: '11px', color: '#9CA3AF' }}>
                           <strong>Desde la resolución:</strong> se cuenta desde que se cerró el incidente.{' '}
                           <strong>Desde el control anterior:</strong> se cuenta desde que se completó el control previo.
                         </p>
@@ -1420,12 +1417,13 @@ export function CreateIncidentDialog({
                         name="notes"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium">Notas adicionales</FormLabel>
+                            <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Notas adicionales</FormLabel>
                             <FormControl>
                               <Textarea
                                 placeholder="Algo más que quieras registrar sobre este incidente..."
                                 rows={3}
                                 className="text-sm resize-none"
+                                style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}
                                 {...field}
                               />
                             </FormControl>
@@ -1438,9 +1436,9 @@ export function CreateIncidentDialog({
               </div>
 
               {/* ── Sticky footer: navigation ── */}
-              <div className="flex-shrink-0 bg-muted/30 border-t px-4 py-2.5 sm:px-6 sm:py-3">
+              <div style={{ flexShrink: 0, background: '#FAFAFA', borderTop: '1px solid #E4E4E8', padding: '10px 24px' }}>
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-muted-foreground">
+                  <div style={{ fontSize: '12px', color: '#9CA3AF' }}>
                     Paso {currentFormStepIndex + 1} de {formStepIds.length}
                   </div>
 
@@ -1449,6 +1447,7 @@ export function CreateIncidentDialog({
                       type="button"
                       variant="outline"
                       size="sm"
+                      style={{ borderRadius: '7px', border: '1px solid #E4E4E8', background: '#FFFFFF', fontSize: '13px' }}
                       onClick={handlePrevFormStep}
                     >
                       <ArrowLeft className="h-3.5 w-3.5 mr-1" />
@@ -1459,6 +1458,7 @@ export function CreateIncidentDialog({
                       <Button
                         type="button"
                         size="sm"
+                        style={{ borderRadius: '7px', background: '#111827', color: '#FFFFFF', fontSize: '13px' }}
                         onClick={handleNextFormStep}
                       >
                         Siguiente
@@ -1469,7 +1469,7 @@ export function CreateIncidentDialog({
                         type="submit"
                         size="sm"
                         disabled={createMutation.isPending}
-                        className="bg-green-600 hover:bg-green-700 text-white"
+                        style={{ borderRadius: '7px', background: '#059669', color: '#FFFFFF', fontSize: '13px' }}
                       >
                         {createMutation.isPending && (
                           <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />

@@ -1,18 +1,15 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   AlertTriangle,
   Clock,
   TrendingUp,
   CheckCircle2,
   History,
+  RefreshCw,
 } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface RecurrenceData {
@@ -54,17 +51,24 @@ interface RecurrencePanelProps {
   onSelectFailure?: (id: number) => void;
 }
 
-const priorityColors: Record<string, string> = {
-  P1: 'bg-destructive/10 text-destructive',
-  P2: 'bg-warning-muted text-warning-muted-foreground',
-  P3: 'bg-blue-500/10 text-blue-600',
-  P4: 'bg-info-muted text-info-muted-foreground',
+const priorityConfig: Record<string, { bg: string; color: string; border: string }> = {
+  P1: { bg: '#FEF2F2', color: '#DC2626', border: '#FECACA' },
+  P2: { bg: '#FFFBEB', color: '#D97706', border: '#FDE68A' },
+  P3: { bg: '#EFF6FF', color: '#2563EB', border: '#BFDBFE' },
+  P4: { bg: '#F0F9FF', color: '#0891B2', border: '#BAE6FD' },
+};
+
+const statusConfig: Record<string, { label: string; bg: string; color: string }> = {
+  REPORTED: { label: 'Reportada', bg: '#FEF2F2', color: '#DC2626' },
+  IN_PROGRESS: { label: 'En Proceso', bg: '#FFFBEB', color: '#D97706' },
+  RESOLVED: { label: 'Resuelta', bg: '#F0FDF4', color: '#16A34A' },
+  CANCELLED: { label: 'Cancelada', bg: '#F5F5F5', color: '#6B7280' },
 };
 
 /**
- * Panel de reincidencia para mostrar historial de fallas similares
+ * Panel de reincidencia — inline styles matching FailureDetailSheet design
  */
-export function RecurrencePanel({ failureId, onSelectFailure }: RecurrencePanelProps) {
+export default function RecurrencePanel({ failureId, onSelectFailure }: RecurrencePanelProps) {
   const { data, isLoading, error } = useQuery<RecurrenceData>({
     queryKey: ['failure-recurrence', failureId],
     queryFn: async () => {
@@ -73,21 +77,31 @@ export function RecurrencePanel({ failureId, onSelectFailure }: RecurrencePanelP
       return res.json();
     },
     enabled: !!failureId,
-    staleTime: 60000, // Cache por 1 minuto
+    staleTime: 60000,
   });
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-24 w-full" />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {[64, 96].map((h, i) => (
+          <div
+            key={i}
+            style={{
+              height: h,
+              width: '100%',
+              background: '#F3F4F6',
+              borderRadius: 8,
+              animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            }}
+          />
+        ))}
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <p className="text-sm text-muted-foreground text-center py-4">
+      <p style={{ fontSize: 13, color: '#9CA3AF', textAlign: 'center', padding: '16px 0' }}>
         Error al cargar historial de reincidencia
       </p>
     );
@@ -96,58 +110,111 @@ export function RecurrencePanel({ failureId, onSelectFailure }: RecurrencePanelP
   const { recurrence, previousOccurrences, effectiveSolutions } = data;
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Alerta de reincidencia */}
       {recurrence.isRecurrent && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Falla Recurrente</AlertTitle>
-          <AlertDescription>
-            Esta falla ha ocurrido {recurrence.recurrenceCount} veces en los
-            últimos {recurrence.windowDays} días.
-            {recurrence.avgDaysBetweenFailures && (
-              <span className="block mt-1 text-sm">
-                Promedio: cada {recurrence.avgDaysBetweenFailures} días
-              </span>
-            )}
-          </AlertDescription>
-        </Alert>
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            padding: '12px 14px',
+            borderRadius: 8,
+            border: '1.5px solid #FECACA',
+            background: '#FEF2F2',
+          }}
+        >
+          <AlertTriangle style={{ width: 16, height: 16, color: '#DC2626', flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 600, color: '#DC2626', margin: 0 }}>
+              Falla Recurrente
+            </p>
+            <p style={{ fontSize: 12, color: '#991B1B', margin: '2px 0 0' }}>
+              Esta falla ha ocurrido {recurrence.recurrenceCount} veces en los últimos {recurrence.windowDays} días.
+              {recurrence.avgDaysBetweenFailures && (
+                <span style={{ display: 'block', marginTop: 2 }}>
+                  Promedio: cada {recurrence.avgDaysBetweenFailures} días
+                </span>
+              )}
+            </p>
+          </div>
+        </div>
       )}
 
       {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg border p-3 text-center">
-          <p className="text-2xl font-bold">{previousOccurrences.length}</p>
-          <p className="text-xs text-muted-foreground">Fallas anteriores</p>
-        </div>
-        <div className="rounded-lg border p-3 text-center">
-          <p className="text-2xl font-bold">
-            {recurrence.avgDaysBetweenFailures ?? '-'}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div
+          style={{
+            border: '1.5px solid #E4E4E8',
+            borderRadius: 8,
+            padding: 12,
+            textAlign: 'center',
+            background: '#FAFAFA',
+          }}
+        >
+          <p style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: 0 }}>
+            {previousOccurrences.length}
           </p>
-          <p className="text-xs text-muted-foreground">Días promedio</p>
+          <p style={{ fontSize: 11, color: '#9CA3AF', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+            Fallas anteriores
+          </p>
+        </div>
+        <div
+          style={{
+            border: '1.5px solid #E4E4E8',
+            borderRadius: 8,
+            padding: 12,
+            textAlign: 'center',
+            background: '#FAFAFA',
+          }}
+        >
+          <p style={{ fontSize: 22, fontWeight: 700, color: '#111827', margin: 0 }}>
+            {recurrence.avgDaysBetweenFailures ?? '—'}
+          </p>
+          <p style={{ fontSize: 11, color: '#9CA3AF', margin: '2px 0 0', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+            Días promedio
+          </p>
         </div>
       </div>
 
       {/* Soluciones efectivas sugeridas */}
       {effectiveSolutions.length > 0 && (
         <div>
-          <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
-            <TrendingUp className="h-4 w-4 text-success" />
-            Soluciones Efectivas
-          </h4>
-          <div className="space-y-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+            <TrendingUp style={{ width: 14, height: 14, color: '#16A34A' }} />
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+              Soluciones Efectivas
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {effectiveSolutions.map((solution) => (
               <div
                 key={solution.id}
-                className="rounded-lg border border-success-muted bg-success-muted p-3"
+                style={{
+                  borderRadius: 8,
+                  border: '1.5px solid #BBF7D0',
+                  background: '#F0FDF4',
+                  padding: 12,
+                }}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <Badge variant="outline" className="bg-success-muted">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: '#16A34A',
+                      background: '#DCFCE7',
+                      padding: '2px 8px',
+                      borderRadius: 10,
+                      border: '1px solid #BBF7D0',
+                    }}
+                  >
                     Efectividad: {solution.effectiveness}/5
-                  </Badge>
+                  </span>
                 </div>
-                <p className="text-sm font-medium">{solution.solution}</p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p style={{ fontSize: 13, fontWeight: 500, color: '#111827', margin: 0 }}>
+                  {solution.solution}
+                </p>
+                <p style={{ fontSize: 12, color: '#6B7280', margin: '4px 0 0' }}>
                   Diagnóstico: {solution.diagnosis}
                 </p>
               </div>
@@ -158,75 +225,115 @@ export function RecurrencePanel({ failureId, onSelectFailure }: RecurrencePanelP
 
       {/* Historial de fallas */}
       <div>
-        <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
-          <History className="h-4 w-4" />
-          Historial
-        </h4>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          <History style={{ width: 14, height: 14, color: '#6B7280' }} />
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+            Historial
+          </span>
+        </div>
         {previousOccurrences.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            No hay fallas anteriores registradas
-          </p>
+          <div style={{ textAlign: 'center', padding: '20px 0' }}>
+            <RefreshCw style={{ width: 28, height: 28, color: '#D1D5DB', margin: '0 auto 8px' }} />
+            <p style={{ fontSize: 13, color: '#9CA3AF', margin: 0 }}>
+              No hay fallas anteriores registradas
+            </p>
+          </div>
         ) : (
-          <div className="space-y-2">
-            {previousOccurrences.map((occ) => (
-              <div
-                key={occ.id}
-                className={cn(
-                  "rounded-lg border p-3",
-                  onSelectFailure && "cursor-pointer hover:bg-muted/50 transition-colors"
-                )}
-                onClick={() => onSelectFailure?.(occ.id)}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium line-clamp-1">
-                      {occ.title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Hace {occ.daysAgo} días •{' '}
-                      {format(new Date(occ.reportedAt), 'd MMM yyyy', {
-                        locale: es,
-                      })}
-                    </p>
-                  </div>
-                  <div className="flex gap-1">
-                    <Badge
-                      variant="outline"
-                      className={priorityColors[occ.priority] || ''}
-                    >
-                      {occ.priority}
-                    </Badge>
-                    <Badge
-                      variant={
-                        occ.status === 'RESOLVED' ? 'secondary' : 'destructive'
-                      }
-                    >
-                      {occ.status === 'RESOLVED' ? (
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                      ) : (
-                        <Clock className="h-3 w-3 mr-1" />
-                      )}
-                      {occ.status === 'REPORTED' ? 'Reportada' : occ.status === 'IN_PROGRESS' ? 'En Proceso' : occ.status === 'RESOLVED' ? 'Resuelta' : occ.status === 'CANCELLED' ? 'Cancelada' : occ.status}
-                    </Badge>
-                  </div>
-                </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {previousOccurrences.map((occ) => {
+              const prio = priorityConfig[occ.priority] || { bg: '#F5F5F5', color: '#6B7280', border: '#E5E7EB' };
+              const status = statusConfig[occ.status] || { label: occ.status, bg: '#F5F5F5', color: '#6B7280' };
 
-                {/* Última solución aplicada */}
-                {occ.lastSolution && (
-                  <div className="mt-2 pt-2 border-t text-xs">
-                    <p className="text-muted-foreground">
-                      <span className="font-medium">Solución:</span>{' '}
-                      {occ.lastSolution.solution}
-                    </p>
-                    {occ.lastSolution.effectiveness && (
-                      <p className="text-muted-foreground mt-1">
-                        Efectividad: {occ.lastSolution.effectiveness}/5
+              return (
+                <div
+                  key={occ.id}
+                  onClick={() => onSelectFailure?.(occ.id)}
+                  style={{
+                    borderRadius: 8,
+                    border: '1.5px solid #E4E4E8',
+                    padding: 12,
+                    cursor: onSelectFailure ? 'pointer' : 'default',
+                    transition: 'background 0.15s',
+                    background: 'white',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (onSelectFailure) (e.currentTarget as HTMLDivElement).style.background = '#FAFAFA';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (onSelectFailure) (e.currentTarget as HTMLDivElement).style.background = 'white';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: '#111827',
+                        margin: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {occ.title}
                       </p>
-                    )}
+                      <p style={{ fontSize: 11, color: '#9CA3AF', margin: '2px 0 0' }}>
+                        Hace {occ.daysAgo} días • {format(new Date(occ.reportedAt), 'd MMM yyyy', { locale: es })}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 4, marginLeft: 8, flexShrink: 0 }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: '2px 7px',
+                          borderRadius: 10,
+                          background: prio.bg,
+                          color: prio.color,
+                          border: `1px solid ${prio.border}`,
+                        }}
+                      >
+                        {occ.priority}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 500,
+                          padding: '2px 7px',
+                          borderRadius: 10,
+                          background: status.bg,
+                          color: status.color,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 3,
+                        }}
+                      >
+                        {occ.status === 'RESOLVED' ? (
+                          <CheckCircle2 style={{ width: 11, height: 11 }} />
+                        ) : (
+                          <Clock style={{ width: 11, height: 11 }} />
+                        )}
+                        {status.label}
+                      </span>
+                    </div>
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {/* Última solución aplicada */}
+                  {occ.lastSolution && (
+                    <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #E4E4E8' }}>
+                      <p style={{ fontSize: 12, color: '#6B7280', margin: 0 }}>
+                        <span style={{ fontWeight: 600, color: '#374151' }}>Solución:</span>{' '}
+                        {occ.lastSolution.solution}
+                      </p>
+                      {occ.lastSolution.effectiveness && (
+                        <p style={{ fontSize: 11, color: '#9CA3AF', margin: '3px 0 0' }}>
+                          Efectividad: {occ.lastSolution.effectiveness}/5
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

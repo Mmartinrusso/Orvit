@@ -16,10 +16,10 @@ export const darkPalette = {
   textSecondary: "#8b9bb4",
   textMuted: "#5b6b82",
 
-  // Primary (indigo)
-  primary: "#818cf8",
-  primaryDark: "#6366f1",
-  primaryBg: "rgba(129, 140, 248, 0.12)",
+  // Primary (dark navy)
+  primary: "#1a3a6b",
+  primaryDark: "#122b52",
+  primaryBg: "rgba(26, 58, 107, 0.12)",
 
   // Semantic
   success: "#34d399",
@@ -27,10 +27,12 @@ export const darkPalette = {
   warning: "#fbbf24",
 
   // Message bubbles
-  bubbleMeBg: "#6366f1",
+  bubbleMeBg: "#0b3d6e",
   bubbleMeText: "#ffffff",
-  bubbleOtherBg: "#1a2336",
-  bubbleOtherText: "#e2e8f0",
+  bubbleOtherBg: "#1f2c34",
+  bubbleOtherText: "#ffffff",
+  chatBg: "#0b141a",
+  chatHeaderBg: "#1f2c34",
 
   // Misc
   overlay: "rgba(0, 0, 0, 0.6)",
@@ -38,12 +40,12 @@ export const darkPalette = {
   skeletonShimmer: "#2d3a4e",
   online: "#34d399",
   recording: "#f87171",
-  badge: "#6366f1",
+  badge: "#1a3a6b",
 
   // Tab bar
   tabBarBg: "#0c111d",
   tabBarBorder: "#1a2336",
-  tabActive: "#818cf8",
+  tabActive: "#1a3a6b",
   tabInactive: "#5b6b82",
 
   // Header
@@ -64,29 +66,32 @@ export const lightPalette: typeof darkPalette = {
   textSecondary: "#475569",
   textMuted: "#94a3b8",
 
-  primary: "#6366f1",
-  primaryDark: "#4f46e5",
-  primaryBg: "rgba(99, 102, 241, 0.08)",
+  primary: "#152e54",
+  primaryDark: "#0f2240",
+  primaryBg: "rgba(21, 46, 84, 0.08)",
 
   success: "#10b981",
   error: "#ef4444",
   warning: "#f59e0b",
 
-  bubbleMeBg: "#6366f1",
+  // Message bubbles
+  bubbleMeBg: "#1a4a7a",
   bubbleMeText: "#ffffff",
-  bubbleOtherBg: "#f1f5f9",
-  bubbleOtherText: "#1e293b",
+  bubbleOtherBg: "#2a2a2e",
+  bubbleOtherText: "#ffffff",
+  chatBg: "#efeae2",
+  chatHeaderBg: "#008069",
 
   overlay: "rgba(0, 0, 0, 0.4)",
   skeleton: "#e2e8f0",
   skeletonShimmer: "#f1f5f9",
   online: "#10b981",
   recording: "#ef4444",
-  badge: "#6366f1",
+  badge: "#152e54",
 
   tabBarBg: "#ffffff",
   tabBarBorder: "#e2e8f0",
-  tabActive: "#6366f1",
+  tabActive: "#152e54",
   tabInactive: "#94a3b8",
 
   headerGradientStart: "#ffffff",

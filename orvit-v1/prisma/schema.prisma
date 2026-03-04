@@ -16444,12 +16444,21 @@ model Conversation {
   // Retention
   retentionDays Int                @default(365) @map("retention_days")
 
+  // Hierarchy (subgroups up to 5 levels: depth 0-4)
+  parentId       String?            @map("parent_id")
+  depth          Int                @default(0)
+  iconName       String?            @db.VarChar(50) @map("icon_name")
+  avatarUrl      String?            @map("avatar_url")
+  onlyAdminsPost Boolean            @default(false) @map("only_admins_post")
+
   isArchived    Boolean            @default(false) @map("is_archived")
   createdAt     DateTime           @default(now()) @map("created_at")
   updatedAt     DateTime           @updatedAt @map("updated_at")
   createdBy     Int                @map("created_by")
 
   company       Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parent        Conversation?      @relation("SubGroups", fields: [parentId], references: [id], onDelete: SetNull)
+  children      Conversation[]     @relation("SubGroups")
   members       ConversationMember[]
   messages      Message[]
 
@@ -16457,6 +16466,7 @@ model Conversation {
   @@index([companyId, isArchived, lastMessageAt(sort: Desc)])
   @@index([companyId, entityType, entityId])
   @@index([companyId, type])
+  @@index([parentId])
   @@map("conversations")
 }
 

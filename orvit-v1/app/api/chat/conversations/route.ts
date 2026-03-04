@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { type, name, description, memberIds, entityType, entityId } = body;
+  const { type, name, description, memberIds, entityType, entityId, parentId, iconName, onlyAdminsPost, avatarUrl } = body;
 
   if (!type || !["DIRECT", "CHANNEL", "CONTEXTUAL"].includes(type)) {
     return NextResponse.json(
@@ -182,6 +182,41 @@ export async function POST(request: NextRequest) {
   }
 
   // === CHANNEL or CONTEXTUAL ===
+
+  // Validate subgroup hierarchy
+  let depth = 0;
+  if (parentId) {
+    if (type !== "CHANNEL") {
+      return NextResponse.json(
+        { error: "Solo CHANNEL puede tener subgrupos" },
+        { status: 400 }
+      );
+    }
+    const parent = await prisma.conversation.findUnique({
+      where: { id: parentId },
+      select: { type: true, companyId: true, depth: true },
+    });
+    if (!parent || parent.companyId !== auth.companyId) {
+      return NextResponse.json(
+        { error: "Grupo padre no encontrado" },
+        { status: 404 }
+      );
+    }
+    if (parent.type !== "CHANNEL") {
+      return NextResponse.json(
+        { error: "El padre debe ser un grupo (CHANNEL)" },
+        { status: 400 }
+      );
+    }
+    if (parent.depth >= 4) {
+      return NextResponse.json(
+        { error: "Máximo 5 niveles de profundidad alcanzado" },
+        { status: 400 }
+      );
+    }
+    depth = parent.depth + 1;
+  }
+
   const allMemberIds = Array.from(new Set([auth.userId, ...memberIds]));
 
   const conversation = await prisma.conversation.create({
@@ -194,6 +229,11 @@ export async function POST(request: NextRequest) {
       entityId: type === "CONTEXTUAL" ? entityId : undefined,
       retentionDays: RETENTION_DEFAULTS[type],
       createdBy: auth.userId,
+      parentId: parentId || undefined,
+      depth,
+      iconName: iconName || undefined,
+      avatarUrl: avatarUrl || undefined,
+      onlyAdminsPost: onlyAdminsPost ?? false,
       members: {
         create: allMemberIds.map((uid) => ({
           userId: uid,

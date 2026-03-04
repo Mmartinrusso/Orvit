@@ -372,8 +372,8 @@ export function CreateTaskModal({
         className="create-task-modal p-0 overflow-hidden gap-0"
         style={{
           maxWidth: '520px',
-          width: '100%',
-          borderRadius: '8px',
+          width: 'calc(100% - 32px)',
+          borderRadius: '12px',
           border: '1.5px solid #D8D8DE',
           boxShadow: '0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.07)',
           background: '#FFFFFF',
@@ -1042,13 +1042,15 @@ export function CreateTaskModal({
         {/* ── Footer ───────────────────────────────────────────────── */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '14px 24px 20px',
+          padding: '12px 16px 16px',
           borderTop: '1px solid #E4E4E8',
           flexShrink: 0,
+          gap: '8px',
+          flexWrap: 'wrap',
         }}>
           {/* Colaboradores = asignados seleccionados */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 500, color: '#9CA3AF' }}>Colaboradores</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+            <span style={{ fontSize: '12px', fontWeight: 500, color: '#9CA3AF', whiteSpace: 'nowrap' }}>Colaboradores</span>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               {selectedUsers.length > 0 ? (
                 <>
@@ -1079,13 +1081,13 @@ export function CreateTaskModal({
           </div>
 
           {/* Botones */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto', flexShrink: 0 }}>
             <button
               type="button"
               onClick={() => onOpenChange(false)}
               disabled={isSaving}
               style={{
-                height: '38px', padding: '0 22px', borderRadius: '6px',
+                height: '36px', padding: '0 16px', borderRadius: '6px',
                 border: '1px solid #E4E4E8', background: 'transparent',
                 fontSize: '13px', fontWeight: 600, color: '#6B7280',
                 cursor: 'pointer', transition: 'background 150ms ease',
@@ -1100,7 +1102,7 @@ export function CreateTaskModal({
               onClick={handleSave}
               disabled={!isValid || isSaving}
               style={{
-                height: '38px', padding: '0 28px', borderRadius: '6px',
+                height: '36px', padding: '0 20px', borderRadius: '6px',
                 border: 'none',
                 background: isValid ? '#111827' : '#D0D0D0',
                 fontSize: '13px', fontWeight: 600, color: '#FFFFFF',

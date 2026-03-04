@@ -11,6 +11,7 @@ import { withGuards } from '@/lib/middleware/withGuards';
 import { validateRequest } from '@/lib/validations/helpers';
 import { UpdateUserSchema } from '@/lib/validations/users';
 import { invalidateUserPermissions } from '@/lib/permissions-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -408,6 +409,9 @@ export const PUT = withGuards(async (
       const userCompanyIds = existingUser.companies?.map((uc: any) => uc.company.id) || [];
       for (const cId of userCompanyIds) {
         await invalidateUserPermissions(userId, cId);
+        triggerCompanyEvent(cId, 'permissions', 'permissions:role-changed', {
+          userId, role,
+        });
       }
     }
 

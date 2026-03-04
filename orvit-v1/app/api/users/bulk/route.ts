@@ -4,7 +4,9 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { createAndSendInstantNotification } from '@/lib/instant-notifications';
 import { hasPermission, createPermissionContext, canManageRole, UserRole } from '@/lib/permissions';
-import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { JWT_SECRET } from '@/lib/auth';
+import { invalidateUserPermissions } from '@/lib/permissions-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -285,8 +287,15 @@ export async function POST(request: NextRequest) {
               );
             }
 
+            // Invalidar cache de permisos + notificar vía Pusher
+            if (targetCompanyIds[0]) {
+              await invalidateUserPermissions(targetUser.id, targetCompanyIds[0]);
+              triggerCompanyEvent(targetCompanyIds[0], 'permissions', 'permissions:role-changed', {
+                userId: targetUser.id, role: newRole,
+              });
+            }
+
             results.success++;
-            // console.log(`✅ [Bulk] Rol de ${targetUser.name} cambiado de ${oldRole} a ${newRole}`) // Log reducido;
 
           } catch (error) {
             console.error(`❌ [Bulk] Error cambiando rol de usuario ${userId}:`, error);

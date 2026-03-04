@@ -118,7 +118,7 @@ export const GET = withGuards(async (request: NextRequest, { user: guardedUser }
         }
 
         return {
-          id: user.id.toString(),
+          id: user.id,
           name: user.name,
           email: user.email,
           role: displayRole,
@@ -182,7 +182,7 @@ export const GET = withGuards(async (request: NextRequest, { user: guardedUser }
       const globalRole = uc.user.role || 'USER';
       
       return {
-        id: uc.user.id.toString(),
+        id: uc.user.id,
         name: uc.user.name,
         email: uc.user.email,
         role: companyRoleCode, // Código del rol específico de la empresa

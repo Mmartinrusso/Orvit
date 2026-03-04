@@ -11,6 +11,15 @@ export interface Conversation {
   lastMessageAt: string | null;
   lastMessageText: string | null;
   lastMessageBy: string | null;
+  // Hierarchy (subgroups)
+  parentId?: string | null;
+  depth?: number;
+  iconName?: string | null;
+  avatarUrl?: string | null;
+  onlyAdminsPost?: boolean;
+  parent?: { id: string; name: string | null; iconName: string | null; depth: number } | null;
+  children?: ConversationChild[];
+
   isArchived: boolean;
   createdAt: string;
   createdBy: number;
@@ -18,6 +27,21 @@ export interface Conversation {
   // Joined from ConversationMember for inbox
   unreadCount?: number;
   muted?: boolean;
+}
+
+export interface ConversationChild {
+  id: string;
+  name: string | null;
+  iconName: string | null;
+  depth: number;
+  memberCount: number;
+}
+
+export interface ConversationAncestor {
+  id: string;
+  name: string | null;
+  iconName: string | null;
+  depth: number;
 }
 
 export interface ConversationMember {

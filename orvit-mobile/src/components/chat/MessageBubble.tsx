@@ -1,26 +1,49 @@
 import { View, Text, Image, Linking, ActionSheetIOS, Platform, Alert } from "react-native";
 import * as Clipboard from "expo-clipboard";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+} from "react-native-reanimated";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useCreateStyles } from "@/hooks/useCreateStyles";
 import AnimatedPressable from "@/components/ui/AnimatedPressable";
 import AudioPlayer from "@/components/AudioPlayer";
 import ReactionPills from "@/components/ReactionPills";
 import type { Message } from "@/types/chat";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const SWIPE_THRESHOLD = 60; // px to trigger reply
+
+// Consistent sender colors for group chats
+const SENDER_COLORS = [
+  "#25D366", "#00a884", "#53bdeb", "#e07c5c",
+  "#7c5ce0", "#e05c8f", "#5ce0c4", "#e0c45c",
+  "#5c8fe0", "#c45ce0", "#5ce07c", "#e0875c",
+];
+
+function getSenderColor(senderId: number): string {
+  return SENDER_COLORS[senderId % SENDER_COLORS.length];
+}
 
 interface Props {
   message: Message;
   isMe: boolean;
   userId: number;
   onReply: (msg: Message) => void;
+  onForward: (msg: Message) => void;
   onReaction: (msg: Message) => void;
   onToggleReaction: (messageId: string, emoji: string) => void;
   onEdit?: (msg: Message) => void;
   onDelete?: (msg: Message) => void;
   onImagePreview?: (url: string) => void;
+  showSender?: boolean;
+  highlighted?: boolean;
 }
 
 export default function MessageBubble({
@@ -28,86 +51,57 @@ export default function MessageBubble({
   isMe,
   userId,
   onReply,
+  onForward,
   onReaction,
   onToggleReaction,
   onEdit,
   onDelete,
   onImagePreview,
+  showSender = true,
+  highlighted = false,
 }: Props) {
-  const { colors } = useTheme();
-  const styles = useCreateStyles((c, t, s, r) => ({
-    systemMessage: { alignItems: "center" as const, marginVertical: s.sm },
-    systemText: { ...t.small, color: c.textMuted, fontStyle: "italic" as const },
-    bubbleRow: { marginVertical: 2 },
-    bubbleRowMe: { alignItems: "flex-end" as const },
-    bubble: {
-      maxWidth: "80%" as `${number}%`,
-      borderRadius: r.lg,
-      paddingHorizontal: s.md + 2,
-      paddingVertical: s.md - 2,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.06,
-      shadowRadius: 4,
-      elevation: 1,
-    },
-    bubbleMe: {
-      backgroundColor: c.bubbleMeBg,
-      borderBottomRightRadius: s.xs,
-    },
-    bubbleOther: {
-      backgroundColor: c.bubbleOtherBg,
-      borderBottomLeftRadius: s.xs,
-    },
-    senderName: {
-      color: c.primary,
-      fontSize: 12,
-      fontWeight: "600" as const,
-      marginBottom: 2,
-    },
-    replyPreview: {
-      flexDirection: "row" as const,
-      backgroundColor: "rgba(0,0,0,0.12)",
-      borderRadius: 6,
-      marginBottom: 6,
-      overflow: "hidden" as const,
-    },
-    replyAccent: { width: 3, backgroundColor: c.primary },
-    replyContent: { paddingHorizontal: 8, paddingVertical: 4, flex: 1 },
-    replyName: { color: c.primary, fontSize: 11, fontWeight: "600" as const },
-    replyText: { ...t.small, color: c.textSecondary },
-    messageText: { ...t.body, color: c.bubbleOtherText },
-    messageTextMe: { color: c.bubbleMeText },
-    deletedText: { fontStyle: "italic" as const, opacity: 0.6 },
-    timeRow: {
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      alignSelf: "flex-end" as const,
-      gap: 4,
-      marginTop: 3,
-    },
-    messageTime: { ...t.tiny, color: c.textMuted },
-    messageTimeMe: { color: "rgba(255,255,255,0.55)" },
-    editedLabel: { ...t.tiny, fontStyle: "italic" as const },
-    imagePreview: {
-      width: 220,
-      height: 160,
-      borderRadius: r.sm,
-      marginBottom: s.xs,
-    },
-    fileCard: {
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      gap: s.sm,
-      backgroundColor: "rgba(0,0,0,0.12)",
-      borderRadius: r.sm,
-      padding: s.sm,
-      marginBottom: s.xs,
-    },
-    fileName: { ...t.caption, color: c.bubbleOtherText },
-    fileSize: { ...t.tiny, color: c.textMuted },
+  const { colors, isDark } = useTheme();
+  const translateX = useSharedValue(0);
+  const replyIconOpacity = useSharedValue(0);
+  const hasTriggered = useSharedValue(false);
+
+  // ── Swipe to reply gesture ──
+  const triggerReply = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onReply(message);
+  };
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetX(20)
+    .failOffsetY([-10, 10])
+    .onUpdate((e) => {
+      // Only allow swipe right
+      if (e.translationX < 0) return;
+      const clamped = Math.min(e.translationX, 100);
+      translateX.value = clamped;
+      replyIconOpacity.value = Math.min(clamped / SWIPE_THRESHOLD, 1);
+
+      if (clamped >= SWIPE_THRESHOLD && !hasTriggered.value) {
+        hasTriggered.value = true;
+        runOnJS(triggerReply)();
+      }
+    })
+    .onEnd(() => {
+      translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
+      replyIconOpacity.value = withTiming(0, { duration: 150 });
+      hasTriggered.value = false;
+    });
+
+  const bubbleAnimStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
   }));
 
+  const replyIconStyle = useAnimatedStyle(() => ({
+    opacity: replyIconOpacity.value,
+    transform: [{ scale: replyIconOpacity.value }],
+  }));
+
+  // ── Long press menu (forward, react, copy, edit, delete) ──
   const handleLongPress = () => {
     if (message.isDeleted) return;
 
@@ -119,15 +113,12 @@ export default function MessageBubble({
     const options: string[] = [];
     const actions: (() => void)[] = [];
 
-    // Responder
-    options.push("Responder");
-    actions.push(() => onReply(message));
+    options.push("Reenviar");
+    actions.push(() => onForward(message));
 
-    // Reaccionar
     options.push("Reaccionar");
     actions.push(() => onReaction(message));
 
-    // Copiar (text only)
     if (message.type === "text") {
       options.push("Copiar texto");
       actions.push(async () => {
@@ -135,13 +126,11 @@ export default function MessageBubble({
       });
     }
 
-    // Editar (own text messages within 15min)
     if (canEdit && onEdit) {
       options.push("Editar");
       actions.push(() => onEdit(message));
     }
 
-    // Eliminar (own messages)
     if (isMe && onDelete) {
       options.push("Eliminar");
       actions.push(() => onDelete(message));
@@ -164,7 +153,6 @@ export default function MessageBubble({
         }
       );
     } else {
-      // Android fallback
       const alertOptions = options
         .filter((_, i) => i !== cancelButtonIndex)
         .map((label, i) => ({
@@ -177,10 +165,28 @@ export default function MessageBubble({
     }
   };
 
+  // System message
   if (message.type === "system") {
     return (
-      <View style={styles.systemMessage}>
-        <Text style={styles.systemText}>{message.content}</Text>
+      <View style={{ alignItems: "center", marginVertical: 6 }}>
+        <View
+          style={{
+            backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
+            borderRadius: 8,
+            paddingHorizontal: 12,
+            paddingVertical: 5,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 12,
+              color: isDark ? "rgba(233,237,239,0.6)" : "rgba(0,0,0,0.45)",
+              textAlign: "center",
+            }}
+          >
+            {message.content}
+          </Text>
+        </View>
       </View>
     );
   }
@@ -190,136 +196,283 @@ export default function MessageBubble({
     minute: "2-digit",
   });
 
+  const bubbleBg = isMe ? colors.bubbleMeBg : colors.bubbleOtherBg;
+  const textColor = isMe ? colors.bubbleMeText : colors.bubbleOtherText;
+  const timeColor = "rgba(255,255,255,0.45)";
+  const senderColor = message.sender
+    ? getSenderColor(message.senderId ?? 0)
+    : colors.primary;
+
+  const hasReactions = message.reactions && message.reactions.length > 0;
+
   return (
-    <Animated.View entering={FadeInDown.duration(200).springify()}>
-      <AnimatedPressable
-        onLongPress={handleLongPress}
-        onPress={() => onReply(message)}
-        style={[styles.bubbleRow, isMe && styles.bubbleRowMe]}
-        haptic="none"
-        scaleValue={0.98}
+    <Animated.View entering={FadeInDown.duration(150)}>
+      {/* Reply icon that appears behind the bubble on swipe */}
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            left: 8,
+            top: 0,
+            bottom: 0,
+            justifyContent: "center",
+            alignItems: "center",
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: "rgba(255,255,255,0.1)",
+            alignSelf: "center",
+            marginTop: 8,
+          },
+          replyIconStyle,
+        ]}
+        pointerEvents="none"
       >
-        <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleOther]}>
-          {!isMe && message.sender && (
-            <Text style={styles.senderName}>{message.sender.name}</Text>
-          )}
+        <Ionicons name="arrow-undo" size={18} color="#fff" />
+      </Animated.View>
 
-          {message.replyTo && (
-            <View style={styles.replyPreview}>
-              <View style={styles.replyAccent} />
-              <View style={styles.replyContent}>
-                <Text style={styles.replyName}>
-                  {message.replyTo.sender?.name || "Unknown"}
-                </Text>
-                <Text style={styles.replyText} numberOfLines={1}>
-                  {message.replyTo.type === "audio"
-                    ? "Audio"
-                    : message.replyTo.content}
-                </Text>
-              </View>
-            </View>
-          )}
-
-          {message.type === "audio" && message.fileUrl && (
-            <AudioPlayer
-              uri={message.fileUrl}
-              duration={message.fileDuration || 0}
-              isMe={isMe}
-            />
-          )}
-
-          {message.type === "image" && message.fileUrl && (
-            <AnimatedPressable
-              onPress={() => {
-                if (onImagePreview) {
-                  onImagePreview(message.fileUrl!);
-                } else {
-                  Linking.openURL(message.fileUrl!);
-                }
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={bubbleAnimStyle}>
+          <AnimatedPressable
+            onLongPress={handleLongPress}
+            style={{
+              alignItems: isMe ? "flex-end" : "flex-start",
+              marginVertical: 1,
+              marginHorizontal: 4,
+              marginBottom: hasReactions ? 16 : 1,
+              overflow: "visible" as any,
+            }}
+            haptic="none"
+            scaleValue={0.985}
+          >
+            <View
+              style={{
+                maxWidth: "82%",
+                backgroundColor: highlighted ? (isMe ? "#1a3a2a" : "#1a2a3a") : bubbleBg,
+                borderRadius: 10,
+                borderTopLeftRadius: isMe ? 10 : 2,
+                borderTopRightRadius: isMe ? 2 : 10,
+                ...(highlighted && { borderWidth: 1, borderColor: "#3b82f6" }),
+                paddingHorizontal: 9,
+                paddingTop: 5,
+                paddingBottom: 3,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: isDark ? 0.3 : 0.08,
+                shadowRadius: 2,
+                elevation: 1,
               }}
-              haptic="none"
             >
-              <Image
-                source={{ uri: message.fileUrl }}
-                style={styles.imagePreview}
-                resizeMode="cover"
-              />
-            </AnimatedPressable>
-          )}
-
-          {message.type === "file" && (
-            <AnimatedPressable
-              style={styles.fileCard}
-              onPress={() => message.fileUrl && Linking.openURL(message.fileUrl)}
-              haptic="light"
-            >
-              <Ionicons
-                name="document-outline"
-                size={22}
-                color={isMe ? colors.bubbleMeText : colors.primary}
-              />
-              <View style={{ flex: 1 }}>
+              {/* Sender name (groups, not me) */}
+              {!isMe && showSender && message.sender && (
                 <Text
-                  style={[styles.fileName, isMe && { color: colors.bubbleMeText }]}
-                  numberOfLines={1}
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "600",
+                    color: senderColor,
+                    marginBottom: 1,
+                  }}
                 >
-                  {message.fileName || "Archivo"}
+                  {message.sender.name}
                 </Text>
-                {message.fileSize && (
-                  <Text style={styles.fileSize}>
-                    {(message.fileSize / 1024).toFixed(0)} KB
+              )}
+
+              {/* Reply preview */}
+              {message.replyTo && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    backgroundColor: isMe
+                      ? "rgba(0,0,0,0.1)"
+                      : (isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"),
+                    borderRadius: 6,
+                    marginBottom: 4,
+                    overflow: "hidden",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 3,
+                      backgroundColor: message.replyTo.sender
+                        ? getSenderColor(message.replyTo.senderId ?? 0)
+                        : colors.primary,
+                    }}
+                  />
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 4, flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: "600",
+                        color: message.replyTo.sender
+                          ? getSenderColor(message.replyTo.senderId ?? 0)
+                          : colors.primary,
+                      }}
+                    >
+                      {message.replyTo.sender?.name || ""}
+                    </Text>
+                    <Text
+                      style={{ fontSize: 12, color: timeColor, marginTop: 1 }}
+                      numberOfLines={1}
+                    >
+                      {message.replyTo.type === "audio"
+                        ? "Audio"
+                        : message.replyTo.content}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Audio */}
+              {message.type === "audio" && message.fileUrl && (
+                <AudioPlayer
+                  uri={message.fileUrl}
+                  duration={message.fileDuration || 0}
+                  isMe={isMe}
+                />
+              )}
+
+              {/* Image */}
+              {message.type === "image" && message.fileUrl && (
+                <AnimatedPressable
+                  onPress={() => {
+                    if (onImagePreview) {
+                      onImagePreview(message.fileUrl!);
+                    } else {
+                      Linking.openURL(message.fileUrl!);
+                    }
+                  }}
+                  haptic="none"
+                >
+                  <Image
+                    source={{ uri: message.fileUrl }}
+                    style={{
+                      width: 240,
+                      height: 180,
+                      borderRadius: 6,
+                      marginBottom: 2,
+                    }}
+                    resizeMode="cover"
+                  />
+                </AnimatedPressable>
+              )}
+
+              {/* File */}
+              {message.type === "file" && (
+                <AnimatedPressable
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    backgroundColor: isMe
+                      ? "rgba(0,0,0,0.1)"
+                      : (isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"),
+                    borderRadius: 8,
+                    padding: 10,
+                    marginBottom: 2,
+                  }}
+                  onPress={() => message.fileUrl && Linking.openURL(message.fileUrl)}
+                  haptic="light"
+                >
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 8,
+                      backgroundColor: isMe
+                        ? "rgba(255,255,255,0.15)"
+                        : (isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"),
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name="document-outline"
+                      size={22}
+                      color={textColor}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{ fontSize: 13, fontWeight: "500", color: textColor }}
+                      numberOfLines={1}
+                    >
+                      {message.fileName || "Archivo"}
+                    </Text>
+                    {message.fileSize && (
+                      <Text style={{ fontSize: 11, color: timeColor, marginTop: 2 }}>
+                        {(message.fileSize / 1024).toFixed(0)} KB
+                      </Text>
+                    )}
+                  </View>
+                  <Ionicons name="download-outline" size={20} color={timeColor} />
+                </AnimatedPressable>
+              )}
+
+              {/* Text content */}
+              {(message.type === "text" ||
+                (!message.fileUrl && (message.type as string) !== "system")) && (
+                <Text
+                  style={{
+                    fontSize: 15,
+                    lineHeight: 20,
+                    color: textColor,
+                    ...(message.isDeleted && { fontStyle: "italic", opacity: 0.6 }),
+                  }}
+                >
+                  {message.isDeleted ? "Mensaje eliminado" : message.content}
+                </Text>
+              )}
+
+              {/* Time + checkmarks row */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                  gap: 3,
+                  marginTop: 1,
+                  marginBottom: 1,
+                }}
+              >
+                {message.editedAt && !message.isDeleted && (
+                  <Text style={{ fontSize: 10, color: timeColor, fontStyle: "italic" }}>
+                    editado
                   </Text>
                 )}
+                <Text style={{ fontSize: 11, color: timeColor }}>
+                  {timeStr}
+                </Text>
+                {isMe && (
+                  <Ionicons
+                    name="checkmark-done"
+                    size={16}
+                    color="#53bdeb"
+                  />
+                )}
               </View>
-            </AnimatedPressable>
-          )}
+            </View>
 
-          {(message.type === "text" ||
-            (!message.fileUrl && (message.type as string) !== "system")) && (
-            <Text
-              style={[
-                styles.messageText,
-                isMe && styles.messageTextMe,
-                message.isDeleted && styles.deletedText,
-              ]}
-            >
-              {message.isDeleted ? "Mensaje eliminado" : message.content}
-            </Text>
-          )}
-
-          <View style={styles.timeRow}>
-            {message.editedAt && !message.isDeleted && (
-              <Text
-                style={[
-                  styles.editedLabel,
-                  { color: isMe ? "rgba(255,255,255,0.45)" : colors.textMuted },
-                ]}
+            {/* Reactions — floating below bubble */}
+            {hasReactions && (
+              <View
+                style={{
+                  position: "absolute",
+                  bottom: -12,
+                  left: isMe ? undefined : 8,
+                  right: isMe ? 8 : undefined,
+                }}
               >
-                editado
-              </Text>
+                <ReactionPills
+                  reactions={message.reactions}
+                  userId={userId}
+                  onToggle={(emoji) => onToggleReaction(message.id, emoji)}
+                  isMe={isMe}
+                />
+              </View>
             )}
-            <Text
-              style={[styles.messageTime, isMe && styles.messageTimeMe]}
-            >
-              {timeStr}
-            </Text>
-            {isMe && (
-              <Ionicons
-                name="checkmark-done"
-                size={14}
-                color="rgba(255,255,255,0.5)"
-              />
-            )}
-          </View>
-
-          <ReactionPills
-            reactions={message.reactions}
-            userId={userId}
-            onToggle={(emoji) => onToggleReaction(message.id, emoji)}
-            isMe={isMe}
-          />
-        </View>
-      </AnimatedPressable>
+          </AnimatedPressable>
+        </Animated.View>
+      </GestureDetector>
     </Animated.View>
   );
 }

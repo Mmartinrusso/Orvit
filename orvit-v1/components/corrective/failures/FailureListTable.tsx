@@ -402,23 +402,23 @@ export function FailureListTable({
                   />
                 </TableHead>
               )}
-              <TableHead className="w-[60px] text-xs cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('priority')}>
+              <TableHead className="w-[60px] cursor-pointer select-none hover:text-foreground" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }} onClick={() => toggleSort('priority')}>
                 <span className="flex items-center">P<SortIcon field="priority" /></span>
               </TableHead>
-              <TableHead className="text-xs cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('title')}>
+              <TableHead className="cursor-pointer select-none hover:text-foreground" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }} onClick={() => toggleSort('title')}>
                 <span className="flex items-center">Título<SortIcon field="title" /></span>
               </TableHead>
-              <TableHead className="text-xs cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('machine')}>
+              <TableHead className="cursor-pointer select-none hover:text-foreground" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }} onClick={() => toggleSort('machine')}>
                 <span className="flex items-center">Máquina<SortIcon field="machine" /></span>
               </TableHead>
-              <TableHead className="text-xs">Componente</TableHead>
-              <TableHead className="text-xs cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('status')}>
+              <TableHead style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Componente</TableHead>
+              <TableHead className="cursor-pointer select-none hover:text-foreground" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }} onClick={() => toggleSort('status')}>
                 <span className="flex items-center">Estado<SortIcon field="status" /></span>
               </TableHead>
-              <TableHead className="text-xs cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('reportedAt')}>
+              <TableHead className="cursor-pointer select-none hover:text-foreground" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }} onClick={() => toggleSort('reportedAt')}>
                 <span className="flex items-center">Reportada<SortIcon field="reportedAt" /></span>
               </TableHead>
-              <TableHead className="text-right text-xs">Acciones</TableHead>
+              <TableHead className="text-right" style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -469,7 +469,7 @@ export function FailureListTable({
                       <div
                         className={cn('h-2 w-2 rounded-full', priorityColors[failure.priority] || priorityColors[displayPriority] || 'bg-muted-foreground')}
                       />
-                      <span className="text-xs font-medium">
+                      <span className="font-medium" style={{ fontSize: '13px' }}>
                         {displayPriority}
                       </span>
                     </div>
@@ -478,7 +478,7 @@ export function FailureListTable({
                   {/* Título con badges */}
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      <span className="text-sm font-medium">{failure.title}</span>
+                      <span className="font-medium" style={{ fontSize: '15px' }}>{failure.title}</span>
                       <div className="flex flex-wrap gap-1">
                         {failure.causedDowntime && (
                           <Badge variant="destructive" className="h-5 text-xs">
@@ -530,7 +530,7 @@ export function FailureListTable({
 
                   {/* Máquina */}
                   <TableCell>
-                    <span className="text-xs">{failure.machine?.name || '-'}</span>
+                    <span style={{ fontSize: '13px' }}>{failure.machine?.name || '-'}</span>
                   </TableCell>
 
                   {/* Componente */}
@@ -579,7 +579,7 @@ export function FailureListTable({
 
                   {/* Estado */}
                   <TableCell>
-                    <Badge className={cn(statusColors[failure.status] || 'bg-muted', 'text-xs')}>
+                    <Badge className={cn(statusColors[failure.status] || 'bg-muted')} style={{ fontSize: '12px' }}>
                       {statusLabels[failure.status] || failure.status}
                     </Badge>
                   </TableCell>
@@ -588,7 +588,7 @@ export function FailureListTable({
                   <TableCell>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <span className="text-xs text-muted-foreground cursor-help">
+                        <span className="text-muted-foreground cursor-help" style={{ fontSize: '13px' }}>
                           {formatDistanceToNow(new Date(failure.reportedAt), {
                             addSuffix: true,
                             locale: es,

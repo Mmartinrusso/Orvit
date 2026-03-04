@@ -1109,7 +1109,7 @@ export default function Insumos() {
           </DialogBody>
           <DialogFooter>
               <Button variant="outline" onClick={closeDialogs}>Cancelar</Button>
-              <Button onClick={handleCreateSupply}>Crear</Button>
+              <Button onClick={handleCreateSupply}>{editingSupply ? 'Guardar' : 'Crear'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

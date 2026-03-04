@@ -3,12 +3,13 @@
 import { useState, useMemo } from 'react';
 import { format, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Bell, ChevronDown, ChevronRight, ChevronUp, FolderKanban, ListChecks } from 'lucide-react';
+import { Bell, ChevronDown, ChevronRight, ChevronUp, FolderKanban, ListChecks, Send } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { WeekStrip } from './WeekStrip';
 import { MonthCalendarMobile } from './MonthCalendarMobile';
 import { TaskCardMobile } from './TaskCardMobile';
 import { ProgressRing } from './ProgressRing';
+import { MultiSelect, type MultiSelectOption } from '@/components/ui/multi-select';
 import { useAuth } from '@/contexts/AuthContext';
 import { isTaskOverdue } from '@/lib/agenda/types';
 import type { AgendaTask } from '@/lib/agenda/types';
@@ -46,13 +47,46 @@ export function AgendaHomeScreen({
 }: AgendaHomeScreenProps) {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [showMonthCal, setShowMonthCal] = useState(false);
+  const [showMine, setShowMine] = useState(true);
+  const [showDelegated, setShowDelegated] = useState(true);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [delegatedFilterIds, setDelegatedFilterIds] = useState<string[]>([]);
   const { user } = useAuth();
 
   const dayTasks = useMemo(
     () => tasks.filter((t) => t.dueDate && isSameDay(new Date(t.dueDate), selectedDate)),
     [tasks, selectedDate]
   );
+
+  // Delegated tasks for today: tasks I created, assigned to others, due on selected day
+  const allDelegatedDayTasks = useMemo(
+    () => {
+      if (!user) return [];
+      return dayTasks.filter(
+        (t) => t.createdById === user.id && t.assignedToUserId && t.assignedToUserId !== user.id && t.status !== 'COMPLETED'
+      );
+    },
+    [dayTasks, user]
+  );
+
+  // Unique assignees as MultiSelect options
+  const delegatedAssigneeOptions = useMemo((): MultiSelectOption[] => {
+    const map = new Map<number, string>();
+    for (const t of allDelegatedDayTasks) {
+      const id = t.assignedToUserId!;
+      if (!map.has(id)) {
+        map.set(id, t.assignedToName || t.assignedToUser?.name || `User ${id}`);
+      }
+    }
+    return Array.from(map.entries()).map(([id, name]) => ({ value: String(id), label: name }));
+  }, [allDelegatedDayTasks]);
+
+  // Apply person filter to delegated tasks
+  const delegatedDayTasks = useMemo(() => {
+    if (delegatedFilterIds.length === 0) return allDelegatedDayTasks;
+    const idSet = new Set(delegatedFilterIds.map(Number));
+    return allDelegatedDayTasks.filter((t) => t.assignedToUserId && idSet.has(t.assignedToUserId));
+  }, [allDelegatedDayTasks, delegatedFilterIds]);
 
   const completedCount = dayTasks.filter((t) => t.status === 'COMPLETED').length;
   const completionPct = dayTasks.length > 0 ? Math.round((completedCount / dayTasks.length) * 100) : 0;
@@ -139,7 +173,7 @@ export function AgendaHomeScreen({
         )}
 
         {/* Daily summary line */}
-        <div className="flex items-center gap-3 px-5 py-2.5">
+        <div className="flex items-center justify-center gap-3 px-5 py-2.5">
           <ProgressRing percent={completionPct} size={32} strokeWidth={3} />
           <p className="text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{completedCount}</span>
@@ -148,6 +182,7 @@ export function AgendaHomeScreen({
             {' '}completada{dayTasks.length !== 1 ? 's' : ''} hoy
           </p>
         </div>
+
       </div>
 
       {/* ── Scrollable content ── */}
@@ -186,20 +221,8 @@ export function AgendaHomeScreen({
           </div>
         )}
 
-        {/* Today's tasks header */}
-        {dayTasks.length > 0 && (
-          <div className="flex items-center gap-2 px-5 pb-2">
-            <span className="text-[13px] font-medium text-muted-foreground">
-              Tareas de hoy
-            </span>
-            <span className="text-[11px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full font-medium">
-              {activeTasks.length}
-            </span>
-          </div>
-        )}
-
-        {/* Task list (flat, no section headers) */}
-        {dayTasks.length === 0 ? (
+        {/* Empty state */}
+        {dayTasks.length === 0 && delegatedDayTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center pt-16 px-8">
             <div className="w-12 h-12 rounded-full bg-muted/60 flex items-center justify-center mb-3">
               <span className="text-xl text-muted-foreground/60">&#10003;</span>
@@ -214,19 +237,97 @@ export function AgendaHomeScreen({
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {activeTasks.map((task) => (
-              <TaskCardMobile
-                key={task.id}
-                task={task}
-                onTap={onTaskTap}
-                onToggleComplete={onToggleComplete}
-              />
-            ))}
+          <div>
+            {/* ── 1. Tareas enviadas (delegated) — collapsible, first ── */}
+            {delegatedDayTasks.length > 0 && (
+              <div className="px-5 pt-1 pb-1">
+                <button
+                  onClick={() => setShowDelegated(!showDelegated)}
+                  className="flex items-center gap-2 w-full py-2"
+                >
+                  <ChevronRight
+                    className={cn(
+                      'h-3.5 w-3.5 text-muted-foreground/60 transition-transform duration-200',
+                      showDelegated && 'rotate-90'
+                    )}
+                  />
+                  <Send className="h-3 w-3 text-muted-foreground/60" />
+                  <span className="text-[13px] font-medium text-muted-foreground">
+                    Tareas enviadas
+                  </span>
+                  <span className="text-[11px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full font-medium">
+                    {delegatedDayTasks.length}
+                  </span>
+                </button>
+              </div>
+            )}
+            {showDelegated && allDelegatedDayTasks.length > 0 && (
+              <>
+                {/* Person filter for delegated tasks */}
+                {delegatedAssigneeOptions.length > 1 && (
+                  <div className="px-5 pb-2">
+                    <MultiSelect
+                      options={delegatedAssigneeOptions}
+                      selected={delegatedFilterIds}
+                      onChange={setDelegatedFilterIds}
+                      placeholder="Para: Todos"
+                      searchPlaceholder="Buscar persona..."
+                      className="h-8 min-h-[2rem] text-xs"
+                      maxCount={2}
+                    />
+                  </div>
+                )}
+                <div className="space-y-3 pb-2">
+                  {delegatedDayTasks.map((task) => (
+                    <TaskCardMobile
+                      key={task.id}
+                      task={task}
+                      onTap={onTaskTap}
+                      onToggleComplete={onToggleComplete}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
 
-            {/* Completed — collapsible */}
+            {/* ── 2. Mis tareas — collapsible ── */}
+            {activeTasks.length > 0 && (
+              <div className="px-5 pt-1 pb-1">
+                <button
+                  onClick={() => setShowMine(!showMine)}
+                  className="flex items-center gap-2 w-full py-2"
+                >
+                  <ChevronRight
+                    className={cn(
+                      'h-3.5 w-3.5 text-muted-foreground/60 transition-transform duration-200',
+                      showMine && 'rotate-90'
+                    )}
+                  />
+                  <span className="text-[13px] font-medium text-muted-foreground">
+                    Mis tareas
+                  </span>
+                  <span className="text-[11px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full font-medium">
+                    {activeTasks.length}
+                  </span>
+                </button>
+              </div>
+            )}
+            {showMine && activeTasks.length > 0 && (
+              <div className="space-y-3 pb-2">
+                {activeTasks.map((task) => (
+                  <TaskCardMobile
+                    key={task.id}
+                    task={task}
+                    onTap={onTaskTap}
+                    onToggleComplete={onToggleComplete}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* ── 3. Completadas — collapsible ── */}
             {completedTasks.length > 0 && (
-              <div className="px-5 pt-2">
+              <div className="px-5 pt-1 pb-1">
                 <button
                   onClick={() => setShowCompleted(!showCompleted)}
                   className="flex items-center gap-2 w-full py-2"
@@ -244,19 +345,18 @@ export function AgendaHomeScreen({
                     {completedTasks.length}
                   </span>
                 </button>
-
-                {showCompleted && (
-                  <div className="space-y-3 pt-1">
-                    {completedTasks.map((task) => (
-                      <TaskCardMobile
-                        key={task.id}
-                        task={task}
-                        onTap={onTaskTap}
-                        onToggleComplete={onToggleComplete}
-                      />
-                    ))}
-                  </div>
-                )}
+              </div>
+            )}
+            {showCompleted && completedTasks.length > 0 && (
+              <div className="space-y-3 pb-2">
+                {completedTasks.map((task) => (
+                  <TaskCardMobile
+                    key={task.id}
+                    task={task}
+                    onTap={onTaskTap}
+                    onToggleComplete={onToggleComplete}
+                  />
+                ))}
               </div>
             )}
           </div>

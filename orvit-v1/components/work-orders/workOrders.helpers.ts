@@ -512,3 +512,54 @@ export const sortByLabels: Record<string, string> = {
   created: 'Fecha de creación',
 };
 
+// =============================================================================
+// HEX COLOR CHIP MAPS (inline styles — design system)
+// =============================================================================
+
+export const WO_STATUS_CHIP: Record<string, { bg: string; text: string; dot: string; label: string }> = {
+  PENDING:     { bg: '#FEF3C7', text: '#92400E', dot: '#D97706', label: 'Pendiente' },
+  INCOMING:    { bg: '#FEF3C7', text: '#92400E', dot: '#D97706', label: 'Pendiente' },
+  SCHEDULED:   { bg: '#FEF3C7', text: '#92400E', dot: '#D97706', label: 'Programada' },
+  IN_PROGRESS: { bg: '#DBEAFE', text: '#1E40AF', dot: '#2563EB', label: 'En proceso' },
+  WAITING:     { bg: '#E0E7FF', text: '#3730A3', dot: '#6366F1', label: 'En espera' },
+  ON_HOLD:     { bg: '#E0E7FF', text: '#3730A3', dot: '#6366F1', label: 'En espera' },
+  COMPLETED:   { bg: '#D1FAE5', text: '#065F46', dot: '#059669', label: 'Completada' },
+  CANCELLED:   { bg: '#F3F4F6', text: '#6B7280', dot: '#9CA3AF', label: 'Cancelada' },
+};
+
+export const WO_PRIORITY_CHIP: Record<string, { bg: string; text: string; label: string }> = {
+  LOW:    { bg: '#F3F4F6', text: '#6B7280', label: 'Baja' },
+  MEDIUM: { bg: '#FEF3C7', text: '#92400E', label: 'Media' },
+  HIGH:   { bg: '#FED7AA', text: '#C2410C', label: 'Alta' },
+  URGENT: { bg: '#FEE2E2', text: '#DC2626', label: 'Urgente' },
+};
+
+export const WO_TYPE_CHIP: Record<string, { bg: string; text: string; dot: string; label: string }> = {
+  PREVENTIVE: { bg: '#D1FAE5', text: '#065F46', dot: '#059669', label: 'Preventivo' },
+  CORRECTIVE: { bg: '#FEF3C7', text: '#92400E', dot: '#D97706', label: 'Correctivo' },
+  PREDICTIVE: { bg: '#DBEAFE', text: '#1E40AF', dot: '#2563EB', label: 'Predictivo' },
+  EMERGENCY:  { bg: '#FEE2E2', text: '#DC2626', dot: '#DC2626', label: 'Emergencia' },
+};
+
+// Hex colors for status indicator bars (left border on cards)
+export const WO_STATUS_BAR_COLOR: Record<string, string> = {
+  PENDING:     '#D97706',
+  INCOMING:    '#D97706',
+  SCHEDULED:   '#D97706',
+  IN_PROGRESS: '#2563EB',
+  WAITING:     '#6366F1',
+  ON_HOLD:     '#6366F1',
+  COMPLETED:   '#059669',
+  CANCELLED:   '#9CA3AF',
+};
+
+// Hex colors for KPI dots/icons
+export const WO_KPI_COLORS: Record<string, { dot: string; icon: string }> = {
+  total:      { dot: '#2563EB', icon: '#2563EB' },
+  pending:    { dot: '#D97706', icon: '#D97706' },
+  inProgress: { dot: '#2563EB', icon: '#2563EB' },
+  overdue:    { dot: '#DC2626', icon: '#DC2626' },
+  unassigned: { dot: '#6B7280', icon: '#6B7280' },
+  completed:  { dot: '#059669', icon: '#059669' },
+};
+

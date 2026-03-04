@@ -9,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -37,12 +36,12 @@ import { cn } from '@/lib/utils';
 import {
   statusLabels,
   priorityLabels,
-  statusColors,
-  priorityColors,
   isOverdue,
   formatDateShort,
   relativeTime,
   getInitials,
+  WO_STATUS_CHIP,
+  WO_PRIORITY_CHIP,
 } from './workOrders.helpers';
 
 interface WorkOrdersTableProps {
@@ -168,22 +167,38 @@ export function WorkOrdersTable({
 
                 {/* Estado */}
                 <TableCell className="py-3">
-                  <Badge
-                    variant="outline"
-                    className={cn('text-xs border', statusColors[order.status])}
-                  >
-                    {statusLabels[order.status]}
-                  </Badge>
+                  {(() => {
+                    const chip = WO_STATUS_CHIP[order.status] || WO_STATUS_CHIP.PENDING;
+                    return (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        fontSize: '11px', fontWeight: 600,
+                        padding: '2px 10px', borderRadius: '6px',
+                        background: chip.bg, color: chip.text,
+                      }}>
+                        <span style={{ height: '5px', width: '5px', borderRadius: '50%', background: chip.dot }} />
+                        {chip.label}
+                      </span>
+                    );
+                  })()}
                 </TableCell>
 
                 {/* Prioridad */}
                 <TableCell className="py-3">
-                  <Badge
-                    variant="outline"
-                    className={cn('text-xs border', priorityColors[order.priority])}
-                  >
-                    {priorityLabels[order.priority]}
-                  </Badge>
+                  {(() => {
+                    const chip = WO_PRIORITY_CHIP[order.priority] || WO_PRIORITY_CHIP.MEDIUM;
+                    return (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                        fontSize: '11px', fontWeight: 600,
+                        padding: '2px 10px', borderRadius: '6px',
+                        background: chip.bg, color: chip.text,
+                        ...(order.priority === 'URGENT' ? { border: `1.5px solid ${chip.text}`, fontWeight: 700 } : {}),
+                      }}>
+                        {chip.label}
+                      </span>
+                    );
+                  })()}
                 </TableCell>
 
                 {/* Responsable */}
@@ -200,7 +215,7 @@ export function WorkOrdersTable({
                       </span>
                     </div>
                   ) : (
-                    <span className="text-sm text-warning-muted-foreground">
+                    <span style={{ fontSize: '13px', color: '#9CA3AF' }}>
                       Sin asignar
                     </span>
                   )}
@@ -209,10 +224,11 @@ export function WorkOrdersTable({
                 {/* Vence */}
                 <TableCell className="py-3">
                   {order.scheduledDate ? (
-                    <span className={cn(
-                      'text-sm',
-                      orderIsOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'
-                    )}>
+                    <span style={{
+                      fontSize: '13px',
+                      color: orderIsOverdue ? '#DC2626' : '#6B7280',
+                      fontWeight: orderIsOverdue ? 500 : 400,
+                    }}>
                       {formatDateShort(order.scheduledDate)}
                     </span>
                   ) : (
@@ -253,7 +269,8 @@ export function WorkOrdersTable({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-warning-muted-foreground hover:text-warning-muted-foreground"
+                        className="h-7 w-7"
+                        style={{ color: '#D97706' }}
                         onClick={(e) => {
                           e.stopPropagation();
                           onAssign(order);

@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleUserRound, Columns3, Plus, PieChart, AlignJustify } from 'lucide-react';
+import { CircleUserRound, ClipboardList, Plus, PieChart, AlignJustify } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type MobileTab = 'home' | 'board' | 'dashboard' | 'more';
@@ -15,7 +15,7 @@ interface BottomNavProps {
 
 const LEFT_TABS = [
   { id: 'home' as const, icon: CircleUserRound, label: 'Mi día' },
-  { id: 'board' as const, icon: Columns3, label: 'Board' },
+  { id: 'board' as const, icon: ClipboardList, label: 'Tareas' },
 ];
 
 const RIGHT_TABS = [

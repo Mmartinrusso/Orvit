@@ -71,6 +71,7 @@ export async function sendChatPushNotifications(payload: PushPayload) {
         data: { conversationId, type: "chat_message" },
         sound: "default",
         badge: badgeMap.get(device.userId) ?? 1,
+        channelId: "chat-messages",
       });
     }
 

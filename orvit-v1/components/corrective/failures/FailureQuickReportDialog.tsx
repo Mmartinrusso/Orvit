@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -29,7 +28,6 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Stepper, type Step } from '@/components/ui/stepper';
-import { Badge } from '@/components/ui/badge';
 import {
   ArrowLeft,
   ArrowRight,
@@ -472,29 +470,25 @@ export function FailureQuickReportDialog({
               className="flex-1 flex flex-col min-h-0 overflow-hidden"
             >
               {/* ── Sticky Header: Título + Stepper ── */}
-              <div className="flex-shrink-0 bg-background border-b">
+              <div style={{ flexShrink: 0, background: '#FFFFFF', borderBottom: '1px solid #E4E4E8' }}>
                 <div className="px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-7 w-7 -ml-1"
+                      className="-ml-1"
+                      style={{ height: '28px', width: '28px', borderRadius: '6px' }}
                       onClick={handlePrevFormStep}
                     >
                       <ArrowLeft className="h-4 w-4" />
                     </Button>
                     <div>
-                      <h2 className="text-base font-semibold flex items-center gap-2">
+                      <h2 style={{ fontSize: '15px', fontWeight: 600, color: '#111827', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {incidentType === 'ROTURA' ? 'Nueva Rotura' : 'Nueva Falla'}
-                        <Badge
-                          variant="outline"
-                          className="text-[10px] px-1.5 py-0"
-                        >
-                          Reporte Rápido
-                        </Badge>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: incidentType === 'ROTURA' ? '#FEE2E2' : '#FEF3C7', color: incidentType === 'ROTURA' ? '#DC2626' : '#D97706' }}>Reporte Rápido</span>
                       </h2>
-                      <p className="text-xs text-muted-foreground">
+                      <p style={{ fontSize: '12px', color: '#9CA3AF' }}>
                         Paso {currentFormStepIndex + 1} de {formStepIds.length}
                       </p>
                     </div>
@@ -503,7 +497,7 @@ export function FailureQuickReportDialog({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7"
+                    style={{ height: '28px', width: '28px', borderRadius: '6px' }}
                     onClick={() => onOpenChange(false)}
                   >
                     <X className="h-4 w-4" />
@@ -528,12 +522,12 @@ export function FailureQuickReportDialog({
                   {formStep === 'equipo' && (
                     <div className="space-y-5">
                       <div className="flex items-center gap-3 mb-2">
-                        <div className="h-9 w-9 rounded-lg bg-orange-100 dark:bg-orange-950 flex items-center justify-center">
-                          <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                        <div style={{ height: '36px', width: '36px', borderRadius: '8px', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <AlertTriangle style={{ height: '20px', width: '20px', color: '#D97706' }} />
                         </div>
                         <div>
-                          <h3 className="text-sm font-semibold">¿Dónde ocurrió?</h3>
-                          <p className="text-xs text-muted-foreground">
+                          <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>¿Dónde ocurrió?</h3>
+                          <p style={{ fontSize: '12px', color: '#6B7280' }}>
                             Seleccioná la máquina y componente(s) afectados
                           </p>
                         </div>
@@ -544,27 +538,29 @@ export function FailureQuickReportDialog({
                         name="machineId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Máquina / Componente(s) *</FormLabel>
+                            <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Máquina / Componente(s) *</FormLabel>
                             <FormControl>
-                              <ComponentTreeSelector
-                                value={{
-                                  machineId: field.value,
-                                  componentIds: form.watch('componentIds'),
-                                  subcomponentIds: form.watch('subcomponentIds'),
-                                }}
-                                onChange={(selection) => {
-                                  if (selection.machineId === undefined) {
-                                    form.setValue('machineId', undefined as any);
-                                    form.setValue('componentIds', []);
-                                    form.setValue('subcomponentIds', []);
-                                  } else {
-                                    form.setValue('machineId', selection.machineId);
-                                    form.setValue('componentIds', selection.componentIds);
-                                    form.setValue('subcomponentIds', selection.subcomponentIds);
-                                  }
-                                }}
-                                allowMultiple={true}
-                              />
+                              <div style={{ border: '1px solid #E4E4E8', borderRadius: '8px', padding: '8px 12px' }}>
+                                <ComponentTreeSelector
+                                  value={{
+                                    machineId: field.value,
+                                    componentIds: form.watch('componentIds'),
+                                    subcomponentIds: form.watch('subcomponentIds'),
+                                  }}
+                                  onChange={(selection) => {
+                                    if (selection.machineId === undefined) {
+                                      form.setValue('machineId', undefined as any);
+                                      form.setValue('componentIds', []);
+                                      form.setValue('subcomponentIds', []);
+                                    } else {
+                                      form.setValue('machineId', selection.machineId);
+                                      form.setValue('componentIds', selection.componentIds);
+                                      form.setValue('subcomponentIds', selection.subcomponentIds);
+                                    }
+                                  }}
+                                  allowMultiple={true}
+                                />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -577,12 +573,12 @@ export function FailureQuickReportDialog({
                   {formStep === 'problema' && (
                     <div className="space-y-5">
                       <div className="flex items-center gap-3 mb-2">
-                        <div className="h-9 w-9 rounded-lg bg-red-100 dark:bg-red-950 flex items-center justify-center">
-                          <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                        <div style={{ height: '36px', width: '36px', borderRadius: '8px', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <AlertTriangle style={{ height: '20px', width: '20px', color: '#DC2626' }} />
                         </div>
                         <div>
-                          <h3 className="text-sm font-semibold">¿Qué pasó?</h3>
-                          <p className="text-xs text-muted-foreground">
+                          <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>¿Qué pasó?</h3>
+                          <p style={{ fontSize: '12px', color: '#6B7280' }}>
                             Describí el problema de la forma más clara posible
                           </p>
                         </div>
@@ -594,10 +590,11 @@ export function FailureQuickReportDialog({
                         name="title"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>¿Qué pasó? *</FormLabel>
+                            <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>¿Qué pasó? *</FormLabel>
                             <FormControl>
                               <Input
                                 placeholder="Ej: Se escucha ruido extraño en rodamiento"
+                                style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}
                                 {...field}
                               />
                             </FormControl>
@@ -612,7 +609,7 @@ export function FailureQuickReportDialog({
                         name="symptomIds"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Síntomas (opcional)</FormLabel>
+                            <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Síntomas (opcional)</FormLabel>
                             <FormControl>
                               <SymptomChips
                                 value={field.value || []}
@@ -630,10 +627,10 @@ export function FailureQuickReportDialog({
                         control={form.control}
                         name="causedDowntime"
                         render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
+                          <FormItem className="flex flex-row items-center justify-between" style={{ border: '1px solid #E4E4E8', borderRadius: '8px', padding: '12px' }}>
                             <div className="space-y-0.5">
-                              <FormLabel>¿Paró la producción?</FormLabel>
-                              <p className="text-xs text-muted-foreground">
+                              <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>¿Paró la producción?</FormLabel>
+                              <p style={{ fontSize: '11px', color: '#9CA3AF' }}>
                                 Se iniciará el registro de downtime automáticamente
                               </p>
                             </div>
@@ -653,11 +650,12 @@ export function FailureQuickReportDialog({
                         name="description"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Descripción detallada (opcional)</FormLabel>
+                            <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Descripción detallada (opcional)</FormLabel>
                             <FormControl>
                               <Textarea
                                 placeholder="Describí el problema con más detalle..."
                                 rows={3}
+                                style={{ border: '1px solid #E4E4E8', borderRadius: '8px' }}
                                 {...field}
                               />
                             </FormControl>
@@ -671,12 +669,12 @@ export function FailureQuickReportDialog({
                   {formStep === 'detalle' && (
                     <div className="space-y-5">
                       <div className="flex items-center gap-3 mb-2">
-                        <div className="h-9 w-9 rounded-lg bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
-                          <Camera className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                        <div style={{ height: '36px', width: '36px', borderRadius: '8px', background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Camera style={{ height: '20px', width: '20px', color: '#2563EB' }} />
                         </div>
                         <div>
-                          <h3 className="text-sm font-semibold">Clasificación y evidencia</h3>
-                          <p className="text-xs text-muted-foreground">
+                          <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#111827' }}>Clasificación y evidencia</h3>
+                          <p style={{ fontSize: '12px', color: '#6B7280' }}>
                             Agregá fotos y clasificá la falla (todo opcional)
                           </p>
                         </div>
@@ -684,7 +682,7 @@ export function FailureQuickReportDialog({
 
                       {/* Upload foto — prominente */}
                       <div className="space-y-3">
-                        <FormLabel>Foto</FormLabel>
+                        <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151' }}>Foto</FormLabel>
 
                         <input
                           ref={fileInputRef}
@@ -701,31 +699,28 @@ export function FailureQuickReportDialog({
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={isUploading}
-                          className={cn(
-                            'w-full rounded-lg border-2 border-dashed p-6 flex flex-col items-center gap-2 transition-colors',
-                            'hover:border-primary/50 hover:bg-muted/50',
-                            isUploading && 'opacity-50 cursor-not-allowed'
-                          )}
+                          style={{ width: '100%', borderRadius: '8px', border: '2px dashed #E4E4E8', padding: '24px', display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: '8px', background: '#FAFAFA', cursor: isUploading ? 'not-allowed' : 'pointer', opacity: isUploading ? 0.5 : 1, transition: 'all 0.15s ease' }}
+                          onMouseEnter={(e) => { if (!isUploading) { e.currentTarget.style.borderColor = '#D8D8DE'; e.currentTarget.style.background = '#F3F4F6'; }}}
+                          onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#E4E4E8'; e.currentTarget.style.background = '#FAFAFA'; }}
                         >
                           {isUploading ? (
                             <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
                           ) : (
                             <Camera className="h-8 w-8 text-muted-foreground" />
                           )}
-                          <span className="text-sm text-muted-foreground">
+                          <span style={{ fontSize: '13px', color: '#6B7280' }}>
                             {isUploading ? `Subiendo ${uploadProgress}%` : 'Tocar para sacar foto o subir imagen'}
                           </span>
-                          <span className="text-xs text-muted-foreground/60">
+                          <span style={{ fontSize: '11px', color: '#9CA3AF' }}>
                             JPG, PNG hasta 5MB
                           </span>
                         </button>
 
                         {/* Barra de progreso */}
                         {isUploading && (
-                          <div className="w-full bg-muted rounded-full h-1.5">
+                          <div style={{ width: '100%', background: '#F3F4F6', borderRadius: '8px', height: '6px' }}>
                             <div
-                              className="bg-primary h-1.5 rounded-full transition-all duration-300"
-                              style={{ width: `${uploadProgress}%` }}
+                              style={{ background: '#2563EB', height: '6px', borderRadius: '8px', transition: 'all 0.3s ease', width: `${uploadProgress}%` }}
                             />
                           </div>
                         )}
@@ -762,12 +757,12 @@ export function FailureQuickReportDialog({
                           control={form.control}
                           name="isIntermittent"
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
+                            <FormItem className="flex flex-row items-center justify-between" style={{ border: '1px solid #E4E4E8', borderRadius: '8px', padding: '12px' }}>
                               <div className="space-y-0.5">
-                                <FormLabel className="cursor-pointer">
+                                <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151', cursor: 'pointer' }}>
                                   Falla Intermitente
                                 </FormLabel>
-                                <p className="text-xs text-muted-foreground">
+                                <p style={{ fontSize: '11px', color: '#9CA3AF' }}>
                                   Aparece y desaparece
                                 </p>
                               </div>
@@ -785,12 +780,12 @@ export function FailureQuickReportDialog({
                           control={form.control}
                           name="isSafetyRelated"
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
+                            <FormItem className="flex flex-row items-center justify-between" style={{ border: '1px solid #E4E4E8', borderRadius: '8px', padding: '12px' }}>
                               <div className="space-y-0.5">
-                                <FormLabel className="cursor-pointer">
+                                <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151', cursor: 'pointer' }}>
                                   Riesgo Seguridad
                                 </FormLabel>
-                                <p className="text-xs text-muted-foreground">
+                                <p style={{ fontSize: '11px', color: '#9CA3AF' }}>
                                   Puede causar lesiones
                                 </p>
                               </div>
@@ -808,12 +803,12 @@ export function FailureQuickReportDialog({
                           control={form.control}
                           name="isObservation"
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 bg-card">
+                            <FormItem className="flex flex-row items-center justify-between" style={{ border: '1px solid #E4E4E8', borderRadius: '8px', padding: '12px' }}>
                               <div className="space-y-0.5">
-                                <FormLabel className="cursor-pointer">
+                                <FormLabel style={{ fontSize: '13px', fontWeight: 500, color: '#374151', cursor: 'pointer' }}>
                                   Solo Observación
                                 </FormLabel>
-                                <p className="text-xs text-muted-foreground">
+                                <p style={{ fontSize: '11px', color: '#9CA3AF' }}>
                                   No requiere acción
                                 </p>
                               </div>
@@ -840,9 +835,9 @@ export function FailureQuickReportDialog({
               </div>
 
               {/* ── Sticky Footer: Navegación ── */}
-              <div className="flex-shrink-0 bg-muted/30 border-t px-4 py-2.5 sm:px-6 sm:py-3">
+              <div style={{ flexShrink: 0, background: '#FAFAFA', borderTop: '1px solid #E4E4E8', padding: '10px 24px' }}>
                 <div className="flex items-center justify-between">
-                  <div className="text-xs text-muted-foreground">
+                  <div style={{ fontSize: '12px', color: '#9CA3AF' }}>
                     Paso {currentFormStepIndex + 1} de {formStepIds.length}
                   </div>
 
@@ -851,6 +846,7 @@ export function FailureQuickReportDialog({
                       type="button"
                       variant="outline"
                       size="sm"
+                      style={{ borderRadius: '7px', border: '1px solid #E4E4E8', background: '#FFFFFF', fontSize: '13px' }}
                       onClick={handlePrevFormStep}
                     >
                       <ArrowLeft className="h-3.5 w-3.5 mr-1" />
@@ -861,6 +857,7 @@ export function FailureQuickReportDialog({
                       <Button
                         type="button"
                         size="sm"
+                        style={{ borderRadius: '7px', background: '#111827', color: '#FFFFFF', fontSize: '13px' }}
                         onClick={handleNextFormStep}
                       >
                         Siguiente
@@ -870,6 +867,7 @@ export function FailureQuickReportDialog({
                       <Button
                         type="button"
                         size="sm"
+                        style={{ borderRadius: '7px', background: '#059669', color: '#FFFFFF', fontSize: '13px' }}
                         onClick={handleValidateAndSubmit}
                         disabled={quickReportMutation.isPending}
                       >
@@ -909,7 +907,7 @@ export function FailureQuickReportDialog({
       }}>
         <DialogContent size="sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-success">
+            <DialogTitle style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#059669', fontSize: '16px', fontWeight: 600 }}>
               <CheckCircle2 className="h-5 w-5" />
               {creationResult?.isObservation
                 ? 'Observación Registrada'
@@ -928,33 +926,29 @@ export function FailureQuickReportDialog({
 
           <DialogBody>
           <div className="space-y-3">
-            <div className="rounded-lg border p-3 bg-muted/30">
+            <div style={{ borderRadius: '8px', border: '1px solid #E4E4E8', padding: '12px', background: '#FAFAFA' }}>
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium">{creationResult?.occurrence.title}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p style={{ fontSize: '13px', fontWeight: 500, color: '#111827' }}>{creationResult?.occurrence.title}</p>
+                  <p style={{ fontSize: '11px', color: '#6B7280' }}>
                     Falla #{creationResult?.occurrence.id}
                   </p>
                 </div>
-                <Badge variant={
-                  creationResult?.occurrence.priority === 'P1' ? 'destructive' :
-                  creationResult?.occurrence.priority === 'P2' ? 'default' :
-                  'secondary'
-                }>
+                <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px', background: creationResult?.occurrence.priority === 'P1' ? '#FEE2E2' : creationResult?.occurrence.priority === 'P2' ? '#FEF3C7' : '#F3F4F6', color: creationResult?.occurrence.priority === 'P1' ? '#DC2626' : creationResult?.occurrence.priority === 'P2' ? '#D97706' : '#6B7280' }}>
                   {creationResult?.occurrence.priority}
-                </Badge>
+                </span>
               </div>
             </div>
 
             {creationResult?.workOrder && (
-              <div className="rounded-lg border border-info-muted p-3 bg-info-muted/50">
+              <div style={{ borderRadius: '8px', border: '1px solid #E4E4E8', padding: '12px', background: '#EFF6FF' }}>
                 <div className="flex items-center gap-2 text-sm">
-                  <FileText className="h-4 w-4 text-info-muted-foreground" />
+                  <FileText className="h-4 w-4" style={{ color: '#2563EB' }} />
                   <div>
-                    <p className="font-medium text-info-muted-foreground">
+                    <p className="font-medium" style={{ color: '#2563EB' }}>
                       OT #{creationResult.workOrder.id}
                     </p>
-                    <p className="text-xs text-info-muted-foreground">
+                    <p style={{ fontSize: '12px', color: '#6B7280' }}>
                       {creationResult.workOrder.title}
                     </p>
                   </div>
@@ -963,14 +957,14 @@ export function FailureQuickReportDialog({
             )}
 
             {creationResult?.isObservation && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#6B7280' }}>
                 <AlertTriangle className="h-4 w-4" />
                 <span>No se creó OT porque es solo una observación</span>
               </div>
             )}
 
             {creationResult?.resolvedImmediately && (
-              <div className="flex items-center gap-2 text-sm text-success">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#059669' }}>
                 <CheckCircle2 className="h-4 w-4" />
                 <span>Marcada como resuelta inmediatamente</span>
               </div>
@@ -983,6 +977,7 @@ export function FailureQuickReportDialog({
               variant="outline"
               onClick={resetAndClose}
               className="sm:flex-1"
+              style={{ borderRadius: '7px', border: '1px solid #E4E4E8', background: '#FFFFFF', fontSize: '13px' }}
             >
               Cerrar
             </Button>
@@ -991,6 +986,7 @@ export function FailureQuickReportDialog({
               <Button
                 onClick={handleViewWorkOrder}
                 className="sm:flex-1"
+                style={{ borderRadius: '7px', background: '#111827', color: '#FFFFFF', fontSize: '13px' }}
               >
                 <FileText className="h-4 w-4 mr-2" />
                 Ver Orden de Trabajo
@@ -1001,6 +997,7 @@ export function FailureQuickReportDialog({
               <Button
                 onClick={handleViewFailure}
                 className="sm:flex-1"
+                style={{ borderRadius: '7px', background: '#111827', color: '#FFFFFF', fontSize: '13px' }}
               >
                 <Eye className="h-4 w-4 mr-2" />
                 Ver Detalle

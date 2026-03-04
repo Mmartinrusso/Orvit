@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { addDays, subDays } from 'date-fns';
 import { AgendaMobileLayout } from './AgendaMobileLayout';
 import { AgendaHomeScreen } from './AgendaHomeScreen';
@@ -40,10 +41,9 @@ interface AgendaMobilePageProps {
   onDuplicateTask?: (task: AgendaTask) => void;
   onSelectGroup?: (groupId: number) => void;
   onCreateGroup?: (isProject: boolean) => void;
-  companyUsers?: Array<{ id: number; name: string; avatar?: string | null }>;
+  companyUsers?: Array<{ id: number; name: string; avatar?: string | null }>; // reserved for admin filter
 }
 
-const EMPTY_USERS: Array<{ id: number; name: string; avatar?: string | null }> = [];
 
 // ── Mock data for preview ────────────────────────────────────────────────────
 
@@ -191,6 +191,32 @@ const MOCK_TASKS: AgendaTask[] = [
     assignedToUser: { id: 2, name: 'Ana García', avatar: null }, assignedToUserId: 2, assignedToName: 'Ana García',
     groupId: -2, group: { id: -2, name: 'Estudio Contable' },
   }),
+  // ── Delegated tasks (created by user 1, assigned to others, due today) ──
+  mockTask({
+    id: -13, title: 'Enviar factura cliente Petropack', status: 'PENDING', priority: 'HIGH',
+    dueDate: today, category: 'Ventas',
+    createdById: 1, createdBy: { id: 1, name: 'Martin Russo', avatar: null },
+    assignedToUser: { id: 2, name: 'Ana García', avatar: null }, assignedToUserId: 2, assignedToName: 'Ana García',
+    groupId: -2, group: { id: -2, name: 'Estudio Contable' },
+  }),
+  mockTask({
+    id: -14, title: 'Coordinar entrega de repuestos', status: 'IN_PROGRESS', priority: 'MEDIUM',
+    dueDate: today, category: 'Compras',
+    createdById: 1, createdBy: { id: 1, name: 'Martin Russo', avatar: null },
+    assignedToUser: { id: 3, name: 'Carlos López', avatar: null }, assignedToUserId: 3, assignedToName: 'Carlos López',
+    groupId: -1, group: { id: -1, name: 'Esbribana' },
+    _count: { comments: 1, subtasks: 2, subtasksDone: 1 },
+    subtasks: [
+      { id: -15, title: 'Confirmar stock con proveedor', done: true, taskId: -14, createdAt: today, updatedAt: today },
+      { id: -16, title: 'Agendar retiro', done: false, taskId: -14, createdAt: today, updatedAt: today },
+    ],
+  }),
+  mockTask({
+    id: -15, title: 'Llamar a proveedor de lubricantes', status: 'PENDING', priority: 'LOW',
+    dueDate: today, category: 'Compras',
+    createdById: 1, createdBy: { id: 1, name: 'Martin Russo', avatar: null },
+    assignedToUser: { id: 4, name: 'Laura Martínez', avatar: null }, assignedToUserId: 4, assignedToName: 'Laura Martínez',
+  }),
 ];
 
 const MOCK_GROUPS: TaskGroupItem[] = [
@@ -200,9 +226,9 @@ const MOCK_GROUPS: TaskGroupItem[] = [
 ];
 
 const MOCK_STATS: AgendaStats = {
-  total: 12,
-  pending: 4,
-  inProgress: 3,
+  total: 15,
+  pending: 6,
+  inProgress: 4,
   waiting: 1,
   completed: 3,
   cancelled: 0,
@@ -218,12 +244,6 @@ const MOCK_STATS: AgendaStats = {
   ],
 };
 
-const MOCK_USERS = [
-  { id: 1, name: 'Martin Russo', avatar: null },
-  { id: 2, name: 'Ana García', avatar: null },
-  { id: 3, name: 'Carlos López', avatar: null },
-  { id: 4, name: 'Laura Martínez', avatar: null },
-];
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -240,20 +260,42 @@ export function AgendaMobilePage({
   onDuplicateTask,
   onSelectGroup,
   onCreateGroup,
-  companyUsers = EMPTY_USERS,
+  companyUsers,
 }: AgendaMobilePageProps) {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<MobileTab>('home');
   const [activeView, setActiveView] = useState<MobileView>('home');
   const [selectedTask, setSelectedTask] = useState<AgendaTask | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [moreSheetOpen, setMoreSheetOpen] = useState(false);
+  const [fixedFormOpen, setFixedFormOpen] = useState(false);
 
   // Always merge mock data with real data so the preview looks populated
   // TODO: Remove mock data merge once user approves design
-  const effectiveTasks = useMemo(() => [...tasks, ...MOCK_TASKS], [tasks]);
+  // Patch mock delegated tasks to use the real user's ID so they show up correctly
+  const patchedMocks = useMemo(() => {
+    if (!user) return MOCK_TASKS;
+    return MOCK_TASKS.map((t) => {
+      if (t.createdById === 1 && t.assignedToUserId && t.assignedToUserId !== 1) {
+        // This is a delegated mock — patch createdById to real user
+        return { ...t, createdById: user.id, createdBy: { id: user.id, name: user.name ?? 'Yo', avatar: null } };
+      }
+      if (t.assignedToUserId === 1) {
+        // This is assigned to "me" — patch to real user
+        return { ...t, assignedToUserId: user.id, assignedToUser: { id: user.id, name: user.name ?? 'Yo', avatar: null }, assignedToName: user.name ?? 'Yo' };
+      }
+      if (!t.assignedToUserId && t.createdById === 1) {
+        // Unassigned, created by "me"
+        return { ...t, createdById: user.id, createdBy: { id: user.id, name: user.name ?? 'Yo', avatar: null } };
+      }
+      return t;
+    });
+  }, [user]);
+
+  const effectiveTasks = useMemo(() => [...tasks, ...patchedMocks], [tasks, patchedMocks]);
   const effectiveGroups = useMemo(() => [...groups, ...MOCK_GROUPS], [groups]);
   const effectiveStats = stats ?? MOCK_STATS;
-  const effectiveUsers = useMemo(() => companyUsers.length > 0 ? [...companyUsers, ...MOCK_USERS] : MOCK_USERS, [companyUsers]);
+  const effectiveUsers = useMemo(() => companyUsers ?? [], [companyUsers]);
 
   // Map bottom nav tabs to views
   const handleTabChange = (tab: MobileTab) => {
@@ -325,7 +367,7 @@ export function AgendaMobilePage({
   }
 
   // Whether we're on a secondary view (accessed from "Más" sheet)
-  const isSecondaryView = activeView === 'inbox' || activeView === 'reporting' || activeView === 'fixed-tasks' || activeView === 'portfolio';
+  const isSecondaryView = activeView === 'inbox' || activeView === 'reporting' || activeView === 'portfolio';
 
   // Determine which view to render
   const renderView = () => {
@@ -344,6 +386,7 @@ export function AgendaMobilePage({
         return (
           <BoardMobile
             tasks={effectiveTasks}
+            companyUsers={effectiveUsers}
             onTaskTap={handleTaskTap}
             onToggleComplete={onToggleComplete}
             onCreateTask={onCreateTask}
@@ -373,7 +416,12 @@ export function AgendaMobilePage({
           />
         );
       case 'fixed-tasks':
-        return <FixedTasksMobile />;
+        return (
+          <FixedTasksMobile
+            createFormOpen={fixedFormOpen}
+            onCreateFormClose={() => setFixedFormOpen(false)}
+          />
+        );
       case 'portfolio':
         return (
           <PortfolioMobile
@@ -436,7 +484,13 @@ export function AgendaMobilePage({
       <AgendaMobileLayout
         activeTab={activeTab}
         onTabChange={handleTabChange}
-        onCreateTask={onCreateTask}
+        onCreateTask={() => {
+          if (activeView === 'fixed-tasks') {
+            setFixedFormOpen(true);
+          } else {
+            onCreateTask();
+          }
+        }}
         onMenuPress={() => setDrawerOpen(true)}
         hideNav={drawerOpen}
       >

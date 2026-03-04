@@ -1,7 +1,6 @@
 import { View, Text } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import AnimatedPressable from "@/components/ui/AnimatedPressable";
-import { useTheme } from "@/contexts/ThemeContext";
 
 interface ReactionGroup {
   emoji: string;
@@ -20,14 +19,11 @@ export default function ReactionPills({
   reactions,
   userId,
   onToggle,
-  isMe,
 }: ReactionPillsProps) {
-  const { colors } = useTheme();
-
   if (!reactions || reactions.length === 0) return null;
 
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+    <View style={{ flexDirection: "row", gap: 4 }}>
       {reactions.map((r) => {
         const isMine = r.users.some((u) => u.id === userId);
         return (
@@ -36,40 +32,31 @@ export default function ReactionPills({
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                backgroundColor: isMine
-                  ? colors.primaryBg
-                  : isMe
-                  ? "rgba(255,255,255,0.12)"
-                  : colors.bgTertiary,
+                backgroundColor: "#1a1a1e",
                 borderRadius: 12,
-                paddingHorizontal: 8,
-                paddingVertical: 3,
-                borderWidth: 1,
-                borderColor: isMine
-                  ? colors.primary
-                  : isMe
-                  ? "rgba(255,255,255,0.15)"
-                  : colors.border,
-                gap: 4,
+                paddingHorizontal: r.count > 1 ? 6 : 5,
+                paddingVertical: 2,
+                gap: r.count > 1 ? 2 : 0,
+                minWidth: 26,
+                minHeight: 24,
+                justifyContent: "center",
               }}
               onPress={() => onToggle(r.emoji)}
               haptic="selection"
               scaleValue={0.9}
             >
               <Text style={{ fontSize: 14 }}>{r.emoji}</Text>
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: "600",
-                  color: isMine
-                    ? colors.primary
-                    : isMe
-                    ? "rgba(255,255,255,0.7)"
-                    : colors.textSecondary,
-                }}
-              >
-                {r.count}
-              </Text>
+              {r.count > 1 && (
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: "600",
+                    color: isMine ? "#53bdeb" : "rgba(255,255,255,0.6)",
+                  }}
+                >
+                  {r.count}
+                </Text>
+              )}
             </AnimatedPressable>
           </Animated.View>
         );

@@ -2172,7 +2172,7 @@ export default function ComprobanteFormModal({
  {proveedorItems.map((proveedorItem) => (
  <CommandItem
  key={proveedorItem.id}
- value={proveedorItem.id}
+ value={`${proveedorItem.id} ${proveedorItem.nombre} ${proveedorItem.codigoProveedor || ''} ${proveedorItem.descripcion || ''}`}
  onSelect={() => {
  selectItemForComprobante(item.id, proveedorItem);
  setItemPopoverOpen(prev => ({ ...prev, [item.id]: false }));

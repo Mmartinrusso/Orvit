@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { View } from "react-native";
+import { View, Text } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -10,8 +10,12 @@ import Animated, {
 } from "react-native-reanimated";
 import { useTheme } from "@/contexts/ThemeContext";
 
-export default function TypingIndicator() {
-  const { colors } = useTheme();
+interface Props {
+  names?: string[];
+}
+
+export default function TypingIndicator({ names = [] }: Props) {
+  const { colors, isDark } = useTheme();
   const dot1 = useSharedValue(0);
   const dot2 = useSharedValue(0);
   const dot3 = useSharedValue(0);
@@ -19,7 +23,7 @@ export default function TypingIndicator() {
   useEffect(() => {
     const bounce = withRepeat(
       withSequence(
-        withTiming(-6, { duration: 300 }),
+        withTiming(-5, { duration: 300 }),
         withTiming(0, { duration: 300 })
       ),
       -1
@@ -44,17 +48,26 @@ export default function TypingIndicator() {
     width: 7,
     height: 7,
     borderRadius: 3.5,
-    backgroundColor: colors.textMuted,
+    backgroundColor: isDark ? "rgba(233,237,239,0.4)" : "rgba(0,0,0,0.3)",
   };
+
+  const label =
+    names.length === 1
+      ? `${names[0]} está escribiendo`
+      : names.length === 2
+      ? `${names[0]} y ${names[1]} están escribiendo`
+      : names.length > 2
+      ? `${names[0]} y ${names.length - 1} más están escribiendo`
+      : "Escribiendo";
 
   return (
     <View
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 4,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        gap: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
       }}
     >
       <View
@@ -62,13 +75,28 @@ export default function TypingIndicator() {
           flexDirection: "row",
           alignItems: "center",
           gap: 4,
-          backgroundColor: colors.bgSecondary,
+          backgroundColor: colors.bubbleOtherBg,
           paddingHorizontal: 14,
-          paddingVertical: 10,
-          borderRadius: 16,
-          borderBottomLeftRadius: 4,
+          paddingVertical: 8,
+          borderRadius: 10,
+          borderTopLeftRadius: 2,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: isDark ? 0.2 : 0.06,
+          shadowRadius: 2,
+          elevation: 1,
         }}
       >
+        <Text
+          style={{
+            fontSize: 12,
+            color: isDark ? "rgba(233,237,239,0.6)" : "rgba(0,0,0,0.45)",
+            fontStyle: "italic",
+            marginRight: 4,
+          }}
+        >
+          {label}
+        </Text>
         <Animated.View style={[dotStyle, style1]} />
         <Animated.View style={[dotStyle, style2]} />
         <Animated.View style={[dotStyle, style3]} />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -7,88 +7,33 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useCreateStyles } from "@/hooks/useCreateStyles";
 import AnimatedPressable from "@/components/ui/AnimatedPressable";
 import { router } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function LoginScreen() {
   const { login } = useAuth();
-  const { colors } = useTheme();
-  const styles = useCreateStyles((c, t, s, r) => ({
-    gradient: {
-      flex: 1,
-    },
-    inner: {
-      flex: 1,
-      justifyContent: "center" as const,
-      paddingHorizontal: s.xxxl,
-    },
-    title: {
-      ...t.title,
-      fontSize: 36,
-      color: c.primary,
-      textAlign: "center" as const,
-      letterSpacing: 6,
-      marginBottom: s.xs,
-    },
-    subtitle: {
-      ...t.body,
-      color: c.textMuted,
-      textAlign: "center" as const,
-      marginBottom: 40,
-    },
-    inputContainer: {
-      flexDirection: "row" as const,
-      alignItems: "center" as const,
-      backgroundColor: c.bgInput,
-      borderRadius: r.md,
-      borderWidth: 1,
-      marginBottom: s.lg,
-      paddingHorizontal: s.lg,
-    },
-    inputIcon: {
-      marginRight: s.md,
-    },
-    input: {
-      flex: 1,
-      paddingVertical: s.lg,
-      ...t.body,
-      color: c.textPrimary,
-    },
-    button: {
-      backgroundColor: c.primary,
-      borderRadius: r.md,
-      paddingVertical: s.lg,
-      alignItems: "center" as const,
-      marginTop: s.sm,
-    },
-    buttonDisabled: {
-      opacity: 0.6,
-    },
-    buttonText: {
-      ...t.subheading,
-      color: "#ffffff",
-    },
-  }));
+  const { colors, isDark } = useTheme();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const passwordRef = useRef<TextInput>(null);
 
   async function handleLogin() {
     if (!email.trim() || !password) {
       Alert.alert("Error", "Ingresá email y contraseña");
       return;
     }
-
     setIsLoading(true);
     try {
       await login(email.trim(), password);
@@ -102,117 +47,225 @@ export default function LoginScreen() {
     }
   }
 
+  // Adaptive colors
+  const bgColor = isDark ? "#000000" : "#ffffff";
+  const inputBorderColor = isDark
+    ? "rgba(255, 255, 255, 0.15)"
+    : "rgba(0, 0, 0, 0.15)";
+  const inputFocusBorder = isDark
+    ? "rgba(255, 255, 255, 0.4)"
+    : "rgba(0, 0, 0, 0.4)";
+  const inputText = isDark ? "#ffffff" : "#000000";
+  const placeholderColor = isDark
+    ? "rgba(255, 255, 255, 0.35)"
+    : "rgba(0, 0, 0, 0.35)";
+  const headingColor = isDark ? "#ffffff" : "#000000";
+  const subtitleColor = isDark
+    ? "rgba(255, 255, 255, 0.5)"
+    : "rgba(0, 0, 0, 0.45)";
+  const mutedColor = isDark
+    ? "rgba(255, 255, 255, 0.4)"
+    : "rgba(0, 0, 0, 0.4)";
+  const dividerColor = isDark
+    ? "rgba(255, 255, 255, 0.08)"
+    : "rgba(0, 0, 0, 0.08)";
+
+  // Button colors
+  const primaryBtnBg = isDark ? "#ffffff" : "#000000";
+  const primaryBtnText = isDark ? "#000000" : "#ffffff";
+
   return (
-    <LinearGradient
-      colors={[colors.bgSecondary, colors.bg]}
-      style={styles.gradient}
-    >
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <View style={styles.inner}>
-          <Animated.Text
-            entering={FadeInDown.delay(0).duration(400).springify()}
-            style={styles.title}
+    <View style={{ flex: 1, backgroundColor: bgColor }}>
+      <SafeAreaView style={{ flex: 1 }} edges={["top", "bottom"]}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <ScrollView
+            contentContainerStyle={{
+              flexGrow: 1,
+              justifyContent: "center",
+              paddingHorizontal: 32,
+            }}
+            keyboardShouldPersistTaps="handled"
           >
-            ORVIT
-          </Animated.Text>
+            {/* Logo placeholder — reemplazar con imagen después */}
+            <View style={{ height: 60, marginBottom: 16 }} />
 
-          <Animated.Text
-            entering={FadeInDown.delay(100).duration(400).springify()}
-            style={styles.subtitle}
-          >
-            Chat Empresarial
-          </Animated.Text>
-
-          <Animated.View
-            entering={FadeInDown.delay(200).duration(400).springify()}
-          >
-            <View
-              style={[
-                styles.inputContainer,
-                {
-                  borderColor: emailFocused
-                    ? colors.primary
-                    : colors.border,
-                },
-              ]}
+            {/* Heading */}
+            <Animated.View
+              entering={FadeInDown.delay(80).duration(500).springify()}
+              style={{ alignItems: "center", marginBottom: 8 }}
             >
-              <Ionicons
-                name="mail-outline"
-                size={20}
-                color={emailFocused ? colors.primary : colors.textMuted}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor={colors.textMuted}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                onFocus={() => setEmailFocused(true)}
-                onBlur={() => setEmailFocused(false)}
-              />
-            </View>
-          </Animated.View>
+              <Text
+                style={{
+                  fontSize: 28,
+                  fontWeight: "700",
+                  color: headingColor,
+                  letterSpacing: -0.5,
+                }}
+              >
+                Bienvenido
+              </Text>
+            </Animated.View>
 
-          <Animated.View
-            entering={FadeInDown.delay(300).duration(400).springify()}
-          >
-            <View
-              style={[
-                styles.inputContainer,
-                {
+            {/* Subtitle */}
+            <Animated.View
+              entering={FadeInDown.delay(140).duration(500).springify()}
+              style={{ alignItems: "center", marginBottom: 40 }}
+            >
+              <Text
+                style={{
+                  fontSize: 15,
+                  color: subtitleColor,
+                  letterSpacing: 0.1,
+                }}
+              >
+                Ingresá a tu cuenta de ORVIT
+              </Text>
+            </Animated.View>
+
+            {/* Email Input */}
+            <Animated.View
+              entering={FadeInDown.delay(200).duration(500).springify()}
+              style={{ marginBottom: 14 }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  borderRadius: 14,
+                  borderWidth: 1,
+                  borderColor: emailFocused ? inputFocusBorder : inputBorderColor,
+                  paddingHorizontal: 18,
+                  height: 54,
+                }}
+              >
+                <TextInput
+                  style={{
+                    flex: 1,
+                    fontSize: 16,
+                    color: inputText,
+                    letterSpacing: 0.1,
+                    outlineStyle: "none",
+                  } as any}
+                  placeholder="Tu email"
+                  placeholderTextColor={placeholderColor}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                  onSubmitEditing={() => passwordRef.current?.focus()}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                />
+              </View>
+            </Animated.View>
+
+            {/* Password Input */}
+            <Animated.View
+              entering={FadeInDown.delay(260).duration(500).springify()}
+              style={{ marginBottom: 16 }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  borderRadius: 14,
+                  borderWidth: 1,
                   borderColor: passwordFocused
-                    ? colors.primary
-                    : colors.border,
-                },
-              ]}
-            >
-              <Ionicons
-                name="lock-closed-outline"
-                size={20}
-                color={passwordFocused ? colors.primary : colors.textMuted}
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Contraseña"
-                placeholderTextColor={colors.textMuted}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                onFocus={() => setPasswordFocused(true)}
-                onBlur={() => setPasswordFocused(false)}
-              />
-            </View>
-          </Animated.View>
+                    ? inputFocusBorder
+                    : inputBorderColor,
+                  paddingHorizontal: 18,
+                  height: 54,
+                }}
+              >
+                <TextInput
+                  ref={passwordRef}
+                  style={{
+                    flex: 1,
+                    fontSize: 16,
+                    color: inputText,
+                    letterSpacing: 0.1,
+                    outlineStyle: "none",
+                  } as any}
+                  placeholder="Tu contraseña"
+                  placeholderTextColor={placeholderColor}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  returnKeyType="go"
+                  onSubmitEditing={handleLogin}
+                  onFocus={() => setPasswordFocused(true)}
+                  onBlur={() => setPasswordFocused(false)}
+                />
+                <AnimatedPressable
+                  onPress={() => setShowPassword(!showPassword)}
+                  hitSlop={12}
+                  style={{ padding: 4 }}
+                >
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={20}
+                    color={mutedColor}
+                  />
+                </AnimatedPressable>
+              </View>
+            </Animated.View>
 
-          <Animated.View
-            entering={FadeInDown.delay(400).duration(400).springify()}
-          >
-            <AnimatedPressable
-              onPress={handleLogin}
-              disabled={isLoading}
-              haptic="medium"
-              style={[
-                styles.button,
-                isLoading && styles.buttonDisabled,
-              ]}
+            {/* Forgot password */}
+            <Animated.View
+              entering={FadeInDown.delay(300).duration(500).springify()}
+              style={{ alignItems: "center", marginBottom: 32 }}
             >
-              {isLoading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text style={styles.buttonText}>Iniciar sesión</Text>
-              )}
-            </AnimatedPressable>
-          </Animated.View>
-        </View>
-      </KeyboardAvoidingView>
-    </LinearGradient>
+              <Text style={{ fontSize: 14, color: mutedColor }}>
+                ¿Olvidaste tu contraseña?
+              </Text>
+            </Animated.View>
+
+            {/* Sign In Button */}
+            <Animated.View
+              entering={FadeInDown.delay(360).duration(500).springify()}
+            >
+              <AnimatedPressable
+                onPress={handleLogin}
+                disabled={isLoading}
+                haptic="medium"
+                style={{
+                  backgroundColor: primaryBtnBg,
+                  borderRadius: 50,
+                  height: 54,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  opacity: isLoading ? 0.7 : 1,
+                }}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color={primaryBtnText} />
+                ) : (
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: "600",
+                      color: primaryBtnText,
+                      letterSpacing: 0.2,
+                    }}
+                  >
+                    Iniciar sesión
+                  </Text>
+                )}
+              </AnimatedPressable>
+            </Animated.View>
+
+            {/* Bottom spacer inside scroll */}
+
+            {/* Bottom spacer */}
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }

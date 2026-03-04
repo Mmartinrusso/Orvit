@@ -1,6 +1,8 @@
-import { apiFetch } from "./client";
+import { apiFetch, API_URL } from "./client";
+import { getAccessToken } from "@/lib/storage";
 import type {
   Conversation,
+  ConversationAncestor,
   Message,
   LoginResponse,
 } from "@/types/chat";
@@ -41,6 +43,10 @@ export async function createConversation(data: {
   memberIds: number[];
   entityType?: string;
   entityId?: number;
+  parentId?: string;
+  iconName?: string;
+  avatarUrl?: string;
+  onlyAdminsPost?: boolean;
 }): Promise<Conversation> {
   return apiFetch("/api/chat/conversations", {
     method: "POST",
@@ -131,9 +137,15 @@ export async function removeReaction(messageId: string, emoji: string): Promise<
 
 // ── Conversation management ──────────────────────────────────
 
+export async function getConversationAncestors(
+  id: string
+): Promise<{ ancestors: ConversationAncestor[] }> {
+  return apiFetch(`/api/chat/conversations/${id}/ancestors`);
+}
+
 export async function updateConversation(
   id: string,
-  data: { name?: string; description?: string; isArchived?: boolean }
+  data: { name?: string; description?: string; isArchived?: boolean; iconName?: string; avatarUrl?: string; onlyAdminsPost?: boolean }
 ): Promise<Conversation> {
   return apiFetch(`/api/chat/conversations/${id}`, {
     method: "PATCH",
@@ -207,4 +219,36 @@ export async function registerDevice(
     method: "POST",
     body: JSON.stringify({ pushToken, platform }),
   });
+}
+
+// ── File upload (multipart) ──────────────────────────────────
+
+export async function uploadChatFile(
+  uri: string,
+  fileName?: string,
+  mimeType?: string
+): Promise<{ url: string; fileName: string; fileSize: number; type: string }> {
+  const accessToken = await getAccessToken();
+  const formData = new FormData();
+
+  formData.append("file", {
+    uri,
+    name: fileName || "photo.jpg",
+    type: mimeType || "image/jpeg",
+  } as unknown as Blob);
+
+  const res = await fetch(`${API_URL}/api/chat/upload`, {
+    method: "POST",
+    headers: {
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || "Upload failed");
+  }
+
+  return res.json();
 }

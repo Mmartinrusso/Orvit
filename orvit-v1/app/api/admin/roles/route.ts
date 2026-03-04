@@ -5,6 +5,7 @@ import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
 import { invalidateUserPermissions } from '@/lib/permissions-helpers';
 import { requirePermission } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -247,6 +248,11 @@ export async function POST(request: NextRequest) {
     await Promise.all(
       usersWithRole.map(uc => invalidateUserPermissions(uc.userId, companyId))
     );
+
+    // Notificar vía Pusher para actualización instantánea en el frontend
+    triggerCompanyEvent(companyId, 'permissions', 'permissions:updated', {
+      roleName, permissionName: permission.name, isGranted,
+    });
 
     return NextResponse.json({
       success: true,

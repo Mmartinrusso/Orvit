@@ -14,15 +14,41 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import { registerDevice } from "@/api/chat";
 import { getAccessToken } from "@/lib/storage";
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+if (Platform.OS !== "web") {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
+
+// Android notification channels (required for Android 8+ / Samsung)
+if (Platform.OS === "android") {
+  Notifications.setNotificationChannelAsync("chat-messages", {
+    name: "Mensajes de chat",
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 250, 250, 250],
+    sound: "default",
+    lightColor: "#3b82f6",
+    enableLights: true,
+    enableVibrate: true,
+    showBadge: true,
+  });
+  Notifications.setNotificationChannelAsync("task-notifications", {
+    name: "Tareas y recordatorios",
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 250, 250, 250],
+    sound: "default",
+    lightColor: "#6366f1",
+    enableLights: true,
+    enableVibrate: true,
+    showBadge: true,
+  });
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,7 +64,7 @@ function useNotificationSetup() {
 
   useEffect(() => {
     (async () => {
-      if (!Device.isDevice) return;
+      if (Platform.OS === "web" || !Device.isDevice) return;
 
       const { status: existing } = await Notifications.getPermissionsAsync();
       let finalStatus = existing;

@@ -32,6 +32,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "googleServicesFile": "./google-services.json",
       "package": "com.orvit.chat",
       "versionCode": 1,
       "permissions": [
@@ -82,7 +83,12 @@
         "root": "./src/app"
       }
     },
-    "runtimeVersion": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/000ae057-7558-4995-bd34-d8450e559eab"
+    },
     "owner": "maartinrusso10"
   }
 }

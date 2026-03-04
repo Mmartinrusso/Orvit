@@ -2,10 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,13 +19,10 @@ import {
   Link2,
   Unlink,
   Eye,
-  Check,
-  X,
   Calendar,
   User,
   Wrench,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useCompany } from '@/contexts/CompanyContext';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -60,6 +53,30 @@ interface FailuresDuplicadosViewProps {
   className?: string;
 }
 
+const getStatusLabel = (status: string) => {
+  switch (status) {
+    case 'OPEN': return 'Abierta';
+    case 'REPORTED': return 'Reportada';
+    case 'IN_PROGRESS': return 'En Proceso';
+    case 'RESOLVED': return 'Resuelta';
+    default: return status;
+  }
+};
+
+const getStatusStyle = (status: string) => {
+  switch (status) {
+    case 'OPEN':
+    case 'REPORTED':
+      return { color: '#3B82F6', bg: '#EFF6FF', border: '#BFDBFE' };
+    case 'IN_PROGRESS':
+      return { color: '#F59E0B', bg: '#FEF3C7', border: '#FDE68A' };
+    case 'RESOLVED':
+      return { color: '#10B981', bg: '#ECFDF5', border: '#A7F3D0' };
+    default:
+      return { color: '#6B7280', bg: '#F3F4F6', border: '#E5E7EB' };
+  }
+};
+
 export function FailuresDuplicadosView({
   onSelectFailure,
   className,
@@ -69,7 +86,6 @@ export function FailuresDuplicadosView({
   const [unlinkDialogOpen, setUnlinkDialogOpen] = useState(false);
   const [selectedForUnlink, setSelectedForUnlink] = useState<FailureOccurrence | null>(null);
 
-  // Fetch duplicates
   const { data: duplicates = [], isLoading, error, refetch } = useQuery({
     queryKey: ['failures-duplicados', currentCompany?.id],
     queryFn: async () => {
@@ -84,13 +100,10 @@ export function FailuresDuplicadosView({
     enabled: !!currentCompany?.id,
   });
 
-  // Fetch potential duplicates (same machine, last 7 days, similar time)
   const { data: potentialDuplicates = [] } = useQuery({
     queryKey: ['potential-duplicates', currentCompany?.id],
     queryFn: async () => {
       if (!currentCompany?.id) return [];
-      // This would ideally be a dedicated endpoint that uses similarity detection
-      // For now, we'll fetch recent failures and group them client-side
       const res = await fetch(
         `/api/failure-occurrences?companyId=${currentCompany.id}&status=OPEN&take=100`
       );
@@ -98,26 +111,20 @@ export function FailuresDuplicadosView({
       const data = await res.json();
       const failures = data.data || data || [];
 
-      // Group by machine + same day
       const groups = new Map<string, FailureOccurrence[]>();
       failures.forEach((f: FailureOccurrence) => {
         if (!f.machine || f.isLinkedDuplicate) return;
         const date = format(new Date(f.reportedAt), 'yyyy-MM-dd');
         const key = `${f.machine.id}-${date}`;
-
-        if (!groups.has(key)) {
-          groups.set(key, []);
-        }
+        if (!groups.has(key)) groups.set(key, []);
         groups.get(key)!.push(f);
       });
 
-      // Return only groups with 2+ failures
       return Array.from(groups.values()).filter(g => g.length >= 2);
     },
     enabled: !!currentCompany?.id,
   });
 
-  // Unlink mutation
   const unlinkMutation = useMutation({
     mutationFn: async (failureId: number) => {
       const res = await fetch(`/api/failure-occurrences/${failureId}`, {
@@ -143,15 +150,9 @@ export function FailuresDuplicadosView({
     },
   });
 
-  // Stats
   const stats = useMemo(() => ({
     totalDuplicates: duplicates.length,
     potentialGroups: potentialDuplicates.length,
-    byMachine: duplicates.reduce((acc: Record<string, number>, d: FailureOccurrence) => {
-      const name = d.machine?.name || 'Sin máquina';
-      acc[name] = (acc[name] || 0) + 1;
-      return acc;
-    }, {}),
   }), [duplicates, potentialDuplicates]);
 
   const handleUnlink = (failure: FailureOccurrence) => {
@@ -161,207 +162,284 @@ export function FailuresDuplicadosView({
 
   if (isLoading) {
     return (
-      <div className={cn('space-y-4', className)}>
-        <div className="flex justify-between">
-          <Skeleton className="h-9 w-48" />
-          <Skeleton className="h-9 w-32" />
+      <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ width: 100, height: 26, borderRadius: 13, background: '#F0F0F4' }} />
+            <div style={{ width: 120, height: 26, borderRadius: 13, background: '#F0F0F4' }} />
+          </div>
+          <div style={{ width: 34, height: 34, borderRadius: 7, background: '#F0F0F4' }} />
         </div>
-        <div className="grid gap-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-24 w-full" />
-          ))}
-        </div>
+        {[1, 2, 3].map((i) => (
+          <div key={i} style={{ height: 80, borderRadius: 8, background: '#F8F8FA', border: '1px solid #E4E4E8' }} />
+        ))}
       </div>
     );
   }
 
   if (error) {
     return (
-      <Card className={cn('p-6', className)}>
-        <div className="flex flex-col items-center gap-4">
-          <AlertCircle className="h-10 w-10 text-destructive" />
-          <p className="text-destructive">Error al cargar duplicados</p>
-          <Button variant="outline" onClick={() => refetch()}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Reintentar
-          </Button>
-        </div>
-      </Card>
+      <div className={className} style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
+        padding: 40, background: '#FFFFFF', borderRadius: 8, border: '1.5px solid #E4E4E8',
+      }}>
+        <AlertCircle style={{ width: 40, height: 40, color: '#EF4444' }} />
+        <span style={{ fontSize: 14, color: '#EF4444', fontWeight: 500 }}>Error al cargar duplicados</span>
+        <button
+          onClick={() => refetch()}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '8px 16px', fontSize: 13, fontWeight: 500,
+            background: '#FFFFFF', border: '1.5px solid #E4E4E8', borderRadius: 7,
+            cursor: 'pointer', color: '#374151',
+          }}
+        >
+          <RefreshCw style={{ width: 14, height: 14 }} />
+          Reintentar
+        </button>
+      </div>
     );
   }
 
   return (
-    <div className={cn('space-y-6', className)}>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Copy className="h-5 w-5 text-purple-500" />
-            Gestión de Duplicados
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Detecta y gestiona fallas duplicadas para evitar trabajo repetido
-          </p>
+    <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Toolbar */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            padding: '4px 10px', fontSize: 11, fontWeight: 500,
+            color: '#7C3AED', background: '#7C3AED10', border: '1px solid #7C3AED30',
+            borderRadius: 20, whiteSpace: 'nowrap',
+          }}>
+            <Link2 style={{ width: 12, height: 12 }} />
+            {stats.totalDuplicates} confirmados
+          </span>
+          {stats.potentialGroups > 0 && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '4px 10px', fontSize: 11, fontWeight: 500,
+              color: '#F59E0B', background: '#F59E0B10', border: '1px solid #F59E0B30',
+              borderRadius: 20, whiteSpace: 'nowrap',
+            }}>
+              <AlertCircle style={{ width: 12, height: 12 }} />
+              {stats.potentialGroups} por revisar
+            </span>
+          )}
         </div>
 
-        <Button variant="ghost" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Actualizar
-        </Button>
+        <button
+          onClick={() => refetch()}
+          style={{
+            width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: '#FAFAFA', border: '1.5px solid #E4E4E8', borderRadius: 7,
+            cursor: 'pointer', color: '#9CA3AF', transition: 'all 150ms',
+          }}
+          title="Actualizar"
+        >
+          <RefreshCw style={{ width: 14, height: 14 }} />
+        </button>
       </div>
 
-      {/* Stats */}
-      <div className="flex flex-wrap gap-2">
-        <Badge variant="outline" className="gap-1">
-          <Link2 className="h-3 w-3" />
-          {stats.totalDuplicates} duplicados
-        </Badge>
-        {stats.potentialGroups > 0 && (
-          <Badge variant="outline" className="gap-1 border-warning-muted text-warning-muted-foreground">
-            <AlertCircle className="h-3 w-3" />
-            {stats.potentialGroups} grupos por revisar
-          </Badge>
-        )}
-      </div>
-
-      {/* Potential duplicates section */}
+      {/* Potential duplicates */}
       {potentialDuplicates.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-sm font-medium text-warning-muted-foreground flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            fontSize: 12, fontWeight: 600, color: '#F59E0B',
+          }}>
+            <AlertCircle style={{ width: 14, height: 14 }} />
             Posibles duplicados por revisar
-          </h3>
+          </div>
 
           {potentialDuplicates.map((group: FailureOccurrence[], idx: number) => (
-            <Card key={idx} className="border-warning-muted bg-warning-muted/50">
-              <CardHeader className="py-3 px-4">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Wrench className="h-4 w-4" />
-                  {group[0].machine?.name}
-                  <Badge variant="secondary" className="ml-auto">
-                    {group.length} fallas similares
-                  </Badge>
-                </CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  {format(new Date(group[0].reportedAt), 'dd/MM/yyyy', { locale: es })}
-                </p>
-              </CardHeader>
-              <CardContent className="py-2 px-4">
-                <div className="space-y-2">
-                  {group.map((failure) => (
-                    <div
-                      key={failure.id}
-                      className="flex items-center justify-between p-2 rounded border bg-card"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">#{failure.id}</span>
-                        <span className="text-sm truncate max-w-[200px]">
-                          {failure.title || 'Sin título'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(failure.reportedAt), 'HH:mm', { locale: es })}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7"
-                          onClick={() => onSelectFailure?.(failure.id)}
-                        >
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+            <div key={idx} style={{
+              background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 8,
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                padding: '12px 16px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                borderBottom: '1px solid #FDE68A',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Wrench style={{ width: 14, height: 14, color: '#92400E' }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#92400E' }}>
+                    {group[0].machine?.name}
+                  </span>
+                  <span style={{ fontSize: 11, color: '#B45309' }}>
+                    {format(new Date(group[0].reportedAt), 'dd/MM/yyyy', { locale: es })}
+                  </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Revisa estas fallas y marca como duplicado si corresponde
-                </p>
-              </CardContent>
-            </Card>
+                <span style={{
+                  padding: '2px 8px', fontSize: 10, fontWeight: 600,
+                  color: '#92400E', background: '#FEF3C7',
+                  border: '1px solid #FDE68A', borderRadius: 4,
+                }}>
+                  {group.length} fallas similares
+                </span>
+              </div>
+
+              <div style={{ padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {group.map((failure) => (
+                  <div
+                    key={failure.id}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 10px', borderRadius: 6,
+                      background: '#FFFFFF', border: '1px solid #FDE68A',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 11, color: '#9CA3AF' }}>#{failure.id}</span>
+                      <span style={{
+                        fontSize: 12, fontWeight: 500, color: '#374151',
+                        maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
+                        {failure.title || 'Sin título'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 11, color: '#9CA3AF' }}>
+                        {format(new Date(failure.reportedAt), 'HH:mm', { locale: es })}
+                      </span>
+                      <button
+                        onClick={() => onSelectFailure?.(failure.id)}
+                        style={{
+                          width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: 'transparent', border: '1px solid #E4E4E8', borderRadius: 5,
+                          cursor: 'pointer', color: '#9CA3AF', transition: 'all 150ms',
+                        }}
+                        title="Ver detalle"
+                      >
+                        <Eye style={{ width: 13, height: 13 }} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <div style={{
+                  fontSize: 11, color: '#B45309', textAlign: 'center',
+                  padding: '6px 0 2px', fontWeight: 500,
+                }}>
+                  Revisá estas fallas y marcá como duplicado si corresponde
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       )}
 
-      {/* Already linked duplicates */}
-      <div className="space-y-3">
-        <div>
-          <h3 className="text-sm font-medium flex items-center gap-2">
-            <Link2 className="h-4 w-4 text-purple-500" />
+      {/* Confirmed duplicates */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {(potentialDuplicates.length > 0 || duplicates.length > 0) && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            fontSize: 12, fontWeight: 600, color: '#7C3AED',
+          }}>
+            <Link2 style={{ width: 14, height: 14 }} />
             Duplicados confirmados
-          </h3>
-          <p className="text-xs text-muted-foreground ml-6">
-            Fallas que fueron marcadas como duplicado de otra falla
-          </p>
-        </div>
+          </div>
+        )}
 
         {duplicates.length === 0 ? (
-          <Card className="p-8">
-            <div className="flex flex-col items-center gap-3 text-center">
-              <Copy className="h-12 w-12 text-muted-foreground/50" />
-              <div>
-                <p className="font-medium">Sin duplicados</p>
-                <p className="text-sm text-muted-foreground">
-                  Cuando marques una falla como duplicado de otra, aparecerá aquí
-                </p>
+          <div style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12,
+            padding: '48px 24px', textAlign: 'center',
+          }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: 14,
+              background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Copy style={{ width: 24, height: 24, color: '#9CA3AF' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 4 }}>
+                Sin duplicados
+              </div>
+              <div style={{ fontSize: 12, color: '#9CA3AF', maxWidth: 300 }}>
+                Cuando marques una falla como duplicado de otra, aparecerá aquí
               </div>
             </div>
-          </Card>
+          </div>
         ) : (
-          <div className="space-y-2">
-            {duplicates.map((failure: FailureOccurrence) => (
-              <Card key={failure.id} className="border-l-4 border-l-purple-500">
-                <CardContent className="py-3 px-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline" className="text-xs border-purple-500 text-purple-600">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {duplicates.map((failure: FailureOccurrence) => {
+              const statusStyle = getStatusStyle(failure.status);
+              return (
+                <div key={failure.id} style={{
+                  background: '#FFFFFF',
+                  border: '1.5px solid #E4E4E8',
+                  borderLeft: '3px solid #7C3AED',
+                  borderRadius: 8,
+                  padding: '14px 16px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* Badges row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <span style={{
+                          padding: '2px 7px', fontSize: 10, fontWeight: 600,
+                          color: '#7C3AED', background: '#EDE9FE',
+                          border: '1px solid #DDD6FE', borderRadius: 4,
+                        }}>
                           Duplicado
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">#{failure.id}</span>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'text-xs',
-                            (failure.status === 'OPEN' || failure.status === 'REPORTED') && 'border-info text-info-muted-foreground',
-                            failure.status === 'IN_PROGRESS' && 'border-warning-muted text-warning-muted-foreground',
-                            failure.status === 'RESOLVED' && 'border-success text-success'
-                          )}
-                        >
-                          {failure.status === 'OPEN' ? 'Abierta' : failure.status === 'REPORTED' ? 'Reportada' : failure.status === 'IN_PROGRESS' ? 'En Proceso' : failure.status === 'RESOLVED' ? 'Resuelta' : failure.status}
-                        </Badge>
+                        </span>
+                        <span style={{ fontSize: 11, color: '#9CA3AF' }}>#{failure.id}</span>
+                        <span style={{
+                          padding: '2px 7px', fontSize: 10, fontWeight: 600,
+                          color: statusStyle.color, background: statusStyle.bg,
+                          border: `1px solid ${statusStyle.border}`, borderRadius: 4,
+                        }}>
+                          {getStatusLabel(failure.status)}
+                        </span>
                       </div>
 
-                      <p className="font-medium text-sm truncate">
+                      {/* Title */}
+                      <div style={{
+                        fontSize: 13, fontWeight: 600, color: '#111827',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
                         {failure.title || 'Sin título'}
-                      </p>
+                      </div>
 
-                      <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                      {/* Meta row */}
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 14,
+                        marginTop: 6, fontSize: 11, color: '#9CA3AF',
+                      }}>
                         {failure.machine && (
-                          <span className="flex items-center gap-1">
-                            <Wrench className="h-3 w-3" />
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Wrench style={{ width: 11, height: 11 }} />
                             {failure.machine.name}
                           </span>
                         )}
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Calendar style={{ width: 11, height: 11 }} />
                           {formatDistanceToNow(new Date(failure.reportedAt), { addSuffix: true, locale: es })}
                         </span>
                         {failure.reporter && (
-                          <span className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <User style={{ width: 11, height: 11 }} />
                             {failure.reporter.name}
                           </span>
                         )}
                       </div>
 
+                      {/* Linked reference */}
                       {failure.linkedOccurrence && (
-                        <div className="mt-2 p-2 rounded bg-muted/50 text-xs">
-                          <span className="text-muted-foreground">Duplicado de: </span>
+                        <div style={{
+                          marginTop: 8, padding: '6px 10px', borderRadius: 6,
+                          background: '#F8F8FA', border: '1px solid #F0F0F4',
+                          fontSize: 11,
+                        }}>
+                          <span style={{ color: '#9CA3AF' }}>Duplicado de: </span>
                           <span
-                            className="font-medium text-primary cursor-pointer hover:underline"
                             onClick={() => onSelectFailure?.(failure.linkedOccurrence!.id)}
+                            style={{
+                              fontWeight: 600, color: '#7C3AED', cursor: 'pointer',
+                            }}
+                            onMouseEnter={(e) => { (e.target as HTMLElement).style.textDecoration = 'underline'; }}
+                            onMouseLeave={(e) => { (e.target as HTMLElement).style.textDecoration = 'none'; }}
                           >
                             #{failure.linkedOccurrence.id} - {failure.linkedOccurrence.title}
                           </span>
@@ -369,36 +447,43 @@ export function FailuresDuplicadosView({
                       )}
 
                       {failure.linkedReason && (
-                        <p className="text-xs text-muted-foreground mt-1 italic">
+                        <div style={{
+                          marginTop: 4, fontSize: 11, color: '#9CA3AF', fontStyle: 'italic',
+                        }}>
                           Razón: {failure.linkedReason}
-                        </p>
+                        </div>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1 ml-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
+                    {/* Action buttons */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 12, flexShrink: 0 }}>
+                      <button
                         onClick={() => onSelectFailure?.(failure.id)}
                         title="Ver detalle"
+                        style={{
+                          width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: 'transparent', border: '1px solid #E4E4E8', borderRadius: 6,
+                          cursor: 'pointer', color: '#9CA3AF', transition: 'all 150ms',
+                        }}
                       >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive/80"
+                        <Eye style={{ width: 14, height: 14 }} />
+                      </button>
+                      <button
                         onClick={() => handleUnlink(failure)}
                         title="Desvincular"
+                        style={{
+                          width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: 'transparent', border: '1px solid #FECACA', borderRadius: 6,
+                          cursor: 'pointer', color: '#EF4444', transition: 'all 150ms',
+                        }}
                       >
-                        <Unlink className="h-4 w-4" />
-                      </Button>
+                        <Unlink style={{ width: 14, height: 14 }} />
+                      </button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

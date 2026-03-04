@@ -8,14 +8,20 @@ import { getPusherClient } from "@/lib/pusher/client";
  * Subscribe to Pusher company channels and auto-invalidate TanStack Query caches.
  * Mount once in the app layout — all pages benefit automatically.
  */
-export function usePusherSync(companyId: number | undefined) {
+export function usePusherSync(
+  companyId: number | undefined,
+  options?: { refreshUser?: () => Promise<void> }
+) {
   const queryClient = useQueryClient();
   const subscribedRef = useRef<string[]>([]);
+  const refreshUserRef = useRef(options?.refreshUser);
+  refreshUserRef.current = options?.refreshUser;
 
   useEffect(() => {
     if (!companyId) return;
 
     const pusher = getPusherClient();
+    if (!pusher) return;
     const channels: string[] = [];
 
     // ── Tasks channel ──────────────────────────────────────────
@@ -116,6 +122,20 @@ export function usePusherSync(companyId: number | undefined) {
     };
     toolsCh.bind("tool:created", invalidateTools);
     toolsCh.bind("tool:updated", invalidateTools);
+
+    // ── Permissions channel ─────────────────────────────────────────
+    const permsCh = pusher.subscribe(`private-company-${companyId}-permissions`);
+    channels.push(`private-company-${companyId}-permissions`);
+
+    const invalidatePermissions = () => {
+      queryClient.invalidateQueries({ queryKey: ["permissions"] });
+      queryClient.invalidateQueries({ queryKey: ["user-permissions"] });
+      queryClient.invalidateQueries({ queryKey: ["roles"] });
+      // Refresh the current user's permissions in AuthContext
+      refreshUserRef.current?.();
+    };
+    permsCh.bind("permissions:updated", invalidatePermissions);
+    permsCh.bind("permissions:role-changed", invalidatePermissions);
 
     subscribedRef.current = channels;
 

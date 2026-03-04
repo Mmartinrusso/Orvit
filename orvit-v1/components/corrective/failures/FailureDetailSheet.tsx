@@ -3,15 +3,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   Clock,
   AlertTriangle,
@@ -37,55 +40,61 @@ import {
   Paperclip,
   ClipboardCheck,
   X,
+  Activity,
+  Eye,
+  ChevronRight,
+  Cpu,
+  Hash,
+  User,
+  Calendar,
+  Timer,
+  Link2,
+  Shield,
 } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { formatDistanceToNow, format, differenceInMinutes } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { Input } from '@/components/ui/input';
+import { useCompany } from '@/contexts/CompanyContext';
 import dynamic from 'next/dynamic';
 
 const ReturnToProductionDialog = dynamic(() => import('./ReturnToProductionDialog').then(m => ({ default: m.ReturnToProductionDialog })), { ssr: false });
 const ImmediateCloseDialog = dynamic(() => import('./ImmediateCloseDialog').then(m => ({ default: m.ImmediateCloseDialog })), { ssr: false });
-const RecurrencePanel = dynamic(() => import('./RecurrencePanel').then(m => ({ default: m.RecurrencePanel })), { ssr: false });
+const RecurrencePanel = dynamic(() => import('./RecurrencePanel'), { ssr: false });
 const ReopenFailureDialog = dynamic(() => import('./ReopenFailureDialog').then(m => ({ default: m.ReopenFailureDialog })), { ssr: false });
+
+// ─── Interfaces ───
 
 interface Comment {
   id: number;
   content: string;
   type?: string;
   createdAt: string;
-  author?: {
-    id: number;
-    name: string;
-    email?: string;
-  };
+  updatedAt?: string;
+  author?: { id: number; name: string; email?: string };
+}
+
+interface TimelineEvent {
+  id: string;
+  type: string;
+  occurredAt: string;
+  title: string;
+  description?: string;
+  performedBy?: { id: number; name: string };
+  metadata?: Record<string, any>;
 }
 
 interface FailureDetailSheetProps {
   failureId: number | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Tab to open by default (info, recurrence, duplicates, downtime, solutions, comments) */
   initialTab?: string;
-  /** Navigate to another failure (e.g. from recurrence panel) */
   onSelectFailure?: (id: number) => void;
 }
 
 interface FailureDetail {
   id: number;
+  companyId?: number;
   title: string;
   description?: string;
   priority: string;
@@ -96,33 +105,63 @@ interface FailureDetail {
   isSafetyRelated?: boolean;
   reportedAt: string;
   resolvedAt?: string;
-  // Síntomas expandidos
+  resolvedImmediately?: boolean;
+  notes?: string;
+  failureCategory?: string;
+  incidentType?: string;
+  // Reopen
+  reopenedFrom?: number;
+  reopenReason?: string;
+  reopenedAt?: string;
+  reopenedById?: number;
+  // Duplicate link
+  isLinkedDuplicate?: boolean;
+  linkedToOccurrenceId?: number;
+  linkedReason?: string;
+  linkedAt?: string;
+  // Correction
+  correctedAt?: string;
+  originalReport?: {
+    title?: string;
+    description?: string;
+    machineId?: number;
+    subcomponentId?: number;
+    failureCategory?: string;
+    incidentType?: string;
+  } | null;
+  // Symptoms
   symptomsList?: Array<{ id: number; label: string }>;
-  // Fotos adjuntas
-  photos?: Array<{ url: string; uploadedAt?: string }>;
+  // Photos
+  photos?: Array<{ url: string; fileName?: string; originalName?: string; uploadedAt?: string }>;
+  // Machine (expanded)
   machine?: {
     id: number;
     name: string;
+    nickname?: string;
+    serialNumber?: string;
+    type?: string;
+    brand?: string;
+    model?: string;
+    status?: string;
   };
-  component?: {
-    id: number;
-    name: string;
-  };
-  subcomponent?: {
-    id: number;
-    name: string;
-  };
-  // Múltiples componentes/subcomponentes
+  component?: { id: number; name: string };
+  subcomponent?: { id: number; name: string };
   components?: Array<{ id: number; name: string }>;
   subcomponents?: Array<{ id: number; name: string }>;
-  reportedBy?: {
-    id: number;
-    name: string;
-  };
+  reportedBy?: { id: number; name: string };
+  // Failure type catalog
+  failureType?: { id: number; title: string; failure_type?: string; priority?: string };
+  // Work Orders (expanded)
   workOrders?: Array<{
     id: number;
     status: string;
     title: string;
+    priority?: string;
+    type?: string;
+    assignedToId?: number;
+    scheduledDate?: string;
+    completedDate?: string;
+    assignedTo?: { id: number; name: string; email?: string };
   }>;
   downtimeLogs?: Array<{
     id: number;
@@ -130,14 +169,13 @@ interface FailureDetail {
     endedAt?: string | null;
     totalMinutes?: number;
     workOrderId?: number | null;
-    machine?: {
-      id: number;
-      name: string;
-    };
+    machine?: { id: number; name: string };
   }>;
   linkedDuplicates?: Array<{
     id: number;
+    title?: string;
     reportedAt: string;
+    linkedReason?: string;
     reportedBy?: { id?: number; name: string };
   }>;
   solutionsApplied?: Array<{
@@ -151,9 +189,9 @@ interface FailureDetail {
     effectiveness?: number;
     confirmedCause?: string;
     repairAction?: string;
-    toolsUsed?: Array<{ id: number; name: string; quantity?: number }> | null;
-    sparePartsUsed?: Array<{ id: number; name: string; quantity: number }> | null;
-    attachments?: Array<{ url: string; type: string; filename: string }> | null;
+    toolsUsed?: any;
+    sparePartsUsed?: any;
+    attachments?: any;
     notes?: string;
     finalComponentId?: number;
     finalSubcomponentId?: number;
@@ -172,20 +210,16 @@ interface FailureDetail {
       delayMinutes: number;
     }>;
   }>;
-  incidentType?: string;
-  failureCategory?: string;
-  correctedAt?: string;
-  originalReport?: {
-    title?: string;
-    description?: string;
-    machineId?: number;
-    subcomponentId?: number;
-    failureCategory?: string;
-    incidentType?: string;
-  } | null;
+  computed?: {
+    minutesSinceReport: number;
+    hoursSinceReport: number;
+    hasActiveDowntime: boolean;
+    totalDowntimeMinutes: number;
+  };
 }
 
-/** Safely parse a JSON field that may come back as string or already-parsed object/array */
+// ─── Constants ───
+
 function parseJsonArr<T>(field: T[] | string | null | undefined): T[] {
   if (!field) return [];
   if (Array.isArray(field)) return field;
@@ -195,67 +229,17 @@ function parseJsonArr<T>(field: T[] | string | null | undefined): T[] {
   return [];
 }
 
-const priorityColors: Record<string, string> = {
-  P1: 'bg-destructive',
-  P2: 'bg-warning',
-  P3: 'bg-blue-500',
-  P4: 'bg-info',
-  URGENT: 'bg-destructive',
-  HIGH: 'bg-warning',
-  MEDIUM: 'bg-blue-500',
-  LOW: 'bg-info',
+const STATUS_CHIP: Record<string, { bg: string; text: string; dot: string; label: string }> = {
+  REPORTED: { bg: '#F3F4F6', text: '#6B7280', dot: '#9CA3AF', label: 'Reportada' },
+  OPEN: { bg: '#EFF6FF', text: '#1D4ED8', dot: '#3B82F6', label: 'Abierta' },
+  IN_PROGRESS: { bg: '#111827', text: '#FFFFFF', dot: '#FFFFFF', label: 'En Progreso' },
+  RESOLVED: { bg: '#ECFDF5', text: '#059669', dot: '#059669', label: 'Solucionada' },
+  RESOLVED_IMMEDIATE: { bg: '#ECFDF5', text: '#059669', dot: '#059669', label: 'Solucionada' },
+  CANCELLED: { bg: '#FEE2E2', text: '#DC2626', dot: '#DC2626', label: 'Cancelada' },
+  CLOSED: { bg: '#F3F4F6', text: '#6B7280', dot: '#6B7280', label: 'Cerrada' },
 };
 
-const statusLabels: Record<string, string> = {
-  REPORTED: 'Reportada',
-  IN_PROGRESS: 'En Progreso',
-  RESOLVED: 'Solucionada',
-  RESOLVED_IMMEDIATE: 'Solucionada',
-  CLOSED: 'Cerrada',
-};
-
-const statusColors: Record<string, string> = {
-  REPORTED: 'bg-warning-muted text-warning-muted-foreground',
-  IN_PROGRESS: 'bg-info-muted text-info-muted-foreground',
-  RESOLVED: 'bg-success-muted text-success',
-  RESOLVED_IMMEDIATE: 'bg-success-muted text-success',
-  CLOSED: 'bg-muted text-foreground',
-};
-
-const commentTypeConfig: Record<string, { label: string; icon: typeof MessageSquare; badgeClass: string }> = {
-  comment: {
-    label: 'Comentario',
-    icon: MessageSquare,
-    badgeClass: 'bg-muted text-muted-foreground border-border',
-  },
-  update: {
-    label: 'Actualización',
-    icon: Info,
-    badgeClass: 'bg-success-muted text-success border-success-muted',
-  },
-  issue: {
-    label: 'Problema',
-    icon: AlertTriangle,
-    badgeClass: 'bg-destructive/10 text-destructive border-destructive/20',
-  },
-  system: {
-    label: 'Sistema',
-    icon: Info,
-    badgeClass: 'bg-info-muted text-info-muted-foreground border-info-muted',
-  },
-};
-
-const STATUS_CHIP_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  REPORTED: { bg: '#F3F4F6', text: '#6B7280', dot: '#9CA3AF' },
-  OPEN: { bg: '#EFF6FF', text: '#1D4ED8', dot: '#3B82F6' },
-  IN_PROGRESS: { bg: '#111827', text: '#FFFFFF', dot: '#FFFFFF' },
-  RESOLVED: { bg: '#ECFDF5', text: '#059669', dot: '#059669' },
-  RESOLVED_IMMEDIATE: { bg: '#ECFDF5', text: '#059669', dot: '#059669' },
-  CANCELLED: { bg: '#FEE2E2', text: '#DC2626', dot: '#DC2626' },
-  CLOSED: { bg: '#F3F4F6', text: '#6B7280', dot: '#6B7280' },
-};
-
-const PRIORITY_CHIP_COLORS: Record<string, { bg: string; text: string }> = {
+const PRIORITY_CHIP: Record<string, { bg: string; text: string }> = {
   P1: { bg: '#FEE2E2', text: '#DC2626' },
   P2: { bg: '#FEF3C7', text: '#D97706' },
   P3: { bg: '#EFF6FF', text: '#1D4ED8' },
@@ -266,9 +250,101 @@ const PRIORITY_CHIP_COLORS: Record<string, { bg: string; text: string }> = {
   LOW: { bg: '#F3F4F6', text: '#6B7280' },
 };
 
-/**
- * Sheet de detalle de falla con tabs
- */
+const CATEGORY_LABELS: Record<string, string> = {
+  MECANICA: 'Mecánica',
+  ELECTRICA: 'Eléctrica',
+  HIDRAULICA: 'Hidráulica',
+  NEUMATICA: 'Neumática',
+  OTRA: 'Otra',
+};
+
+const MACHINE_STATUS_LABELS: Record<string, { label: string; bg: string; text: string }> = {
+  ACTIVE: { label: 'Activa', bg: '#ECFDF5', text: '#059669' },
+  INACTIVE: { label: 'Inactiva', bg: '#F3F4F6', text: '#6B7280' },
+  MAINTENANCE: { label: 'En Mantenimiento', bg: '#FEF3C7', text: '#D97706' },
+  DECOMMISSIONED: { label: 'Fuera de servicio', bg: '#FEE2E2', text: '#DC2626' },
+};
+
+const WO_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pendiente',
+  IN_PROGRESS: 'En Progreso',
+  COMPLETED: 'Completada',
+  CANCELLED: 'Cancelada',
+  ON_HOLD: 'En Espera',
+};
+
+const OUTCOME_STYLE: Record<string, { bg: string; text: string; label: string }> = {
+  'FUNCIONÓ': { bg: '#ECFDF5', text: '#059669', label: 'Funcionó' },
+  'PARCIAL': { bg: '#FEF3C7', text: '#D97706', label: 'Parcial' },
+  'NO_FUNCIONÓ': { bg: '#FEE2E2', text: '#DC2626', label: 'No Funcionó' },
+};
+
+const TIMELINE_ICONS: Record<string, { color: string; bg: string }> = {
+  REPORTED: { color: '#3B82F6', bg: '#EFF6FF' },
+  OCCURRENCE: { color: '#F59E0B', bg: '#FEF3C7' },
+  STATUS_CHANGE: { color: '#6B7280', bg: '#F3F4F6' },
+  PRIORITY_CHANGE: { color: '#DC2626', bg: '#FEE2E2' },
+  ASSIGNED: { color: '#7C3AED', bg: '#F5F3FF' },
+  WORK_ORDER_CREATED: { color: '#2563EB', bg: '#EFF6FF' },
+  WORK_ORDER_STARTED: { color: '#D97706', bg: '#FEF3C7' },
+  WORK_ORDER_CLOSED: { color: '#059669', bg: '#ECFDF5' },
+  SOLUTION_APPLIED: { color: '#059669', bg: '#ECFDF5' },
+  COMMENT_ADDED: { color: '#6B7280', bg: '#F3F4F6' },
+  DOWNTIME_STARTED: { color: '#DC2626', bg: '#FEE2E2' },
+  DOWNTIME_ENDED: { color: '#059669', bg: '#ECFDF5' },
+  LINKED_DUPLICATE: { color: '#7C3AED', bg: '#F5F3FF' },
+  RCA_CREATED: { color: '#0891B2', bg: '#ECFEFF' },
+  CHECKLIST_COMPLETED: { color: '#059669', bg: '#ECFDF5' },
+};
+
+const COMMENT_TYPES: Record<string, { label: string; color: string; bg: string }> = {
+  comment: { label: 'Comentario', color: '#6B7280', bg: '#F3F4F6' },
+  update: { label: 'Actualización', color: '#059669', bg: '#ECFDF5' },
+  issue: { label: 'Problema', color: '#DC2626', bg: '#FEE2E2' },
+  system: { label: 'Sistema', color: '#2563EB', bg: '#EFF6FF' },
+};
+
+// ─── Helpers ───
+
+const getInitials = (name: string) =>
+  name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
+const formatDuration = (minutes: number) => {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m} min`;
+};
+
+// Chip component
+const Chip = ({ bg, text, dot, label, style }: { bg: string; text: string; dot?: string; label: string; style?: React.CSSProperties }) => (
+  <span style={{
+    display: 'inline-flex', alignItems: 'center', gap: '4px',
+    fontSize: '11px', fontWeight: 600,
+    padding: '2px 10px', borderRadius: '6px',
+    background: bg, color: text,
+    ...style,
+  }}>
+    {dot && <span style={{ height: '5px', width: '5px', borderRadius: '50%', background: dot }} />}
+    {label}
+  </span>
+);
+
+// Section label
+const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+  <p style={{ fontSize: '11px', fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
+    {children}
+  </p>
+);
+
+// Info row
+const InfoCard = ({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) => (
+  <div style={{ border: '1px solid #E4E4E8', borderRadius: '8px', padding: '12px', ...style }}>
+    {children}
+  </div>
+);
+
+// ─── Main Component ───
+
 export function FailureDetailSheet({
   failureId,
   open,
@@ -278,24 +354,36 @@ export function FailureDetailSheet({
 }: FailureDetailSheetProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [chatMessage, setChatMessage] = useState('');
-  const [commentType, setCommentType] = useState<'comment' | 'update' | 'issue'>('comment');
+  const { user: currentUser } = useAuth();
+  const { currentCompany } = useCompany();
   const chatScrollRef = useRef<HTMLDivElement>(null);
-  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
-  const [immediateCloseOpen, setImmediateCloseOpen] = useState(false);
-  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+
+  // State
   const [activeTab, setActiveTab] = useState(initialTab || 'info');
   const [openAnim, setOpenAnim] = useState(false);
   const prevOpenRef = useRef(false);
+  const [chatMessage, setChatMessage] = useState('');
+  const [commentType, setCommentType] = useState<'comment' | 'update' | 'issue'>('comment');
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [immediateCloseOpen, setImmediateCloseOpen] = useState(false);
+  const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
+  const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null);
+  const [hoveredCommentId, setHoveredCommentId] = useState<number | null>(null);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionStart, setMentionStart] = useState<number | null>(null);
+  const mentionedUserIds = useRef<Set<number>>(new Set());
+  const chatTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const [selectedDowntimeLog, setSelectedDowntimeLog] = useState<{
+    id: number; startedAt: string; endedAt?: string | null; workOrderId?: number | null; machine?: { id: number; name: string };
+  } | null>(null);
 
-  // Update active tab when initialTab changes (e.g., from URL)
-  useEffect(() => {
-    if (initialTab) {
-      setActiveTab(initialTab);
-    }
-  }, [initialTab]);
+  // Tab sync
+  useEffect(() => { if (initialTab) setActiveTab(initialTab); }, [initialTab]);
 
-  // Trigger unfold animation when panel opens
+  // Open animation
   useEffect(() => {
     if (open && !prevOpenRef.current) {
       setOpenAnim(true);
@@ -306,7 +394,7 @@ export function FailureDetailSheet({
     if (!open) prevOpenRef.current = false;
   }, [open]);
 
-  // Close on ESC
+  // ESC close
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onOpenChange(false); };
@@ -314,15 +402,7 @@ export function FailureDetailSheet({
     return () => document.removeEventListener('keydown', handler);
   }, [open, onOpenChange]);
 
-  const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
-
-  const [selectedDowntimeLog, setSelectedDowntimeLog] = useState<{
-    id: number;
-    startedAt: string;
-    endedAt?: string | null;
-    workOrderId?: number | null;
-    machine?: { id: number; name: string };
-  } | null>(null);
+  // ─── Queries ───
 
   const { data: failure, isLoading } = useQuery<FailureDetail>({
     queryKey: ['failure-detail', failureId],
@@ -336,11 +416,7 @@ export function FailureDetailSheet({
     enabled: !!failureId && open,
   });
 
-  // Query para comentarios
-  const { data: commentsData, isLoading: isLoadingComments } = useQuery<{
-    data: Comment[];
-    count: number;
-  }>({
+  const { data: commentsData, isLoading: isLoadingComments } = useQuery<{ data: Comment[]; count: number }>({
     queryKey: ['failure-comments', failureId],
     queryFn: async () => {
       if (!failureId) throw new Error('No failure ID');
@@ -349,17 +425,11 @@ export function FailureDetailSheet({
       return res.json();
     },
     enabled: !!failureId && open,
-    refetchInterval: 30000, // Refrescar cada 30 segundos
+    refetchInterval: 30000,
   });
-
   const comments = commentsData?.data || [];
 
-  // Query para watchers
-  const { data: watchersData } = useQuery<{
-    isWatching: boolean;
-    count: number;
-    watchers: Array<{ id: number; user: { id: number; name: string } }>;
-  }>({
+  const { data: watchersData } = useQuery<{ isWatching: boolean; count: number; watchers: Array<{ id: number; user: { id: number; name: string } }> }>({
     queryKey: ['failure-watchers', failureId],
     queryFn: async () => {
       if (!failureId) throw new Error('No failure ID');
@@ -369,11 +439,43 @@ export function FailureDetailSheet({
     },
     enabled: !!failureId && open,
   });
-
   const isWatching = watchersData?.isWatching ?? false;
   const watchersList = watchersData?.watchers ?? [];
 
-  // Mutation para watch/unwatch
+  // Timeline query
+  const { data: timelineData, isLoading: isLoadingTimeline } = useQuery<{ timeline: TimelineEvent[]; totalEvents: number }>({
+    queryKey: ['failure-timeline', failureId],
+    queryFn: async () => {
+      if (!failureId) throw new Error('No failure ID');
+      const res = await fetch(`/api/failure-occurrences/${failureId}/timeline`);
+      if (!res.ok) throw new Error('Error al cargar timeline');
+      return res.json();
+    },
+    enabled: !!failureId && open && activeTab === 'timeline',
+  });
+  const timeline = timelineData?.timeline || [];
+
+  // Users for @mentions — derive companyId from failure data (already loaded)
+  const companyId = failure?.companyId || currentCompany?.id;
+  const { data: mentionUsersData } = useQuery<{ id: number; name: string }[]>({
+    queryKey: ['company-users-mentions', companyId],
+    queryFn: async () => {
+      const res = await fetch(`/api/companies/${companyId}/users`);
+      if (!res.ok) return [];
+      const json = await res.json();
+      const users = json.users || json.data || json;
+      return Array.isArray(users) ? users.map((u: any) => ({ id: u.id, name: u.name })) : [];
+    },
+    enabled: !!companyId,
+    staleTime: 5 * 60 * 1000,
+  });
+  const mentionMembers = mentionUsersData || [];
+  const filteredMentions = mentionQuery !== null
+    ? mentionMembers.filter(m => m.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 5)
+    : [];
+
+  // ─── Mutations ───
+
   const watchMutation = useMutation({
     mutationFn: async (action: 'watch' | 'unwatch') => {
       const res = await fetch(`/api/failure-occurrences/${failureId}/watchers`, {
@@ -381,33 +483,24 @@ export function FailureDetailSheet({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
       });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Error');
-      }
+      if (!res.ok) { const error = await res.json(); throw new Error(error.error || 'Error'); }
       return res.json();
     },
     onSuccess: (_, action) => {
       toast.success(action === 'watch' ? 'Siguiendo falla' : 'Dejaste de seguir');
       queryClient.invalidateQueries({ queryKey: ['failure-watchers', failureId] });
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
-  // Mutation para enviar comentario
   const sendCommentMutation = useMutation({
-    mutationFn: async ({ content, type }: { content: string; type: 'comment' | 'update' | 'issue' }) => {
+    mutationFn: async ({ content, type }: { content: string; type: string }) => {
       const res = await fetch(`/api/failure-occurrences/${failureId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content, type }),
       });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Error al enviar comentario');
-      }
+      if (!res.ok) { const error = await res.json(); throw new Error(error.error || 'Error al enviar comentario'); }
       return res.json();
     },
     onSuccess: () => {
@@ -415,17 +508,9 @@ export function FailureDetailSheet({
       setCommentType('comment');
       queryClient.invalidateQueries({ queryKey: ['failure-comments', failureId] });
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
-  // Edit/delete comment state
-  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
-  const [editingContent, setEditingContent] = useState('');
-  const { user: currentUser } = useAuth();
-
-  // Mutation para editar comentario
   const editCommentMutation = useMutation({
     mutationFn: async ({ commentId, content }: { commentId: number; content: string }) => {
       const res = await fetch(`/api/failure-occurrences/${failureId}/comments`, {
@@ -433,10 +518,7 @@ export function FailureDetailSheet({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ commentId, content }),
       });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Error al editar');
-      }
+      if (!res.ok) { const error = await res.json(); throw new Error(error.error || 'Error al editar'); }
       return res.json();
     },
     onSuccess: () => {
@@ -448,7 +530,6 @@ export function FailureDetailSheet({
     onError: (error: Error) => toast.error(error.message),
   });
 
-  // Mutation para eliminar comentario
   const deleteCommentMutation = useMutation({
     mutationFn: async (commentId: number) => {
       const res = await fetch(`/api/failure-occurrences/${failureId}/comments`, {
@@ -456,10 +537,7 @@ export function FailureDetailSheet({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ commentId }),
       });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Error al eliminar');
-      }
+      if (!res.ok) { const error = await res.json(); throw new Error(error.error || 'Error al eliminar'); }
       return res.json();
     },
     onSuccess: () => {
@@ -469,12 +547,14 @@ export function FailureDetailSheet({
     onError: (error: Error) => toast.error(error.message),
   });
 
-  // Scroll al fondo cuando hay nuevos comentarios
+  // Scroll on new comments
   useEffect(() => {
     if (chatScrollRef.current && comments.length > 0) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
   }, [comments.length]);
+
+  // ─── Handlers ───
 
   const handleSendComment = () => {
     if (!chatMessage.trim()) return;
@@ -482,44 +562,64 @@ export function FailureDetailSheet({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendComment();
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleSendComment(); }
+    if (e.key === 'Escape') setMentionQuery(null);
+  };
+
+  const handleChatInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    setChatMessage(text);
+    const cursor = e.target.selectionStart ?? text.length;
+    const textUpToCursor = text.slice(0, cursor);
+    const atMatch = textUpToCursor.match(/@(\w*)$/);
+    if (atMatch) {
+      setMentionQuery(atMatch[1]);
+      setMentionStart(cursor - atMatch[0].length);
+    } else {
+      setMentionQuery(null);
+      setMentionStart(null);
     }
   };
 
-  // Obtener iniciales del nombre
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+  const handleSelectMention = (user: { id: number; name: string }) => {
+    if (mentionStart === null) return;
+    const cursorPos = chatTextareaRef.current?.selectionStart ?? chatMessage.length;
+    const before = chatMessage.slice(0, mentionStart);
+    const after = chatMessage.slice(cursorPos);
+    setChatMessage(`${before}@${user.name} ${after}`);
+    mentionedUserIds.current.add(user.id);
+    setMentionQuery(null);
+    setMentionStart(null);
+    setTimeout(() => chatTextareaRef.current?.focus(), 0);
   };
 
-  // Navegar a la orden de trabajo existente
-  const handleGoToWorkOrder = (woId: number) => {
-    onOpenChange(false);
-    router.push(`/mantenimiento/ordenes?workOrderId=${woId}`);
-  };
-
-  // Navegar al mantenimiento correctivo (para soluciones)
-  const handleGoToMaintenance = (woId: number) => {
-    onOpenChange(false);
-    router.push(`/mantenimiento/mantenimientos?correctiveId=${woId}`);
-  };
-
-  // Navegar a crear nueva OT (si no existe)
-  const handleCreateWorkOrder = () => {
-    onOpenChange(false);
-    router.push(`/mantenimiento/ordenes?newFromFailure=${failureId}`);
-  };
+  const handleGoToWorkOrder = (woId: number) => { onOpenChange(false); router.push(`/mantenimiento/ordenes?workOrderId=${woId}`); };
+  const handleGoToMaintenance = (woId: number) => { onOpenChange(false); router.push(`/mantenimiento/mantenimientos?correctiveId=${woId}`); };
+  const handleCreateWorkOrder = () => { onOpenChange(false); router.push(`/mantenimiento/ordenes?newFromFailure=${failureId}`); };
 
   const hasWorkOrder = (failure?.workOrders?.length ?? 0) > 0;
+  const sChip = STATUS_CHIP[failure?.status || ''] || STATUS_CHIP.REPORTED;
+  const pChip = PRIORITY_CHIP[failure?.priority || ''] || PRIORITY_CHIP.P3;
 
-  const sChip = STATUS_CHIP_COLORS[failure?.status || ''] || STATUS_CHIP_COLORS.REPORTED;
-  const pChip = PRIORITY_CHIP_COLORS[failure?.priority || ''] || PRIORITY_CHIP_COLORS.P3;
+  // Priority accent for modal top border
+  const priorityAccent = (() => {
+    const p = failure?.priority || '';
+    if (p === 'URGENT' || p === 'P1') return '#DC2626';
+    if (p === 'HIGH' || p === 'P2') return '#D97706';
+    if (p === 'MEDIUM' || p === 'P3') return '#2563EB';
+    return '#9CA3AF';
+  })();
+
+  // Tab definitions
+  const tabs = [
+    { value: 'info', label: 'Info' },
+    { value: 'timeline', label: 'Actividad' },
+    { value: 'recurrence', label: 'Reincidencia' },
+    { value: 'duplicates', label: 'Duplicados', count: failure?.linkedDuplicates?.length },
+    { value: 'downtime', label: 'Paradas', hasActive: failure?.downtimeLogs?.some(d => !d.endedAt) },
+    { value: 'solutions', label: 'Soluciones', count: failure?.solutionsApplied?.length },
+    { value: 'comments', label: 'Chat', count: comments.length || undefined },
+  ];
 
   return (
     <>
@@ -537,8 +637,8 @@ export function FailureDetailSheet({
         from { opacity: 0; backdrop-filter: blur(0px); }
         to   { opacity: 1; backdrop-filter: blur(6px); }
       }
-      .failure-detail-scroll { scrollbar-width: none; -ms-overflow-style: none; overflow-y: auto; height: 100%; flex: 1; min-height: 0; }
-      .failure-detail-scroll::-webkit-scrollbar { display: none; }
+      .fd-scroll { scrollbar-width: none; -ms-overflow-style: none; overflow-y: auto; height: 100%; flex: 1; min-height: 0; }
+      .fd-scroll::-webkit-scrollbar { display: none; }
     `}</style>
 
     {/* Backdrop */}
@@ -548,8 +648,7 @@ export function FailureDetailSheet({
         style={{
           position: 'fixed', inset: 0, zIndex: 50,
           background: 'rgba(0,0,0,0.40)',
-          backdropFilter: 'blur(6px)',
-          WebkitBackdropFilter: 'blur(6px)',
+          backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
           animation: 'failure-backdrop-in 300ms ease both',
         }}
       />
@@ -561,486 +660,556 @@ export function FailureDetailSheet({
       style={{
         position: 'fixed', inset: 0, zIndex: 51,
         display: open ? 'flex' : 'none',
-        alignItems: 'center', justifyContent: 'center',
-        padding: '16px',
+        alignItems: 'center', justifyContent: 'center', padding: '16px',
       }}
     >
       {/* Modal box */}
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: '1020px',
-          maxWidth: '95vw',
-          height: '920px',
-          maxHeight: '96vh',
+          width: '1020px', maxWidth: '95vw', height: '920px', maxHeight: '96vh',
           background: '#FFFFFF',
-          border: '1.5px solid #D8D8DE',
-          borderRadius: '10px',
+          border: '1.5px solid #D8D8DE', borderRadius: '10px',
+          borderTop: `3px solid ${priorityAccent}`,
           boxShadow: '0 4px 32px rgba(0,0,0,.12), 0 1px 4px rgba(0,0,0,.06)',
-          display: 'flex', flexDirection: 'column',
-          overflow: 'hidden',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
           transformOrigin: 'center center',
           animation: openAnim ? 'failure-modal-unfold 950ms cubic-bezier(.22,1,.36,1) both' : undefined,
         }}
       >
         {isLoading ? (
-            <div style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <Skeleton className="h-6 w-20 rounded-md" />
-                <Skeleton className="h-6 w-16 rounded-md" />
-              </div>
-              <Skeleton className="h-7 w-3/4 rounded-md mb-3" />
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
-                <Skeleton className="h-5 w-24 rounded" />
-                <Skeleton className="h-5 w-20 rounded" />
-                <Skeleton className="h-5 w-16 rounded" />
-              </div>
-              <Skeleton className="h-10 w-full rounded-lg mb-4" />
-              <Skeleton className="h-48 w-full rounded-lg mb-3" />
-              <Skeleton className="h-32 w-full rounded-lg" />
-            </div>
-          ) : failure ? (
-            <>
-              {/* ── Header ── */}
-              <div style={{
-                padding: '18px 24px',
-                borderBottom: '1px solid #E4E4E8',
-                flexShrink: 0,
-                animation: openAnim ? 'failure-content-reveal 420ms cubic-bezier(.22,1,.36,1) 320ms both' : undefined,
-              }}>
-                {/* Top row: status chip + badges + actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-                  {/* Status chip */}
+          <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {[120, 200, 80, 300, 160].map((w, i) => (
+              <div key={i} style={{ height: i === 3 ? '48px' : '20px', width: `${w}px`, maxWidth: '100%', background: '#F3F4F6', borderRadius: '6px', animation: 'pulse 2s infinite' }} />
+            ))}
+          </div>
+        ) : failure ? (
+          <>
+            {/* ── HEADER ── */}
+            <div style={{
+              padding: '18px 24px',
+              borderBottom: '1px solid #E4E4E8',
+              flexShrink: 0,
+              animation: openAnim ? 'failure-content-reveal 420ms cubic-bezier(.22,1,.36,1) 320ms both' : undefined,
+            }}>
+              {/* Top row: chips + actions */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                <Chip bg={sChip.bg} text={sChip.text} dot={sChip.dot} label={sChip.label} />
+                <Chip
+                  bg={pChip.bg} text={pChip.text}
+                  label={failure.priority === 'URGENT' ? 'Urgente' : failure.priority === 'HIGH' ? 'Alta' : failure.priority === 'MEDIUM' ? 'Media' : failure.priority === 'LOW' ? 'Baja' : failure.priority}
+                  style={(failure.priority === 'URGENT' || failure.priority === 'P1') ? { border: `1.5px solid ${pChip.text}`, fontWeight: 700 } : undefined}
+                />
+                <Chip
+                  bg={failure.incidentType === 'ROTURA' ? '#FEE2E2' : '#F4F4F6'}
+                  text={failure.incidentType === 'ROTURA' ? '#DC2626' : '#6B7280'}
+                  label={`${failure.incidentType === 'ROTURA' ? 'Rotura' : 'Falla'} #${failure.id}`}
+                />
+                {/* NEW: failureCategory */}
+                {failure.failureCategory && (
+                  <Chip bg="#F0F9FF" text="#0369A1" label={CATEGORY_LABELS[failure.failureCategory] || failure.failureCategory} />
+                )}
+                {/* NEW: isObservation */}
+                {failure.isObservation && (
+                  <Chip bg="#F5F3FF" text="#7C3AED" label="Observación" style={{ gap: '3px' }} />
+                )}
+                {/* NEW: resolvedImmediately */}
+                {failure.resolvedImmediately && (
+                  <Chip bg="#ECFDF5" text="#059669" label="Cierre rápido" />
+                )}
+                {failure.causedDowntime && (
                   <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '4px',
-                    fontSize: '11px', fontWeight: 600,
-                    padding: '2px 10px', borderRadius: '6px',
-                    background: sChip.bg, color: sChip.text,
+                    display: 'inline-flex', alignItems: 'center', gap: '3px',
+                    fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px',
+                    background: '#FEE2E2', color: '#DC2626',
                   }}>
-                    <span style={{ height: '5px', width: '5px', borderRadius: '50%', background: sChip.dot }} />
-                    {statusLabels[failure.status] || failure.status}
+                    <Clock className="h-3 w-3" /> Parada
                   </span>
-                  {/* Priority chip */}
+                )}
+                {failure.isIntermittent && (
+                  <Chip bg="#FEF3C7" text="#D97706" label="Intermitente" />
+                )}
+                {failure.isSafetyRelated && (
                   <span style={{
-                    fontSize: '11px', fontWeight: 600,
-                    padding: '2px 10px', borderRadius: '6px',
-                    background: pChip.bg, color: pChip.text,
+                    display: 'inline-flex', alignItems: 'center', gap: '3px',
+                    fontSize: '11px', fontWeight: 600, padding: '2px 8px', borderRadius: '6px',
+                    background: '#FEE2E2', color: '#DC2626',
                   }}>
-                    {failure.priority}
+                    <Shield className="h-3 w-3" /> Seguridad
                   </span>
-                  {/* Type badge */}
-                  <span style={{
-                    fontSize: '11px', fontWeight: 600,
-                    padding: '2px 10px', borderRadius: '6px',
-                    background: failure.incidentType === 'ROTURA' ? '#FEE2E2' : '#F4F4F6',
-                    color: failure.incidentType === 'ROTURA' ? '#DC2626' : '#6B7280',
-                  }}>
-                    {failure.incidentType === 'ROTURA' ? 'Rotura' : 'Falla'} #{failure.id}
-                  </span>
-                  {failure.causedDowntime && (
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '3px',
-                      fontSize: '11px', fontWeight: 600,
-                      padding: '2px 8px', borderRadius: '6px',
-                      background: '#FEE2E2', color: '#DC2626',
-                    }}>
-                      <Clock className="h-3 w-3" /> Parada
-                    </span>
-                  )}
-                  {failure.isIntermittent && (
-                    <span style={{
-                      fontSize: '11px', fontWeight: 600,
-                      padding: '2px 8px', borderRadius: '6px',
-                      background: '#FEF3C7', color: '#D97706',
-                    }}>
-                      Intermitente
-                    </span>
-                  )}
-                  {failure.isSafetyRelated && (
-                    <span style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '3px',
-                      fontSize: '11px', fontWeight: 600,
-                      padding: '2px 8px', borderRadius: '6px',
-                      background: '#FEE2E2', color: '#DC2626',
-                    }}>
-                      <AlertTriangle className="h-3 w-3" /> Seguridad
-                    </span>
-                  )}
+                )}
 
-                  <div style={{ flex: 1 }} />
+                <div style={{ flex: 1 }} />
 
-                  {/* Watch button */}
-                  <button
-                    onClick={() => watchMutation.mutate(isWatching ? 'unwatch' : 'watch')}
-                    disabled={watchMutation.isPending}
-                    style={{
-                      height: '28px', padding: '0 10px',
-                      borderRadius: '6px', border: '1px solid #E4E4E8',
-                      background: isWatching ? '#F5F3FF' : '#FFFFFF',
-                      color: isWatching ? '#7C3AED' : '#6B7280',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
-                      fontSize: '12px', fontWeight: 500,
-                      transition: 'all 120ms ease',
-                    }}
-                  >
-                    {watchMutation.isPending ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : isWatching ? (
-                      <><BellOff className="h-3 w-3" /> Siguiendo</>
-                    ) : (
-                      <><Bell className="h-3 w-3" /> Seguir</>
-                    )}
-                  </button>
+                {/* Watch button */}
+                <button
+                  onClick={() => watchMutation.mutate(isWatching ? 'unwatch' : 'watch')}
+                  disabled={watchMutation.isPending}
+                  style={{
+                    height: '28px', padding: '0 10px', borderRadius: '6px', border: '1px solid #E4E4E8',
+                    background: isWatching ? '#F5F3FF' : '#FFFFFF', color: isWatching ? '#7C3AED' : '#6B7280',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                    fontSize: '12px', fontWeight: 500, transition: 'all 120ms ease',
+                  }}
+                >
+                  {watchMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> :
+                    isWatching ? <><BellOff className="h-3 w-3" /> Siguiendo</> : <><Bell className="h-3 w-3" /> Seguir</>}
+                </button>
 
-                  {/* Menu */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button style={{
-                        height: '28px', width: '28px', borderRadius: '6px',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer',
-                        transition: 'all 150ms',
-                      }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#F4F4F6'; e.currentTarget.style.color = '#6B7280'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
-                      >
-                        <MoreVertical className="h-3.5 w-3.5" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem className="text-xs gap-2" onClick={() => router.push(`/mantenimiento/incidentes/${failure.id}/editar`)}>
-                        <Pencil className="h-3 w-3" /> Editar Falla
-                      </DropdownMenuItem>
-                      {(failure.status === 'RESOLVED' || failure.status === 'RESOLVED_IMMEDIATE') && (
-                        <DropdownMenuItem className="text-xs gap-2" onClick={() => setReopenDialogOpen(true)}>
-                          <RotateCcw className="h-3 w-3" /> Reabrir Falla
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-
-                  {/* Close button */}
-                  <button
-                    onClick={() => onOpenChange(false)}
-                    style={{
+                {/* Menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button style={{
                       height: '28px', width: '28px', borderRadius: '6px',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer',
-                      transition: 'all 150ms',
                     }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#DC2626'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                      onMouseEnter={e => { e.currentTarget.style.background = '#F4F4F6'; e.currentTarget.style.color = '#6B7280'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
+                    >
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem className="text-xs gap-2" onClick={() => router.push(`/mantenimiento/incidentes/${failure.id}/editar`)}>
+                      <Pencil className="h-3 w-3" /> Editar
+                    </DropdownMenuItem>
+                    {(failure.status === 'RESOLVED' || failure.status === 'RESOLVED_IMMEDIATE') && (
+                      <DropdownMenuItem className="text-xs gap-2" onClick={() => setReopenDialogOpen(true)}>
+                        <RotateCcw className="h-3 w-3" /> Reabrir
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-                {/* Title */}
-                <h2 style={{
-                  fontSize: '22px', fontWeight: 700, color: '#111827',
-                  letterSpacing: '-0.02em', lineHeight: 1.3,
-                  marginBottom: '8px', margin: 0,
-                }}>
-                  {failure.title || 'Sin título'}
-                </h2>
-
-                {/* Meta row: machine + reporter + watchers + dates */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
-                  {failure.machine?.name && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#6B7280' }}>
-                      <span style={{ height: '20px', width: '20px', borderRadius: '6px', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <FileText className="h-3 w-3" style={{ color: '#9CA3AF' }} />
-                      </span>
-                      {failure.machine.name}
-                    </span>
-                  )}
-                  {failure.reportedBy?.name && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#6B7280' }}>
-                      <span style={{
-                        height: '20px', width: '20px', borderRadius: '50%',
-                        background: '#EDE9FE', color: '#7C3AED',
-                        fontSize: '8px', fontWeight: 700,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        {getInitials(failure.reportedBy.name)}
-                      </span>
-                      {failure.reportedBy.name}
-                    </span>
-                  )}
-                  {(watchersData?.count ?? 0) > 0 && (
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#9CA3AF', cursor: 'help' }}>
-                            <Users className="h-3 w-3" />
-                            {watchersData?.count} {watchersData?.count === 1 ? 'seguidor' : 'seguidores'}
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom">
-                          <div className="text-xs">
-                            <p className="font-medium mb-1">Seguidores:</p>
-                            {watchersList.map((w) => (
-                              <p key={w.id}>{w.user.name}</p>
-                            ))}
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                  <span style={{ fontSize: '12px', color: '#D1D5DB' }}>
-                    {format(new Date(failure.reportedAt), "d MMM yyyy · HH:mm", { locale: es })}
-                  </span>
-                </div>
+                {/* Close */}
+                <button
+                  onClick={() => onOpenChange(false)}
+                  style={{
+                    height: '28px', width: '28px', borderRadius: '6px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#DC2626'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </div>
 
-              {/* ── Tabs ── */}
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
-                <div style={{ padding: '0 24px', borderBottom: '1px solid #E4E4E8', flexShrink: 0 }}>
-                  <TabsList className="w-full justify-start overflow-x-auto h-10 bg-transparent border-none p-0 gap-0">
-                    {[
-                      { value: 'info', label: 'Info' },
-                      { value: 'recurrence', label: 'Reincidencia' },
-                      { value: 'duplicates', label: 'Duplicados', count: failure.linkedDuplicates?.length },
-                      { value: 'downtime', label: 'Paradas', hasActive: failure.downtimeLogs?.some(d => !d.endedAt) },
-                      { value: 'solutions', label: 'Soluciones' },
-                      { value: 'comments', label: 'Chat' },
-                    ].map(tab => (
-                      <TabsTrigger
-                        key={tab.value}
-                        value={tab.value}
-                        className="relative px-4 py-2 text-xs font-medium data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground rounded-none border-b-2 border-transparent data-[state=active]:border-[#111827]"
-                      >
-                        {tab.label}
-                        {tab.count != null && tab.count > 0 && (
-                          <span style={{
-                            marginLeft: '4px', fontSize: '10px', fontWeight: 600,
-                            padding: '1px 5px', borderRadius: '8px',
-                            background: '#F3F4F6', color: '#6B7280',
-                          }}>
-                            {tab.count}
-                          </span>
-                        )}
-                        {tab.hasActive && (
-                          <span style={{
-                            marginLeft: '4px', height: '6px', width: '6px',
-                            borderRadius: '50%', background: '#DC2626',
-                            display: 'inline-block',
-                            animation: 'pulse 2s infinite',
-                          }} />
-                        )}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </div>
+              {/* Title */}
+              <h2 style={{ fontSize: '22px', fontWeight: 700, color: '#111827', letterSpacing: '-0.02em', lineHeight: 1.3, margin: 0 }}>
+                {failure.title || 'Sin título'}
+              </h2>
 
-                <div className="failure-detail-scroll" style={{ padding: '0 24px' }}>
-                {/* Tab: Información */}
-                <TabsContent value="info" className="space-y-3 mt-4">
-                  {/* Corrección: mostrar reporte original si fue corregido */}
-                  {failure.originalReport && (
-                    <div className="rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/40 p-3 space-y-2">
-                      <div className="flex items-center gap-1.5">
-                        <AlertTriangle className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400 shrink-0" />
-                        <p className="text-xs font-semibold text-orange-700 dark:text-orange-400">
-                          Falla corregida al cierre
+              {/* Meta row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
+                {failure.machine?.name && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#6B7280' }}>
+                    <span style={{ height: '20px', width: '20px', borderRadius: '6px', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Cpu className="h-3 w-3" style={{ color: '#9CA3AF' }} />
+                    </span>
+                    {failure.machine.nickname || failure.machine.name}
+                  </span>
+                )}
+                {failure.reportedBy?.name && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#6B7280' }}>
+                    <span style={{
+                      height: '20px', width: '20px', borderRadius: '50%',
+                      background: '#EDE9FE', color: '#7C3AED',
+                      fontSize: '8px', fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {getInitials(failure.reportedBy.name)}
+                    </span>
+                    {failure.reportedBy.name}
+                  </span>
+                )}
+                {(watchersData?.count ?? 0) > 0 && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#9CA3AF', cursor: 'help' }}>
+                          <Users className="h-3 w-3" />
+                          {watchersData?.count} {watchersData?.count === 1 ? 'seguidor' : 'seguidores'}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <div style={{ fontSize: '12px' }}>
+                          <p style={{ fontWeight: 600, marginBottom: '4px' }}>Seguidores:</p>
+                          {watchersList.map(w => <p key={w.id}>{w.user.name}</p>)}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                {/* NEW: Time since report */}
+                {failure.computed && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#9CA3AF' }}>
+                    <Timer className="h-3 w-3" />
+                    {failure.computed.hoursSinceReport > 24
+                      ? `${Math.floor(failure.computed.hoursSinceReport / 24)}d`
+                      : failure.computed.hoursSinceReport > 0
+                        ? `${failure.computed.hoursSinceReport}h`
+                        : `${failure.computed.minutesSinceReport}m`}
+                  </span>
+                )}
+                <span style={{ fontSize: '12px', color: '#D1D5DB' }}>
+                  {format(new Date(failure.reportedAt), "d MMM yyyy · HH:mm", { locale: es })}
+                </span>
+              </div>
+            </div>
+
+            {/* ── BANNERS ── */}
+            <div style={{ flexShrink: 0 }}>
+              {/* Reopen banner */}
+              {failure.reopenReason && (
+                <div style={{
+                  padding: '10px 24px', background: '#FEF3C7', borderBottom: '1px solid #FDE68A',
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                }}>
+                  <RotateCcw className="h-3.5 w-3.5" style={{ color: '#D97706', flexShrink: 0 }} />
+                  <span style={{ fontSize: '12px', color: '#92400E', fontWeight: 500 }}>
+                    Reabierta{failure.reopenedAt ? ` el ${format(new Date(failure.reopenedAt), "d MMM HH:mm", { locale: es })}` : ''}
+                    {' — '}{failure.reopenReason}
+                  </span>
+                </div>
+              )}
+              {/* Duplicate banner */}
+              {failure.isLinkedDuplicate && (
+                <div style={{
+                  padding: '10px 24px', background: '#F5F3FF', borderBottom: '1px solid #E9D5FF',
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                }}>
+                  <Link2 className="h-3.5 w-3.5" style={{ color: '#7C3AED', flexShrink: 0 }} />
+                  <span style={{ fontSize: '12px', color: '#6D28D9', fontWeight: 500 }}>
+                    Duplicado de #{failure.linkedToOccurrenceId}
+                    {failure.linkedReason && ` — ${failure.linkedReason}`}
+                  </span>
+                  {failure.linkedToOccurrenceId && onSelectFailure && (
+                    <button
+                      onClick={() => onSelectFailure(failure.linkedToOccurrenceId!)}
+                      style={{ fontSize: '12px', color: '#7C3AED', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                      Ver original
+                    </button>
+                  )}
+                </div>
+              )}
+              {/* Original report correction */}
+              {failure.originalReport && (
+                <div style={{
+                  padding: '10px 24px', background: '#FFF7ED', borderBottom: '1px solid #FED7AA',
+                  display: 'flex', alignItems: 'flex-start', gap: '8px',
+                }}>
+                  <AlertTriangle className="h-3.5 w-3.5" style={{ color: '#EA580C', flexShrink: 0, marginTop: '1px' }} />
+                  <div style={{ fontSize: '12px', color: '#9A3412' }}>
+                    <span style={{ fontWeight: 600 }}>Corregida al cierre</span>
+                    {failure.originalReport.title && (
+                      <span style={{ textDecoration: 'line-through', marginLeft: '8px', opacity: 0.7 }}>
+                        {failure.originalReport.title}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── TABS BAR ── */}
+            <div style={{ padding: '0 24px', borderBottom: '1px solid #E4E4E8', flexShrink: 0, overflowX: 'auto' }}>
+              <div style={{ display: 'flex', gap: '0' }}>
+                {tabs.map(tab => (
+                  <button
+                    key={tab.value}
+                    onClick={() => setActiveTab(tab.value)}
+                    style={{
+                      padding: '10px 16px', fontSize: '12px', fontWeight: 500,
+                      color: activeTab === tab.value ? '#111827' : '#9CA3AF',
+                      background: 'none', border: 'none', borderBottom: `2px solid ${activeTab === tab.value ? '#111827' : 'transparent'}`,
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                      transition: 'all 150ms', whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {tab.label}
+                    {tab.count != null && tab.count > 0 && (
+                      <span style={{
+                        fontSize: '10px', fontWeight: 600, padding: '1px 5px', borderRadius: '8px',
+                        background: '#F3F4F6', color: '#6B7280',
+                      }}>
+                        {tab.count}
+                      </span>
+                    )}
+                    {tab.hasActive && (
+                      <span style={{
+                        height: '6px', width: '6px', borderRadius: '50%', background: '#DC2626',
+                        display: 'inline-block', animation: 'pulse 2s infinite',
+                      }} />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── TAB CONTENT ── */}
+            <div className="fd-scroll" style={{ padding: '16px 24px' }}>
+
+              {/* ═══ INFO TAB ═══ */}
+              {activeTab === 'info' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {/* Description + Notes */}
+                  <InfoCard>
+                    <SectionLabel>Descripción</SectionLabel>
+                    <p style={{ fontSize: '14px', color: '#111827', margin: 0, lineHeight: 1.5 }}>
+                      {failure.description || 'Sin descripción'}
+                    </p>
+                    {failure.notes && (
+                      <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #F3F4F6' }}>
+                        <SectionLabel>Notas</SectionLabel>
+                        <p style={{ fontSize: '13px', color: '#6B7280', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                          {failure.notes}
                         </p>
                       </div>
-                      <p className="text-[10px] text-orange-600 dark:text-orange-500">
-                        Lo que se pensaba inicialmente:
-                      </p>
-                      {failure.originalReport.title && (
-                        <p className="text-xs font-medium text-orange-800 dark:text-orange-300 line-through decoration-orange-400">
-                          {failure.originalReport.title}
-                        </p>
-                      )}
-                      {failure.originalReport.description && (
-                        <p className="text-xs text-orange-700 dark:text-orange-400 line-clamp-2">
-                          {failure.originalReport.description}
-                        </p>
-                      )}
-                      <div className="flex flex-wrap gap-2">
-                        {failure.originalReport.incidentType && (
-                          <span className="text-[10px] bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 rounded px-1.5 py-0.5">
-                            {failure.originalReport.incidentType === 'ROTURA' ? 'Rotura' : 'Falla'}
+                    )}
+                  </InfoCard>
+
+                  {/* Symptoms */}
+                  {failure.symptomsList && failure.symptomsList.length > 0 && (
+                    <InfoCard>
+                      <SectionLabel>Síntomas</SectionLabel>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {failure.symptomsList.map(s => (
+                          <span key={s.id} style={{
+                            fontSize: '12px', fontWeight: 500, padding: '3px 10px', borderRadius: '6px',
+                            background: '#EFF6FF', color: '#1D4ED8',
+                          }}>
+                            {s.label}
                           </span>
-                        )}
-                        {failure.originalReport.failureCategory && (
-                          <span className="text-[10px] bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400 rounded px-1.5 py-0.5">
-                            {failure.originalReport.failureCategory}
-                          </span>
-                        )}
+                        ))}
                       </div>
-                    </div>
+                    </InfoCard>
                   )}
 
-                  <div className="rounded-lg border p-4 space-y-3">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Descripción</p>
-                      <p className="text-sm">{failure.description || 'Sin descripción'}</p>
+                  {/* Photos */}
+                  <InfoCard>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <SectionLabel>Fotos {failure.photos?.length ? `(${failure.photos.length})` : ''}</SectionLabel>
+                      <label style={{ cursor: 'pointer' }}>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            toast.loading('Subiendo foto...', { id: 'photo-upload' });
+                            try {
+                              const formData = new FormData();
+                              formData.append('file', file);
+                              formData.append('entityType', 'failure-occurrence');
+                              formData.append('entityId', failureId?.toString() || '');
+                              formData.append('fileType', 'image');
+                              const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+                              if (!uploadRes.ok) throw new Error('Error al subir');
+                              const uploadData = await uploadRes.json();
+                              const newPhoto = { url: uploadData.url, fileName: uploadData.fileName, originalName: file.name };
+                              const currentPhotos = failure.photos || [];
+                              await fetch(`/api/failure-occurrences/${failureId}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ photos: [...currentPhotos, newPhoto] }),
+                              });
+                              queryClient.invalidateQueries({ queryKey: ['failure-detail', failureId] });
+                              toast.success('Foto subida', { id: 'photo-upload' });
+                            } catch {
+                              toast.error('Error al subir foto', { id: 'photo-upload' });
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                        <span style={{ fontSize: '12px', color: '#2563EB', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 500 }}>
+                          <ImageIcon className="h-3 w-3" /> Agregar
+                        </span>
+                      </label>
                     </div>
-
-                    {/* Síntomas */}
-                    {failure.symptomsList && failure.symptomsList.length > 0 && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-2">Síntomas</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {failure.symptomsList.map((symptom) => (
-                            <Badge
-                              key={symptom.id}
-                              variant="secondary"
-                              className="bg-info-muted text-info-muted-foreground hover:bg-info-muted"
-                            >
-                              {symptom.label}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Fotos adjuntas + Upload */}
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs text-muted-foreground">
-                          Fotos {failure.photos?.length ? `(${failure.photos.length})` : ''}
-                        </p>
-                        <label className="cursor-pointer">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              toast.loading('Subiendo foto...', { id: 'photo-upload' });
-                              try {
-                                const formData = new FormData();
-                                formData.append('file', file);
-                                formData.append('entityType', 'failure-occurrence');
-                                formData.append('entityId', failureId?.toString() || '');
-                                formData.append('fileType', 'image');
-                                const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
-                                if (!uploadRes.ok) throw new Error('Error al subir');
-                                const uploadData = await uploadRes.json();
-                                const newPhoto = { url: uploadData.url, fileName: uploadData.fileName, originalName: file.name };
-                                const currentPhotos = failure.photos || [];
-                                await fetch(`/api/failure-occurrences/${failureId}`, {
-                                  method: 'PATCH',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ photos: [...currentPhotos, newPhoto] }),
-                                });
-                                queryClient.invalidateQueries({ queryKey: ['failure-detail', failureId] });
-                                toast.success('Foto subida', { id: 'photo-upload' });
-                              } catch {
-                                toast.error('Error al subir foto', { id: 'photo-upload' });
-                              }
-                              e.target.value = '';
+                    {failure.photos && failure.photos.length > 0 ? (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {failure.photos.map((photo, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setLightboxPhoto(photo.url)}
+                            style={{
+                              display: 'block', borderRadius: '8px', border: '1px solid #E4E4E8',
+                              overflow: 'hidden', cursor: 'zoom-in', padding: 0, background: 'none',
+                              transition: 'all 150ms',
                             }}
-                          />
-                          <span className="text-xs text-primary hover:underline flex items-center gap-1">
-                            <ImageIcon className="h-3 w-3" />
-                            Agregar foto
-                          </span>
-                        </label>
+                          >
+                            <img src={photo.url} alt={`Foto ${idx + 1}`} style={{ height: '80px', width: '80px', objectFit: 'cover' }} />
+                          </button>
+                        ))}
                       </div>
-                      {failure.photos && failure.photos.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {failure.photos.map((photo, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => setLightboxPhoto(photo.url)}
-                              className="block rounded-lg border overflow-hidden hover:ring-2 hover:ring-primary transition-all cursor-zoom-in"
-                            >
-                              <img
-                                src={photo.url}
-                                alt={`Foto ${idx + 1}`}
-                                className="h-20 w-20 object-cover"
-                              />
-                            </button>
-                          ))}
+                    ) : (
+                      <p style={{ fontSize: '12px', color: '#9CA3AF', fontStyle: 'italic', margin: 0 }}>Sin fotos</p>
+                    )}
+                  </InfoCard>
+
+                  {/* Machine details (EXPANDED) */}
+                  <InfoCard>
+                    <SectionLabel>Equipo</SectionLabel>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <div>
+                        <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Máquina</p>
+                        <p style={{ fontSize: '14px', fontWeight: 600, color: '#111827', margin: 0 }}>{failure.machine?.name || '-'}</p>
+                        {failure.machine?.nickname && failure.machine.nickname !== failure.machine.name && (
+                          <p style={{ fontSize: '12px', color: '#6B7280', margin: 0 }}>({failure.machine.nickname})</p>
+                        )}
+                      </div>
+                      {failure.machine?.serialNumber && (
+                        <div>
+                          <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Nro. Serie</p>
+                          <p style={{ fontSize: '13px', color: '#111827', margin: 0, fontFamily: 'monospace' }}>{failure.machine.serialNumber}</p>
                         </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground italic">Sin fotos</p>
+                      )}
+                      {(failure.machine?.brand || failure.machine?.model) && (
+                        <div>
+                          <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Marca / Modelo</p>
+                          <p style={{ fontSize: '13px', color: '#111827', margin: 0 }}>
+                            {[failure.machine.brand, failure.machine.model].filter(Boolean).join(' ')}
+                          </p>
+                        </div>
+                      )}
+                      {failure.machine?.status && (
+                        <div>
+                          <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Estado máquina</p>
+                          {(() => {
+                            const ms = MACHINE_STATUS_LABELS[failure.machine!.status!] || { label: failure.machine!.status!, bg: '#F3F4F6', text: '#6B7280' };
+                            return (
+                              <span style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                fontSize: '12px', fontWeight: 500, padding: '2px 8px', borderRadius: '5px',
+                                background: ms.bg, color: ms.text,
+                              }}>
+                                <span style={{ height: '5px', width: '5px', borderRadius: '50%', background: ms.text }} />
+                                {ms.label}
+                              </span>
+                            );
+                          })()}
+                        </div>
                       )}
                     </div>
-                  </div>
-
-                  {/* Ubicación del equipo */}
-                  <div className="rounded-lg border p-3 space-y-2">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Máquina</p>
-                      <p className="text-sm font-medium">{failure.machine?.name || '-'}</p>
-                    </div>
-                    {/* Componentes */}
+                    {/* Components */}
                     {(failure.components?.length || failure.component) && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Componentes</p>
-                        <p className="text-sm">
-                          {failure.components?.length
-                            ? failure.components.map(c => c.name).join(', ')
-                            : failure.component?.name}
+                      <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #F3F4F6' }}>
+                        <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Componentes</p>
+                        <p style={{ fontSize: '13px', color: '#111827', margin: 0 }}>
+                          {failure.components?.length ? failure.components.map(c => c.name).join(', ') : failure.component?.name}
                         </p>
                       </div>
                     )}
-                    {/* Subcomponentes */}
                     {(failure.subcomponents?.length || failure.subcomponent) && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Subcomponentes</p>
-                        <p className="text-sm text-muted-foreground">
-                          {failure.subcomponents?.length
-                            ? failure.subcomponents.map(s => s.name).join(', ')
-                            : failure.subcomponent?.name}
+                      <div style={{ marginTop: '6px' }}>
+                        <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Subcomponentes</p>
+                        <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>
+                          {failure.subcomponents?.length ? failure.subcomponents.map(s => s.name).join(', ') : failure.subcomponent?.name}
                         </p>
                       </div>
                     )}
-                  </div>
+                    {/* Failure type catalog */}
+                    {failure.failureType?.title && (
+                      <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #F3F4F6' }}>
+                        <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Tipo de falla (catálogo)</p>
+                        <p style={{ fontSize: '13px', color: '#111827', margin: 0 }}>{failure.failureType.title}</p>
+                      </div>
+                    )}
+                  </InfoCard>
 
-                  {/* Info adicional */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-lg border p-3">
-                      <p className="text-xs text-muted-foreground mb-1">Reportada por</p>
-                      <p className="text-sm font-medium">{failure.reportedBy?.name || '-'}</p>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <p className="text-xs text-muted-foreground mb-1">Fecha</p>
-                      <p className="text-sm font-medium">
+                  {/* Reporter + Date + Computed metrics */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <InfoCard>
+                      <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Reportada por</p>
+                      <p style={{ fontSize: '14px', fontWeight: 500, color: '#111827', margin: 0 }}>{failure.reportedBy?.name || '-'}</p>
+                      <p style={{ fontSize: '12px', color: '#9CA3AF', margin: 0 }}>
                         {format(new Date(failure.reportedAt), "d MMM yyyy, HH:mm", { locale: es })}
                       </p>
-                    </div>
+                    </InfoCard>
+                    <InfoCard>
+                      <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Métricas</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {failure.computed && (
+                          <>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                              <span style={{ color: '#6B7280' }}>Tiempo abierta</span>
+                              <span style={{ fontWeight: 600, color: '#111827' }}>
+                                {formatDuration(failure.computed.minutesSinceReport)}
+                              </span>
+                            </div>
+                            {failure.computed.totalDowntimeMinutes > 0 && (
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                                <span style={{ color: '#DC2626' }}>Downtime total</span>
+                                <span style={{ fontWeight: 600, color: '#DC2626' }}>
+                                  {formatDuration(failure.computed.totalDowntimeMinutes)}
+                                </span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                        {failure.resolvedAt && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                            <span style={{ color: '#6B7280' }}>Resuelta</span>
+                            <span style={{ fontWeight: 500, color: '#059669' }}>
+                              {format(new Date(failure.resolvedAt), "d MMM, HH:mm", { locale: es })}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </InfoCard>
                   </div>
 
-                  {/* Work Orders asociadas */}
+                  {/* Work Orders (EXPANDED) */}
                   {hasWorkOrder && (
                     <div>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Órdenes de Trabajo ({failure.workOrders?.length})
-                      </p>
-                      <div className="space-y-2">
-                        {failure.workOrders?.map((wo) => {
-                          const statusLabels: Record<string, string> = {
-                            PENDING: 'Pendiente',
-                            IN_PROGRESS: 'En Progreso',
-                            COMPLETED: 'Completada',
-                            CANCELLED: 'Cancelada',
-                            ON_HOLD: 'En Espera',
-                          };
-                          const statusLabel = statusLabels[wo.status] || wo.status;
-
+                      <SectionLabel>Órdenes de Trabajo ({failure.workOrders?.length})</SectionLabel>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {failure.workOrders?.map(wo => {
+                          const woChip = STATUS_CHIP[wo.status] || { bg: '#F3F4F6', text: '#6B7280', dot: '#9CA3AF', label: wo.status };
                           return (
                             <div
                               key={wo.id}
-                              className="rounded-lg border p-3 flex items-center justify-between hover:bg-accent/50 cursor-pointer transition-colors"
                               onClick={() => handleGoToWorkOrder(wo.id)}
+                              style={{
+                                border: '1px solid #E4E4E8', borderRadius: '8px', padding: '12px',
+                                cursor: 'pointer', transition: 'all 150ms',
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                              }}
+                              onMouseEnter={e => { e.currentTarget.style.background = '#FAFAFA'; e.currentTarget.style.borderColor = '#D8D8DE'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.borderColor = '#E4E4E8'; }}
                             >
-                              <div>
-                                <p className="text-sm font-medium">{wo.title}</p>
-                                <p className="text-xs text-muted-foreground">OT #{wo.id}</p>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ fontSize: '14px', fontWeight: 500, color: '#111827', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {wo.title}
+                                </p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                  <span style={{ fontSize: '12px', color: '#9CA3AF' }}>OT #{wo.id}</span>
+                                  {wo.assignedTo?.name && (
+                                    <span style={{ fontSize: '12px', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                      <User className="h-3 w-3" /> {wo.assignedTo.name}
+                                    </span>
+                                  )}
+                                  {wo.scheduledDate && (
+                                    <span style={{ fontSize: '12px', color: '#6B7280', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                      <Calendar className="h-3 w-3" /> {format(new Date(wo.scheduledDate), "d MMM", { locale: es })}
+                                    </span>
+                                  )}
+                                  {wo.completedDate && (
+                                    <span style={{ fontSize: '12px', color: '#059669', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                      <CheckCircle2 className="h-3 w-3" /> {format(new Date(wo.completedDate), "d MMM", { locale: es })}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant={wo.status === 'COMPLETED' ? 'default' : 'secondary'}>
-                                  {statusLabel}
-                                </Badge>
-                                <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                                <Chip bg={woChip.bg} text={woChip.text} label={WO_STATUS_LABELS[wo.status] || wo.status} />
+                                <ExternalLink className="h-4 w-4" style={{ color: '#9CA3AF' }} />
                               </div>
                             </div>
                           );
@@ -1048,635 +1217,752 @@ export function FailureDetailSheet({
                       </div>
                     </div>
                   )}
-                </TabsContent>
-
-                {/* Tab: Reincidencia */}
-                <TabsContent value="recurrence" className="mt-4">
-                  {failureId && <RecurrencePanel failureId={failureId} onSelectFailure={onSelectFailure} />}
-                </TabsContent>
-
-                {/* Tab: Duplicados */}
-                <TabsContent value="duplicates" className="space-y-3 mt-4">
-                  {(failure.linkedDuplicates?.length ?? 0) === 0 ? (
-                    <div className="text-center py-8 bg-muted/20 rounded-lg border border-dashed">
-                      <FileText className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        No hay reportes duplicados vinculados
-                      </p>
-                    </div>
-                  ) : (
-                    failure.linkedDuplicates?.map((dup, idx) => (
-                      <div key={dup.id} className="rounded-lg border bg-muted/20 p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium">
-                              Reporte #{idx + 1}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Por {dup.reportedBy?.name || 'Usuario'} •{' '}
-                              {format(
-                                new Date(dup.reportedAt),
-                                "d 'de' MMMM, HH:mm",
-                                { locale: es }
-                              )}
-                            </p>
-                          </div>
-                          <Badge variant="outline">Duplicado</Badge>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </TabsContent>
-
-                {/* Tab: Paradas */}
-                <TabsContent value="downtime" className="space-y-3 mt-4">
-                  {(failure.downtimeLogs?.length ?? 0) === 0 ? (
-                    <div className="text-center py-8 bg-muted/20 rounded-lg border border-dashed">
-                      <Clock className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        Esta falla no causó paradas de producción
-                      </p>
-                    </div>
-                  ) : (
-                    failure.downtimeLogs?.map((log) => {
-                      const isActive = !log.endedAt;
-                      const activeMinutes = isActive
-                        ? differenceInMinutes(new Date(), new Date(log.startedAt))
-                        : log.totalMinutes || 0;
-                      const hours = Math.floor(activeMinutes / 60);
-                      const mins = activeMinutes % 60;
-                      const timeDisplay = hours > 0 ? `${hours}h ${mins}m` : `${mins} min`;
-
-                      return (
-                        <div
-                          key={log.id}
-                          className={cn('rounded-lg border p-4', isActive ? 'border-destructive/50 bg-destructive/5' : 'bg-muted/20')}
-                        >
-                          <div className="flex items-center justify-between mb-3">
-                            <Badge
-                              variant={isActive ? 'destructive' : 'secondary'}
-                              className={isActive ? 'animate-pulse' : ''}
-                            >
-                              {isActive ? (
-                                <>
-                                  <Clock className="mr-1 h-3 w-3" />
-                                  Planta Parada
-                                </>
-                              ) : (
-                                'Finalizada'
-                              )}
-                            </Badge>
-                            <span className={cn('text-lg font-bold', isActive ? 'text-destructive' : 'text-muted-foreground')}>
-                              {timeDisplay}
-                            </span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div>
-                              <p className="text-xs text-muted-foreground">Inicio</p>
-                              <p className="font-medium">
-                                {format(new Date(log.startedAt), 'Pp', { locale: es })}
-                              </p>
-                            </div>
-                            {log.endedAt && (
-                              <div>
-                                <p className="text-xs text-muted-foreground">Fin</p>
-                                <p className="font-medium">
-                                  {format(new Date(log.endedAt), 'Pp', { locale: es })}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Botón Retorno a Producción si está activo */}
-                          {isActive && (
-                            <Button
-                              className="w-full mt-4 bg-success hover:bg-success/90"
-                              onClick={() => {
-                                setSelectedDowntimeLog({
-                                  id: log.id,
-                                  startedAt: log.startedAt,
-                                  endedAt: log.endedAt,
-                                  workOrderId: log.workOrderId,
-                                  machine: log.machine || failure.machine,
-                                });
-                                setReturnDialogOpen(true);
-                              }}
-                            >
-                              <CheckCircle2 className="mr-2 h-4 w-4" />
-                              Confirmar Retorno a Producción
-                            </Button>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </TabsContent>
-
-                {/* Tab: Soluciones */}
-                <TabsContent value="solutions" className="space-y-3 mt-4">
-                  {(failure.solutionsApplied?.length ?? 0) === 0 ? (
-                    <div className="text-center py-8 bg-muted/20 rounded-lg border border-dashed">
-                      <CheckCircle2 className="mx-auto h-8 w-8 text-muted-foreground/50 mb-2" />
-                      <p className="text-sm text-muted-foreground">
-                        Aún no se han aplicado soluciones
-                      </p>
-                    </div>
-                  ) : (
-                    failure.solutionsApplied?.map((solution, idx) => {
-                      const outcomeColors: Record<string, string> = {
-                        'FUNCIONÓ': 'bg-success text-white',
-                        'PARCIAL': 'bg-warning text-white',
-                        'NO_FUNCIONÓ': 'bg-destructive text-white',
-                      };
-                      const outcomeLabels: Record<string, string> = {
-                        'FUNCIONÓ': 'Funcionó',
-                        'PARCIAL': 'Parcial',
-                        'NO_FUNCIONÓ': 'No Funcionó',
-                      };
-                      const toolsArr = parseJsonArr(solution.toolsUsed);
-                      const partsArr = parseJsonArr(solution.sparePartsUsed);
-                      const attachArr = parseJsonArr(solution.attachments);
-                      const controlsArr = solution.controlInstances || [];
-
-                      return (
-                        <div key={solution.id} className="rounded-lg border bg-card p-4 space-y-3">
-                          {/* Header */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <Badge className="bg-success">Solución #{idx + 1}</Badge>
-                              {solution.outcome && (
-                                <Badge className={cn('text-xs', outcomeColors[solution.outcome] || 'bg-muted')}>
-                                  {outcomeLabels[solution.outcome] || solution.outcome}
-                                </Badge>
-                              )}
-                              {solution.fixType && (
-                                <Badge variant="outline" className="text-xs">
-                                  {solution.fixType === 'DEFINITIVA' ? 'Definitiva' : 'Parche'}
-                                </Badge>
-                              )}
-                              {solution.repairAction && (
-                                <Badge variant="outline" className="text-xs">
-                                  {solution.repairAction === 'CAMBIO' ? 'Cambio' : 'Reparación'}
-                                </Badge>
-                              )}
-                              {solution.closingMode === 'PROFESSIONAL' && (
-                                <Badge variant="outline" className="text-xs text-muted-foreground">Profesional</Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {solution.effectiveness && (
-                                <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
-                                  <Star className="h-3 w-3 fill-warning text-warning" />
-                                  {solution.effectiveness}/5
-                                </span>
-                              )}
-                              {solution.actualMinutes && (
-                                <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Clock className="h-3 w-3" />
-                                  {solution.actualMinutes >= 60
-                                    ? `${Math.floor(solution.actualMinutes / 60)}h ${solution.actualMinutes % 60}m`
-                                    : `${solution.actualMinutes}min`}
-                                </span>
-                              )}
-                              <span className="text-xs text-muted-foreground">
-                                {format(new Date(solution.performedAt), "d 'de' MMM, HH:mm", { locale: es })}
-                              </span>
-                              {solution.workOrderId && (
-                                <button
-                                  onClick={() => solution.workOrderId && handleGoToMaintenance(solution.workOrderId)}
-                                  className="text-muted-foreground hover:text-foreground"
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Diagnóstico */}
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Diagnóstico</p>
-                            <p className="text-sm">{solution.diagnosis}</p>
-                          </div>
-
-                          {/* Solución */}
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-1">Solución aplicada</p>
-                            <p className="text-sm">{solution.solution}</p>
-                          </div>
-
-                          {/* Causa confirmada */}
-                          {solution.confirmedCause && (
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Causa confirmada</p>
-                              <p className="text-sm">{solution.confirmedCause}</p>
-                            </div>
-                          )}
-
-                          {/* Notas */}
-                          {solution.notes && (
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1">Notas adicionales</p>
-                              <p className="text-sm text-muted-foreground">{solution.notes}</p>
-                            </div>
-                          )}
-
-                          {/* Herramientas */}
-                          {toolsArr.length > 0 && (
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                                <Wrench className="h-3 w-3" /> Herramientas usadas
-                              </p>
-                              <div className="flex flex-wrap gap-1">
-                                {toolsArr.map((t, i) => (
-                                  <span key={i} className="text-xs bg-muted rounded px-2 py-0.5">
-                                    {t.name}{t.quantity && t.quantity > 1 ? ` ×${t.quantity}` : ''}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Repuestos */}
-                          {partsArr.length > 0 && (
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                                <Package className="h-3 w-3" /> Repuestos usados
-                              </p>
-                              <div className="flex flex-wrap gap-1">
-                                {partsArr.map((p, i) => (
-                                  <span key={i} className="text-xs bg-muted rounded px-2 py-0.5">
-                                    {p.name} ×{p.quantity}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Componente / Subcomponente */}
-                          {(solution.finalComponent || solution.finalSubcomponent) && (
-                            <div className="flex flex-wrap gap-4">
-                              {solution.finalComponent && (
-                                <div>
-                                  <p className="text-xs text-muted-foreground mb-1">Componente</p>
-                                  <p className="text-sm">{solution.finalComponent.name}</p>
-                                </div>
-                              )}
-                              {solution.finalSubcomponent && (
-                                <div>
-                                  <p className="text-xs text-muted-foreground mb-1">Subcomponente</p>
-                                  <p className="text-sm">{solution.finalSubcomponent.name}</p>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* Archivos adjuntos */}
-                          {attachArr.length > 0 && (
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                                <Paperclip className="h-3 w-3" /> Archivos adjuntos
-                              </p>
-                              <div className="flex flex-wrap gap-2">
-                                {attachArr.map((att, i) => (
-                                  att.type === 'IMAGE' ? (
-                                    <a key={i} href={att.url} target="_blank" rel="noopener noreferrer">
-                                      <img
-                                        src={att.url}
-                                        alt={att.filename}
-                                        className="h-16 w-16 object-cover rounded-md border hover:opacity-80 transition-opacity"
-                                      />
-                                    </a>
-                                  ) : (
-                                    <a
-                                      key={i}
-                                      href={att.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-1 text-xs text-primary hover:underline bg-muted rounded px-2 py-1"
-                                    >
-                                      <FileText className="h-3 w-3" />
-                                      {att.filename}
-                                    </a>
-                                  )
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Plan de controles */}
-                          {controlsArr.length > 0 && (
-                            <div>
-                              <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                                <ClipboardCheck className="h-3 w-3" /> Controles de seguimiento
-                              </p>
-                              <div className="space-y-1">
-                                {controlsArr.map((ctrl) => {
-                                  const statusColors: Record<string, string> = {
-                                    PENDING: 'text-warning',
-                                    WAITING: 'text-muted-foreground',
-                                    COMPLETED: 'text-success',
-                                    SKIPPED: 'text-muted-foreground line-through',
-                                  };
-                                  return (
-                                    <div key={ctrl.id} className="flex items-center gap-2 text-xs">
-                                      <span className="text-muted-foreground w-4 text-right shrink-0">{ctrl.order}.</span>
-                                      <span className={cn('flex-1', statusColors[ctrl.status] || '')}>
-                                        {ctrl.description}
-                                      </span>
-                                      {ctrl.scheduledAt && (
-                                        <span className="text-muted-foreground shrink-0">
-                                          {format(new Date(ctrl.scheduledAt), "d MMM HH:mm", { locale: es })}
-                                        </span>
-                                      )}
-                                      <Badge
-                                        variant="outline"
-                                        className={cn('text-[10px] px-1 py-0 h-4', statusColors[ctrl.status] || '')}
-                                      >
-                                        {ctrl.status === 'PENDING' ? 'Pendiente' : ctrl.status === 'WAITING' ? 'Esperando' : ctrl.status === 'COMPLETED' ? 'Completado' : ctrl.status}
-                                      </Badge>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Footer: técnico */}
-                          <p className="text-xs text-muted-foreground pt-2 border-t">
-                            Por {solution.performedBy?.name || 'Técnico'}
-                          </p>
-                        </div>
-                      );
-                    })
-                  )}
-                </TabsContent>
-
-                {/* Tab: Chat/Comentarios */}
-                <TabsContent value="comments" className="mt-4">
-                  <div className="flex flex-col h-[400px]">
-                    {/* Composer sticky */}
-                    <div className="flex-shrink-0 border rounded-t-lg bg-card p-3 space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs">U</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <ToggleGroup
-                            type="single"
-                            value={commentType}
-                            onValueChange={(value) => value && setCommentType(value as typeof commentType)}
-                            className="border border-border rounded-md"
-                          >
-                            <ToggleGroupItem value="comment" aria-label="Comentario" className="h-8 px-3 text-xs">
-                              <MessageSquare className="h-3 w-3 mr-1.5" />
-                              Comentario
-                            </ToggleGroupItem>
-                            <ToggleGroupItem value="update" aria-label="Actualización" className="h-8 px-3 text-xs">
-                              <Info className="h-3 w-3 mr-1.5" />
-                              Actualización
-                            </ToggleGroupItem>
-                            <ToggleGroupItem value="issue" aria-label="Problema" className="h-8 px-3 text-xs">
-                              <AlertTriangle className="h-3 w-3 mr-1.5" />
-                              Problema
-                            </ToggleGroupItem>
-                          </ToggleGroup>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 items-end">
-                        <Textarea
-                          placeholder="Escribe un mensaje... (Enter para enviar)"
-                          value={chatMessage}
-                          onChange={(e) => setChatMessage(e.target.value)}
-                          onKeyDown={handleKeyDown}
-                          className="min-h-[40px] max-h-[120px] resize-none text-sm"
-                          disabled={sendCommentMutation.isPending}
-                          rows={1}
-                        />
-                        <Button
-                          onClick={handleSendComment}
-                          disabled={!chatMessage.trim() || sendCommentMutation.isPending}
-                          size="icon"
-                          className="h-10 w-10 shrink-0"
-                        >
-                          {sendCommentMutation.isPending ? (
-                            <RefreshCw className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Send className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <Separator className="flex-shrink-0" />
-
-                    {/* Timeline */}
-                    <div className="flex-1 min-h-0 overflow-y-auto border border-t-0 rounded-b-lg" ref={chatScrollRef}>
-                      <div className="p-3">
-                        {isLoadingComments ? (
-                          <div className="flex items-center justify-center py-8">
-                            <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-                          </div>
-                        ) : comments.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <MessageSquare className="h-10 w-10 text-muted-foreground mb-3" />
-                            <p className="text-sm text-muted-foreground">No hay comentarios aún</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Sé el primero en agregar un comentario
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            {comments.map((comment) => {
-                              const typeKey = comment.type || 'comment';
-                              const config = commentTypeConfig[typeKey] || commentTypeConfig.comment;
-                              const Icon = config.icon;
-
-                              const isOwnComment = currentUser?.id === comment.author?.id;
-                              const isEditing = editingCommentId === comment.id;
-
-                              return (
-                                <div key={comment.id} className="flex gap-3 group">
-                                  <Avatar className="h-8 w-8 flex-shrink-0">
-                                    <AvatarFallback className="text-xs">
-                                      {comment.author?.name ? getInitials(comment.author.name) : '??'}
-                                    </AvatarFallback>
-                                  </Avatar>
-
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-sm font-medium text-foreground">
-                                        {comment.author?.name || 'Usuario'}
-                                      </span>
-                                      <Badge variant="outline" className={cn('text-xs border', config.badgeClass)}>
-                                        <Icon className="h-3 w-3 mr-1" />
-                                        {config.label}
-                                      </Badge>
-                                      <span className="text-xs text-muted-foreground ml-auto">
-                                        {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: es })}
-                                      </span>
-                                      {isOwnComment && !isEditing && (
-                                        <DropdownMenu>
-                                          <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                                              <MoreVertical className="h-3 w-3" />
-                                            </Button>
-                                          </DropdownMenuTrigger>
-                                          <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => { setEditingCommentId(comment.id); setEditingContent(comment.content); }}>
-                                              <Pencil className="h-3.5 w-3.5 mr-2" />
-                                              Editar
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem
-                                              className="text-destructive focus:text-destructive"
-                                              onClick={() => { if (confirm('¿Eliminar este comentario?')) deleteCommentMutation.mutate(comment.id); }}
-                                            >
-                                              <Trash2 className="h-3.5 w-3.5 mr-2" />
-                                              Eliminar
-                                            </DropdownMenuItem>
-                                          </DropdownMenuContent>
-                                        </DropdownMenu>
-                                      )}
-                                    </div>
-
-                                    {isEditing ? (
-                                      <div className="space-y-2">
-                                        <Textarea
-                                          value={editingContent}
-                                          onChange={(e) => setEditingContent(e.target.value)}
-                                          rows={2}
-                                          className="text-sm"
-                                        />
-                                        <div className="flex gap-2">
-                                          <Button
-                                            size="sm"
-                                            className="h-7 text-xs"
-                                            disabled={editCommentMutation.isPending || !editingContent.trim()}
-                                            onClick={() => editCommentMutation.mutate({ commentId: comment.id, content: editingContent.trim() })}
-                                          >
-                                            {editCommentMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-                                            Guardar
-                                          </Button>
-                                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingCommentId(null)}>
-                                            Cancelar
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    ) : (
-                                      <p className="text-sm text-foreground whitespace-pre-wrap">
-                                        {comment.content}
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
                 </div>
-              </Tabs>
+              )}
 
-              {/* Actions - Solo mostrar para fallas abiertas */}
-              {failure.status !== 'RESOLVED' && failure.status !== 'RESOLVED_IMMEDIATE' && (
-                <div style={{
-                  borderTop: '1px solid #E4E4E8',
-                  padding: '16px 24px',
-                  flexShrink: 0,
-                  display: 'flex', gap: '8px',
-                }}>
-                  <button
-                    onClick={() => setImmediateCloseOpen(true)}
-                    style={{
-                      flex: 1, height: '38px', borderRadius: '8px',
-                      border: '1.5px solid #059669',
-                      background: '#ECFDF5', color: '#059669',
-                      fontSize: '13px', fontWeight: 600,
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                      transition: 'all 120ms ease',
-                    }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#D1FAE5'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = '#ECFDF5'; }}
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Resolver Ahora
-                  </button>
-
-                  {hasWorkOrder ? (
-                    <button
-                      onClick={() => handleGoToWorkOrder(failure.workOrders![0].id)}
-                      style={{
-                        flex: 1, height: '38px', borderRadius: '8px',
-                        border: 'none',
-                        background: '#111827', color: '#FFFFFF',
-                        fontSize: '13px', fontWeight: 600,
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                        transition: 'all 120ms ease',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#1F2937'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#111827'; }}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      Ver OT
-                    </button>
+              {/* ═══ TIMELINE TAB ═══ */}
+              {activeTab === 'timeline' && (
+                <div>
+                  {isLoadingTimeline ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+                      <Loader2 className="h-6 w-6 animate-spin" style={{ color: '#9CA3AF' }} />
+                    </div>
+                  ) : timeline.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                      <Activity className="h-8 w-8" style={{ color: '#D1D5DB', margin: '0 auto 8px' }} />
+                      <p style={{ fontSize: '14px', color: '#9CA3AF' }}>Sin actividad registrada</p>
+                    </div>
                   ) : (
-                    <button
-                      onClick={handleCreateWorkOrder}
-                      style={{
-                        flex: 1, height: '38px', borderRadius: '8px',
-                        border: 'none',
-                        background: '#111827', color: '#FFFFFF',
-                        fontSize: '13px', fontWeight: 600,
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                        transition: 'all 120ms ease',
-                      }}
-                      onMouseEnter={e => { e.currentTarget.style.background = '#1F2937'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = '#111827'; }}
-                    >
-                      <FileText className="h-4 w-4" />
-                      Crear OT
-                    </button>
+                    <div style={{ position: 'relative', paddingLeft: '28px' }}>
+                      {/* Vertical line */}
+                      <div style={{ position: 'absolute', left: '9px', top: '4px', bottom: '4px', width: '2px', background: '#E4E4E8', borderRadius: '1px' }} />
+                      {timeline.map((event, idx) => {
+                        const tStyle = TIMELINE_ICONS[event.type] || { color: '#6B7280', bg: '#F3F4F6' };
+                        return (
+                          <div key={event.id} style={{ position: 'relative', paddingBottom: idx < timeline.length - 1 ? '16px' : '0' }}>
+                            {/* Dot */}
+                            <div style={{
+                              position: 'absolute', left: '-28px', top: '2px',
+                              height: '20px', width: '20px', borderRadius: '50%',
+                              background: tStyle.bg, border: `2px solid ${tStyle.color}`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                              <div style={{ height: '6px', width: '6px', borderRadius: '50%', background: tStyle.color }} />
+                            </div>
+                            {/* Content */}
+                            <div>
+                              <p style={{ fontSize: '13px', fontWeight: 500, color: '#111827', margin: 0 }}>{event.title}</p>
+                              {event.description && (
+                                <p style={{ fontSize: '12px', color: '#6B7280', margin: '2px 0 0', lineHeight: 1.4 }}>{event.description}</p>
+                              )}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                                {event.performedBy?.name && (
+                                  <span style={{ fontSize: '11px', color: '#9CA3AF' }}>{event.performedBy.name}</span>
+                                )}
+                                <span style={{ fontSize: '11px', color: '#D1D5DB' }}>
+                                  {format(new Date(event.occurredAt), "d MMM yyyy, HH:mm", { locale: es })}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
               )}
-            </>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
-              <p style={{ fontSize: '14px', color: '#9CA3AF' }}>Falla no encontrada</p>
+
+              {/* ═══ RECURRENCE TAB ═══ */}
+              {activeTab === 'recurrence' && (
+                <div>
+                  {failureId && <RecurrencePanel failureId={failureId} onSelectFailure={onSelectFailure} />}
+                </div>
+              )}
+
+              {/* ═══ DUPLICATES TAB ═══ */}
+              {activeTab === 'duplicates' && (
+                <div>
+                  {(failure.linkedDuplicates?.length ?? 0) === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                      <FileText className="h-8 w-8" style={{ color: '#D1D5DB', margin: '0 auto 8px' }} />
+                      <p style={{ fontSize: '14px', color: '#9CA3AF' }}>No hay reportes duplicados vinculados</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {failure.linkedDuplicates?.map((dup, idx) => (
+                        <div key={dup.id} style={{
+                          border: '1px solid #E4E4E8', borderRadius: '8px', padding: '12px',
+                          borderLeft: '3px solid #7C3AED',
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div>
+                              <p style={{ fontSize: '14px', fontWeight: 500, color: '#111827', margin: 0 }}>
+                                {dup.title || `Reporte #${idx + 1}`}
+                              </p>
+                              <p style={{ fontSize: '12px', color: '#6B7280', margin: '2px 0 0' }}>
+                                Por {dup.reportedBy?.name || 'Usuario'} · {format(new Date(dup.reportedAt), "d 'de' MMMM, HH:mm", { locale: es })}
+                              </p>
+                              {dup.linkedReason && (
+                                <p style={{ fontSize: '12px', color: '#9CA3AF', margin: '4px 0 0', fontStyle: 'italic' }}>{dup.linkedReason}</p>
+                              )}
+                            </div>
+                            <Chip bg="#F5F3FF" text="#7C3AED" label="Duplicado" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ═══ DOWNTIME TAB ═══ */}
+              {activeTab === 'downtime' && (
+                <div>
+                  {/* Total downtime metric */}
+                  {failure.computed && failure.computed.totalDowntimeMinutes > 0 && (
+                    <div style={{
+                      background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px',
+                      padding: '12px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    }}>
+                      <span style={{ fontSize: '13px', fontWeight: 500, color: '#991B1B' }}>Downtime total acumulado</span>
+                      <span style={{ fontSize: '16px', fontWeight: 700, color: '#DC2626' }}>
+                        {formatDuration(failure.computed.totalDowntimeMinutes)}
+                      </span>
+                    </div>
+                  )}
+                  {(failure.downtimeLogs?.length ?? 0) === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                      <Clock className="h-8 w-8" style={{ color: '#D1D5DB', margin: '0 auto 8px' }} />
+                      <p style={{ fontSize: '14px', color: '#9CA3AF' }}>Esta falla no causó paradas de producción</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {failure.downtimeLogs?.map(log => {
+                        const isActive = !log.endedAt;
+                        const activeMinutes = isActive
+                          ? differenceInMinutes(new Date(), new Date(log.startedAt))
+                          : log.totalMinutes || 0;
+                        return (
+                          <div key={log.id} style={{
+                            border: `1.5px solid ${isActive ? '#FECACA' : '#E4E4E8'}`,
+                            borderRadius: '8px', padding: '14px',
+                            background: isActive ? '#FEF2F2' : '#FFFFFF',
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                              {isActive ? (
+                                <span style={{
+                                  display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                  fontSize: '12px', fontWeight: 600, padding: '3px 10px', borderRadius: '6px',
+                                  background: '#DC2626', color: '#FFFFFF', animation: 'pulse 2s infinite',
+                                }}>
+                                  <Clock className="h-3 w-3" /> Planta Parada
+                                </span>
+                              ) : (
+                                <Chip bg="#ECFDF5" text="#059669" label="Finalizada" />
+                              )}
+                              <span style={{ fontSize: '18px', fontWeight: 700, color: isActive ? '#DC2626' : '#6B7280' }}>
+                                {formatDuration(activeMinutes)}
+                              </span>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px' }}>
+                              <div>
+                                <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Inicio</p>
+                                <p style={{ fontWeight: 500, color: '#111827', margin: 0 }}>
+                                  {format(new Date(log.startedAt), 'Pp', { locale: es })}
+                                </p>
+                              </div>
+                              {log.endedAt && (
+                                <div>
+                                  <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Fin</p>
+                                  <p style={{ fontWeight: 500, color: '#111827', margin: 0 }}>
+                                    {format(new Date(log.endedAt), 'Pp', { locale: es })}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                            {isActive && (
+                              <button
+                                onClick={() => {
+                                  setSelectedDowntimeLog({
+                                    id: log.id, startedAt: log.startedAt, endedAt: log.endedAt,
+                                    workOrderId: log.workOrderId, machine: log.machine || failure.machine,
+                                  });
+                                  setReturnDialogOpen(true);
+                                }}
+                                style={{
+                                  width: '100%', marginTop: '12px', height: '38px', borderRadius: '8px',
+                                  border: 'none', background: '#059669', color: '#FFFFFF',
+                                  fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                                  transition: 'all 120ms',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#047857'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#059669'; }}
+                              >
+                                <CheckCircle2 className="h-4 w-4" /> Confirmar Retorno a Producción
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ═══ SOLUTIONS TAB ═══ */}
+              {activeTab === 'solutions' && (
+                <div>
+                  {(failure.solutionsApplied?.length ?? 0) === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                      <CheckCircle2 className="h-8 w-8" style={{ color: '#D1D5DB', margin: '0 auto 8px' }} />
+                      <p style={{ fontSize: '14px', color: '#9CA3AF' }}>Aún no se han aplicado soluciones</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {failure.solutionsApplied?.map((sol, idx) => {
+                        const toolsArr = parseJsonArr(sol.toolsUsed);
+                        const partsArr = parseJsonArr(sol.sparePartsUsed);
+                        const attachArr = parseJsonArr(sol.attachments);
+                        const controlsArr = sol.controlInstances || [];
+                        const outcomeStyle = OUTCOME_STYLE[sol.outcome || ''] || { bg: '#F3F4F6', text: '#6B7280', label: sol.outcome || '-' };
+
+                        return (
+                          <div key={sol.id} style={{
+                            border: '1px solid #E4E4E8', borderRadius: '8px', padding: '16px',
+                            borderLeft: '3px solid #059669',
+                          }}>
+                            {/* Header */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '6px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                <Chip bg="#ECFDF5" text="#059669" label={`Solución #${idx + 1}`} />
+                                {sol.outcome && <Chip bg={outcomeStyle.bg} text={outcomeStyle.text} label={outcomeStyle.label} />}
+                                {sol.fixType && <Chip bg="#F3F4F6" text="#6B7280" label={sol.fixType === 'DEFINITIVA' ? 'Definitiva' : 'Parche'} />}
+                                {sol.repairAction && <Chip bg="#F3F4F6" text="#6B7280" label={sol.repairAction === 'CAMBIO' ? 'Cambio' : 'Reparación'} />}
+                                {sol.closingMode === 'PROFESSIONAL' && <Chip bg="#F3F4F6" text="#6B7280" label="Profesional" />}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {sol.effectiveness && (
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: '2px', fontSize: '12px', color: '#6B7280' }}>
+                                    <Star className="h-3 w-3" style={{ color: '#F59E0B', fill: '#F59E0B' }} /> {sol.effectiveness}/5
+                                  </span>
+                                )}
+                                {sol.actualMinutes && (
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '12px', color: '#6B7280' }}>
+                                    <Clock className="h-3 w-3" /> {formatDuration(sol.actualMinutes)}
+                                  </span>
+                                )}
+                                <span style={{ fontSize: '12px', color: '#9CA3AF' }}>
+                                  {format(new Date(sol.performedAt), "d MMM, HH:mm", { locale: es })}
+                                </span>
+                                {sol.workOrderId && (
+                                  <button onClick={() => sol.workOrderId && handleGoToMaintenance(sol.workOrderId)}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', padding: 0 }}>
+                                    <ExternalLink className="h-3 w-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Content grid */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <div>
+                                <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Diagnóstico</p>
+                                <p style={{ fontSize: '13px', color: '#111827', margin: 0 }}>{sol.diagnosis}</p>
+                              </div>
+                              <div>
+                                <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Solución aplicada</p>
+                                <p style={{ fontSize: '13px', color: '#111827', margin: 0 }}>{sol.solution}</p>
+                              </div>
+                              {sol.confirmedCause && (
+                                <div>
+                                  <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Causa confirmada</p>
+                                  <p style={{ fontSize: '13px', color: '#111827', margin: 0 }}>{sol.confirmedCause}</p>
+                                </div>
+                              )}
+                              {sol.notes && (
+                                <div>
+                                  <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Notas</p>
+                                  <p style={{ fontSize: '13px', color: '#6B7280', margin: 0 }}>{sol.notes}</p>
+                                </div>
+                              )}
+                              {toolsArr.length > 0 && (
+                                <div>
+                                  <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Wrench className="h-3 w-3" /> Herramientas
+                                  </p>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                    {toolsArr.map((t: any, i: number) => (
+                                      <span key={i} style={{ fontSize: '12px', background: '#F3F4F6', borderRadius: '4px', padding: '2px 8px', color: '#374151' }}>
+                                        {t.name}{t.quantity > 1 ? ` ×${t.quantity}` : ''}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {partsArr.length > 0 && (
+                                <div>
+                                  <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Package className="h-3 w-3" /> Repuestos
+                                  </p>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                    {partsArr.map((p: any, i: number) => (
+                                      <span key={i} style={{ fontSize: '12px', background: '#F3F4F6', borderRadius: '4px', padding: '2px 8px', color: '#374151' }}>
+                                        {p.name} ×{p.quantity}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {(sol.finalComponent || sol.finalSubcomponent) && (
+                                <div style={{ display: 'flex', gap: '16px' }}>
+                                  {sol.finalComponent && (
+                                    <div>
+                                      <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Componente</p>
+                                      <p style={{ fontSize: '13px', color: '#111827', margin: 0 }}>{sol.finalComponent.name}</p>
+                                    </div>
+                                  )}
+                                  {sol.finalSubcomponent && (
+                                    <div>
+                                      <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '2px' }}>Subcomponente</p>
+                                      <p style={{ fontSize: '13px', color: '#111827', margin: 0 }}>{sol.finalSubcomponent.name}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              {attachArr.length > 0 && (
+                                <div>
+                                  <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Paperclip className="h-3 w-3" /> Adjuntos
+                                  </p>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                    {attachArr.map((att: any, i: number) => (
+                                      att.type === 'IMAGE' ? (
+                                        <a key={i} href={att.url} target="_blank" rel="noopener noreferrer">
+                                          <img src={att.url} alt={att.filename} style={{
+                                            height: '64px', width: '64px', objectFit: 'cover', borderRadius: '6px',
+                                            border: '1px solid #E4E4E8', transition: 'opacity 150ms',
+                                          }} />
+                                        </a>
+                                      ) : (
+                                        <a key={i} href={att.url} target="_blank" rel="noopener noreferrer"
+                                          style={{ fontSize: '12px', color: '#2563EB', display: 'flex', alignItems: 'center', gap: '4px', background: '#F3F4F6', borderRadius: '4px', padding: '4px 8px', textDecoration: 'none' }}>
+                                          <FileText className="h-3 w-3" /> {att.filename}
+                                        </a>
+                                      )
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {controlsArr.length > 0 && (
+                                <div>
+                                  <p style={{ fontSize: '11px', color: '#9CA3AF', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <ClipboardCheck className="h-3 w-3" /> Controles de seguimiento
+                                  </p>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                    {controlsArr.map(ctrl => {
+                                      const ctrlColor = ctrl.status === 'COMPLETED' ? '#059669' : ctrl.status === 'PENDING' ? '#D97706' : '#9CA3AF';
+                                      return (
+                                        <div key={ctrl.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                                          <span style={{ color: '#9CA3AF', width: '16px', textAlign: 'right', flexShrink: 0 }}>{ctrl.order}.</span>
+                                          <span style={{ flex: 1, color: ctrl.status === 'SKIPPED' ? '#9CA3AF' : '#374151', textDecoration: ctrl.status === 'SKIPPED' ? 'line-through' : 'none' }}>
+                                            {ctrl.description}
+                                          </span>
+                                          {ctrl.scheduledAt && (
+                                            <span style={{ color: '#9CA3AF', flexShrink: 0 }}>
+                                              {format(new Date(ctrl.scheduledAt), "d MMM HH:mm", { locale: es })}
+                                            </span>
+                                          )}
+                                          <span style={{
+                                            fontSize: '10px', fontWeight: 600, padding: '1px 6px', borderRadius: '4px',
+                                            border: `1px solid ${ctrlColor}30`, color: ctrlColor,
+                                          }}>
+                                            {ctrl.status === 'PENDING' ? 'Pendiente' : ctrl.status === 'WAITING' ? 'Esperando' : ctrl.status === 'COMPLETED' ? 'Completado' : ctrl.status}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                              {/* Footer */}
+                              <p style={{ fontSize: '12px', color: '#9CA3AF', paddingTop: '8px', borderTop: '1px solid #F3F4F6', margin: 0 }}>
+                                Por {sol.performedBy?.name || 'Técnico'}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ═══ CHAT TAB ═══ */}
+              {activeTab === 'comments' && (
+                <div style={{ display: 'flex', flexDirection: 'column', height: '400px' }}>
+                  {/* Messages */}
+                  <div ref={chatScrollRef} style={{
+                    flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 0',
+                  }}>
+                    {isLoadingComments ? (
+                      <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}>
+                        <Loader2 className="h-6 w-6 animate-spin" style={{ color: '#9CA3AF' }} />
+                      </div>
+                    ) : comments.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '48px 0' }}>
+                        <MessageSquare className="h-10 w-10" style={{ color: '#D1D5DB', margin: '0 auto 12px' }} />
+                        <p style={{ fontSize: '14px', color: '#9CA3AF', margin: 0 }}>No hay comentarios aún</p>
+                        <p style={{ fontSize: '12px', color: '#D1D5DB', margin: '4px 0 0' }}>Sé el primero en agregar un comentario</p>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {comments.map(comment => {
+                          const typeKey = comment.type || 'comment';
+                          const cfg = COMMENT_TYPES[typeKey] || COMMENT_TYPES.comment;
+                          const isOwn = currentUser?.id === comment.author?.id;
+                          const isEditing = editingCommentId === comment.id;
+                          const isDeleting = deletingCommentId === comment.id;
+                          const isHovered = hoveredCommentId === comment.id;
+                          const wasEdited = comment.updatedAt && new Date(comment.updatedAt).getTime() - new Date(comment.createdAt).getTime() > 1000;
+
+                          return (
+                            <div
+                              key={comment.id}
+                              style={{
+                                display: 'flex', gap: '10px', padding: '8px 4px', borderRadius: '6px',
+                                transition: 'background 120ms',
+                                background: isHovered ? '#F9FAFB' : 'transparent',
+                              }}
+                              onMouseEnter={() => setHoveredCommentId(comment.id)}
+                              onMouseLeave={() => setHoveredCommentId(null)}
+                            >
+                              {/* Avatar */}
+                              <div style={{
+                                height: '28px', width: '28px', borderRadius: '50%', background: '#F3F4F6',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '10px', fontWeight: 700, color: '#6B7280', flexShrink: 0, marginTop: '2px',
+                              }}>
+                                {comment.author?.name ? getInitials(comment.author.name) : '??'}
+                              </div>
+                              {/* Content */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+                                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#111827' }}>
+                                    {comment.author?.name || 'Usuario'}
+                                  </span>
+                                  <span style={{
+                                    fontSize: '10px', fontWeight: 500, padding: '1px 6px', borderRadius: '4px',
+                                    background: cfg.bg, color: cfg.color,
+                                  }}>
+                                    {cfg.label}
+                                  </span>
+                                  <span style={{ fontSize: '11px', color: '#D1D5DB' }}>
+                                    {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: es })}
+                                  </span>
+                                  {wasEdited && (
+                                    <span style={{ fontSize: '10px', color: '#D1D5DB', fontStyle: 'italic' }}>(editado)</span>
+                                  )}
+                                </div>
+
+                                {isEditing ? (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                                    <textarea
+                                      value={editingContent}
+                                      onChange={e => setEditingContent(e.target.value)}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                          e.preventDefault();
+                                          if (editingContent.trim()) editCommentMutation.mutate({ commentId: comment.id, content: editingContent.trim() });
+                                        }
+                                        if (e.key === 'Escape') setEditingCommentId(null);
+                                      }}
+                                      rows={2}
+                                      autoFocus
+                                      style={{
+                                        fontSize: '13px', padding: '8px', borderRadius: '6px',
+                                        border: '1px solid #E4E4E8', outline: 'none', fontFamily: 'inherit',
+                                        resize: 'vertical', color: '#111827',
+                                      }}
+                                    />
+                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                      <button
+                                        disabled={editCommentMutation.isPending || !editingContent.trim()}
+                                        onClick={() => editCommentMutation.mutate({ commentId: comment.id, content: editingContent.trim() })}
+                                        style={{
+                                          height: '26px', padding: '0 10px', borderRadius: '5px', fontSize: '11px', fontWeight: 600,
+                                          border: 'none', background: '#111827', color: '#FFFFFF', cursor: 'pointer',
+                                          display: 'flex', alignItems: 'center', gap: '4px',
+                                        }}
+                                      >
+                                        {editCommentMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+                                        Guardar
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingCommentId(null)}
+                                        style={{
+                                          height: '26px', padding: '0 10px', borderRadius: '5px', fontSize: '11px', fontWeight: 500,
+                                          border: '1px solid #E4E4E8', background: '#FFFFFF', color: '#6B7280', cursor: 'pointer',
+                                        }}
+                                      >
+                                        Cancelar
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : isDeleting ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                                    <span style={{ fontSize: '12px', color: '#6B7280' }}>¿Eliminar este comentario?</span>
+                                    <button
+                                      onClick={() => { deleteCommentMutation.mutate(comment.id); setDeletingCommentId(null); }}
+                                      style={{
+                                        height: '24px', padding: '0 8px', borderRadius: '5px', fontSize: '11px', fontWeight: 600,
+                                        border: 'none', background: '#FEE2E2', color: '#DC2626', cursor: 'pointer',
+                                      }}
+                                    >
+                                      Sí
+                                    </button>
+                                    <button
+                                      onClick={() => setDeletingCommentId(null)}
+                                      style={{
+                                        height: '24px', padding: '0 8px', borderRadius: '5px', fontSize: '11px', fontWeight: 500,
+                                        border: '1px solid #E4E4E8', background: '#FFFFFF', color: '#6B7280', cursor: 'pointer',
+                                      }}
+                                    >
+                                      No
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <p style={{ fontSize: '13px', color: '#374151', margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                                    {comment.content}
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Hover actions */}
+                              {isOwn && !isEditing && !isDeleting && (
+                                <div style={{
+                                  display: 'flex', gap: '2px', opacity: isHovered ? 1 : 0,
+                                  transition: 'opacity 120ms', flexShrink: 0,
+                                }}>
+                                  <button
+                                    onClick={() => { setEditingCommentId(comment.id); setEditingContent(comment.content); }}
+                                    title="Editar"
+                                    style={{
+                                      height: '24px', width: '24px', borderRadius: '4px', border: 'none',
+                                      background: 'transparent', color: '#9CA3AF', cursor: 'pointer',
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.color = '#6B7280'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => setDeletingCommentId(comment.id)}
+                                    title="Eliminar"
+                                    style={{
+                                      height: '24px', width: '24px', borderRadius: '4px', border: 'none',
+                                      background: 'transparent', color: '#9CA3AF', cursor: 'pointer',
+                                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#DC2626'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Composer */}
+                  <div style={{ flexShrink: 0, borderTop: '1px solid #E4E4E8', paddingTop: '12px', position: 'relative' }}>
+                    {/* @Mention dropdown */}
+                    {mentionQuery !== null && filteredMentions.length > 0 && (
+                      <div style={{
+                        position: 'absolute', bottom: '100%', left: 0, marginBottom: '4px', zIndex: 50,
+                        background: '#FFFFFF', border: '1px solid #E4E4E8', borderRadius: '8px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)', minWidth: '200px', overflow: 'hidden',
+                      }}>
+                        {filteredMentions.map(user => (
+                          <button
+                            key={user.id}
+                            onMouseDown={e => { e.preventDefault(); handleSelectMention(user); }}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+                              padding: '6px 12px', border: 'none', background: 'transparent',
+                              cursor: 'pointer', fontSize: '13px', color: '#111827', textAlign: 'left',
+                            }}
+                            onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                          >
+                            <div style={{
+                              height: '24px', width: '24px', borderRadius: '50%', background: '#F3F4F6',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: '9px', fontWeight: 700, color: '#6B7280', flexShrink: 0,
+                            }}>
+                              {getInitials(user.name)}
+                            </div>
+                            {user.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Type chips */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', gap: '2px', border: '1px solid #E4E4E8', borderRadius: '6px', overflow: 'hidden' }}>
+                        {(['comment', 'update', 'issue'] as const).map(type => {
+                          const cfg = COMMENT_TYPES[type];
+                          const isActive = commentType === type;
+                          return (
+                            <button
+                              key={type}
+                              onClick={() => setCommentType(type)}
+                              style={{
+                                padding: '3px 8px', fontSize: '11px', fontWeight: 500,
+                                background: isActive ? cfg.bg : '#FFFFFF', color: isActive ? cfg.color : '#9CA3AF',
+                                border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px',
+                                transition: 'all 120ms',
+                              }}
+                            >
+                              {type === 'comment' && <MessageSquare className="h-3 w-3" />}
+                              {type === 'update' && <Info className="h-3 w-3" />}
+                              {type === 'issue' && <AlertTriangle className="h-3 w-3" />}
+                              {cfg.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Input area */}
+                    <div style={{
+                      display: 'flex', gap: '8px', alignItems: 'flex-end',
+                      border: '1px solid #E4E4E8', borderRadius: '8px', padding: '8px',
+                      transition: 'box-shadow 120ms',
+                    }}>
+                      <textarea
+                        ref={chatTextareaRef}
+                        placeholder="Escribe un comentario... @ para mencionar"
+                        value={chatMessage}
+                        onChange={handleChatInputChange}
+                        onKeyDown={handleKeyDown}
+                        disabled={sendCommentMutation.isPending}
+                        rows={1}
+                        style={{
+                          flex: 1, minHeight: '36px', maxHeight: '120px', resize: 'none',
+                          fontSize: '13px', padding: '4px 0', border: 'none', outline: 'none',
+                          fontFamily: 'inherit', color: '#111827', background: 'transparent',
+                        }}
+                      />
+                      <button
+                        onClick={handleSendComment}
+                        disabled={!chatMessage.trim() || sendCommentMutation.isPending}
+                        style={{
+                          height: '28px', width: '28px', borderRadius: '6px', flexShrink: 0,
+                          border: 'none', background: '#111827', color: '#FFFFFF',
+                          cursor: chatMessage.trim() ? 'pointer' : 'not-allowed',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          opacity: chatMessage.trim() ? 1 : 0.4, transition: 'all 120ms',
+                        }}
+                      >
+                        {sendCommentMutation.isPending ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                      </button>
+                    </div>
+                    <p style={{ fontSize: '11px', color: '#D1D5DB', margin: '4px 0 0 4px' }}>
+                      Cmd+Enter para enviar
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* ── ACTION BAR ── */}
+            {failure.status !== 'RESOLVED' && failure.status !== 'RESOLVED_IMMEDIATE' && (
+              <div style={{
+                borderTop: '1px solid #E4E4E8', padding: '16px 24px', flexShrink: 0,
+                display: 'flex', gap: '8px',
+              }}>
+                <button
+                  onClick={() => setImmediateCloseOpen(true)}
+                  style={{
+                    flex: 1, height: '38px', borderRadius: '8px',
+                    border: '1.5px solid #059669', background: '#ECFDF5', color: '#059669',
+                    fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    transition: 'all 120ms ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#D1FAE5'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#ECFDF5'; }}
+                >
+                  <CheckCircle2 className="h-4 w-4" /> Resolver Ahora
+                </button>
+                {hasWorkOrder ? (
+                  <button
+                    onClick={() => handleGoToWorkOrder(failure.workOrders![0].id)}
+                    style={{
+                      flex: 1, height: '38px', borderRadius: '8px',
+                      border: 'none', background: '#111827', color: '#FFFFFF',
+                      fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      transition: 'all 120ms ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#1F2937'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#111827'; }}
+                  >
+                    <ExternalLink className="h-4 w-4" /> Ver OT
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleCreateWorkOrder}
+                    style={{
+                      flex: 1, height: '38px', borderRadius: '8px',
+                      border: 'none', background: '#111827', color: '#FFFFFF',
+                      fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      transition: 'all 120ms ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#1F2937'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#111827'; }}
+                  >
+                    <FileText className="h-4 w-4" /> Crear OT
+                  </button>
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
+            <p style={{ fontSize: '14px', color: '#9CA3AF' }}>Falla no encontrada</p>
+          </div>
+        )}
       </div>
     </div>
 
-    {/* Dialog de Retorno a Producción */}
+    {/* Dialogs */}
     {selectedDowntimeLog && failureId && (
       <ReturnToProductionDialog
         open={returnDialogOpen}
-        onOpenChange={(open) => {
-          setReturnDialogOpen(open);
-          if (!open) setSelectedDowntimeLog(null);
-        }}
+        onOpenChange={open => { setReturnDialogOpen(open); if (!open) setSelectedDowntimeLog(null); }}
         downtimeLog={selectedDowntimeLog}
         failureId={failureId}
       />
     )}
-
-    {/* Dialog de Cierre Inmediato */}
     {failureId && failure && (
       <ImmediateCloseDialog
         open={immediateCloseOpen}
         onOpenChange={setImmediateCloseOpen}
         failureId={failureId}
         failureTitle={failure.title}
-        hasActiveDowntime={failure.downtimeLogs?.some((d) => !d.endedAt) || false}
+        hasActiveDowntime={failure.downtimeLogs?.some(d => !d.endedAt) || false}
         onSuccess={() => onOpenChange(false)}
       />
     )}
-
-    {/* Dialog de Reabrir Falla */}
     {failureId && failure && (
       <ReopenFailureDialog
         open={reopenDialogOpen}
@@ -1687,26 +1973,34 @@ export function FailureDetailSheet({
       />
     )}
 
-    {/* Lightbox de fotos */}
+    {/* Lightbox */}
     {lightboxPhoto && (
       <div
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 cursor-zoom-out"
         onClick={() => setLightboxPhoto(null)}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 100,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.80)', cursor: 'zoom-out',
+        }}
       >
         <button
-          className="absolute top-4 right-4 text-white/80 hover:text-white"
           onClick={() => setLightboxPhoto(null)}
+          style={{
+            position: 'absolute', top: '16px', right: '16px',
+            background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)',
+            cursor: 'pointer', padding: '4px',
+          }}
         >
           <X className="h-6 w-6" />
         </button>
         <img
           src={lightboxPhoto}
           alt="Foto ampliada"
-          className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
+          style={{ maxHeight: '90vh', maxWidth: '90vw', objectFit: 'contain', borderRadius: '8px' }}
         />
       </div>
     )}
-  </>
+    </>
   );
 }

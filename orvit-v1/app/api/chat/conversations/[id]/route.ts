@@ -38,6 +38,23 @@ export async function GET(
   const conversation = await prisma.conversation.findUnique({
     where: { id },
     include: {
+      parent: {
+        select: { id: true, name: true, iconName: true, depth: true },
+      },
+      children: {
+        where: { isArchived: false },
+        select: {
+          id: true,
+          name: true,
+          iconName: true,
+          depth: true,
+          members: {
+            where: { leftAt: null },
+            select: { userId: true },
+          },
+        },
+        orderBy: { name: "asc" },
+      },
       members: {
         where: { leftAt: null },
         select: {
@@ -57,7 +74,19 @@ export async function GET(
     return NextResponse.json({ error: "No encontrado" }, { status: 404 });
   }
 
-  return NextResponse.json(conversation);
+  // Enrich children with memberCount
+  const enriched = {
+    ...conversation,
+    children: conversation.children.map((c) => ({
+      id: c.id,
+      name: c.name,
+      iconName: c.iconName,
+      depth: c.depth,
+      memberCount: c.members.length,
+    })),
+  };
+
+  return NextResponse.json(enriched);
 }
 
 // ── PATCH — Edit ──────────────────────────────────────────────────
@@ -84,6 +113,9 @@ export async function PATCH(
   if (body.name !== undefined) updateData.name = body.name;
   if (body.description !== undefined) updateData.description = body.description;
   if (body.isArchived !== undefined) updateData.isArchived = body.isArchived;
+  if (body.iconName !== undefined) updateData.iconName = body.iconName;
+  if (body.avatarUrl !== undefined) updateData.avatarUrl = body.avatarUrl;
+  if (body.onlyAdminsPost !== undefined) updateData.onlyAdminsPost = body.onlyAdminsPost;
 
   const updated = await prisma.conversation.update({
     where: { id },

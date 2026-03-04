@@ -395,6 +395,19 @@ export function FailureCard({
           }}>
             {displayPriority} {pInfo.label}
           </span>
+          {failure.incidentType && (
+            <span style={{
+              fontSize: '10px', fontWeight: 600,
+              padding: '2px 7px', borderRadius: '4px',
+              backgroundColor: failure.incidentType === 'ROTURA' ? '#EDE9FE' : '#F0F9FF',
+              color: failure.incidentType === 'ROTURA' ? '#7C3AED' : '#0284C7',
+              lineHeight: '16px',
+              letterSpacing: '0.02em',
+              textTransform: 'uppercase' as const,
+            }}>
+              {failure.incidentType === 'ROTURA' ? 'Rotura' : 'Falla'}
+            </span>
+          )}
           {failure.causedDowntime && (
             <span style={{
               fontSize: '11px', fontWeight: 500,

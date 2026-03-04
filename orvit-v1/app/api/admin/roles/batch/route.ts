@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth';
 import { invalidateUserPermissions } from '@/lib/permissions-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -127,6 +128,11 @@ export async function POST(request: NextRequest) {
     await Promise.all(
       usersWithRole.map(uc => invalidateUserPermissions(uc.userId, companyId))
     );
+
+    // Notificar vía Pusher para actualización instantánea en el frontend
+    triggerCompanyEvent(companyId, 'permissions', 'permissions:updated', {
+      roleName, batch: true, count: result.length,
+    });
 
     const notFound = permissionNames.filter(
       (n: string) => !permissions.some(p => p.name === n)

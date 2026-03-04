@@ -100,7 +100,30 @@ export async function POST(request: NextRequest) {
       RETURNING id, name, unit_measure as "unitMeasure", supplier_id as "supplierId", company_id as "companyId", is_active as "isActive", created_at as "createdAt", updated_at as "updatedAt"
     `;
 
-    return NextResponse.json((newSupply as any[])[0]);
+    const created = (newSupply as any[])[0];
+
+    // Auto-crear SupplierItem para que aparezca en comprobantes del proveedor
+    if (supplierId && created?.id) {
+      try {
+        await prisma.supplierItem.create({
+          data: {
+            supplierId: parseInt(supplierId),
+            supplyId: created.id,
+            nombre: name,
+            unidad: unitMeasure || 'UN',
+            activo: true,
+            companyId: parseInt(companyId),
+          },
+        });
+      } catch (err: any) {
+        // Ignorar si ya existe (unique constraint)
+        if (!err?.code?.includes('P2002')) {
+          console.warn('[insumos] Error auto-creando SupplierItem:', err?.message);
+        }
+      }
+    }
+
+    return NextResponse.json(created);
 
   } catch (error) {
     console.error('Error creando insumo:', error);

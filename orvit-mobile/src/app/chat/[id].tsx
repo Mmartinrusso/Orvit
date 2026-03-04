@@ -44,6 +44,7 @@ import { getPusherClient } from "@/lib/pusher";
 import ChatHeader from "@/components/chat/ChatHeader";
 import MessageBubble from "@/components/chat/MessageBubble";
 import ChatInputBar from "@/components/chat/ChatInputBar";
+import ForwardMessageModal from "@/components/chat/ForwardMessageModal";
 import TypingIndicator from "@/components/chat/TypingIndicator";
 import MentionList from "@/components/MentionList";
 import ReactionPicker from "@/components/ReactionPicker";
@@ -52,14 +53,134 @@ import type { Message } from "@/types/chat";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
+// ── Date separator helper ──────────────────────────────────
+function formatDateSeparator(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "Hoy";
+  if (diffDays === 1) return "Ayer";
+  return date.toLocaleDateString("es", {
+    day: "numeric",
+    month: "long",
+    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+  });
+}
+
+function DateSeparator({ date, isDark }: { date: string; isDark: boolean }) {
+  return (
+    <View style={{ alignItems: "center", marginVertical: 10 }}>
+      <View
+        style={{
+          backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.9)",
+          borderRadius: 8,
+          paddingHorizontal: 12,
+          paddingVertical: 5,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: isDark ? 0.2 : 0.06,
+          shadowRadius: 2,
+          elevation: 1,
+        }}
+      >
+        <Text
+          style={{
+            fontSize: 12,
+            fontWeight: "500",
+            color: isDark ? "rgba(233,237,239,0.6)" : "rgba(0,0,0,0.5)",
+          }}
+        >
+          {formatDateSeparator(date)}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+// ── Chat background texture (WhatsApp-style dense doodle) ──
+function ChatBackgroundPattern() {
+  const icons = [
+    "heart-outline", "camera-outline", "musical-notes-outline", "gift-outline",
+    "happy-outline", "star-outline", "call-outline", "chatbubble-outline",
+    "globe-outline", "time-outline", "lock-closed-outline", "alarm-outline",
+    "calculator-outline", "calendar-outline", "bulb-outline", "compass-outline",
+    "football-outline", "basketball-outline", "balloon-outline", "bicycle-outline",
+    "boat-outline", "bus-outline", "cafe-outline", "cart-outline",
+    "cloud-outline", "code-slash-outline", "color-palette-outline", "construct-outline",
+    "cube-outline", "diamond-outline", "earth-outline", "film-outline",
+    "fish-outline", "fitness-outline", "flame-outline", "flash-outline",
+    "flower-outline", "game-controller-outline", "headset-outline", "home-outline",
+    "ice-cream-outline", "key-outline", "leaf-outline", "library-outline",
+    "location-outline", "mail-outline", "megaphone-outline", "mic-outline",
+    "moon-outline", "newspaper-outline", "notifications-outline", "paper-plane-outline",
+    "paw-outline", "pencil-outline", "pizza-outline", "planet-outline",
+    "play-outline", "rainy-outline", "rocket-outline", "rose-outline",
+    "school-outline", "shirt-outline", "skull-outline", "snow-outline",
+    "sparkles-outline", "sunny-outline", "telescope-outline", "tennisball-outline",
+    "thumbs-up-outline", "ticket-outline", "trophy-outline", "umbrella-outline",
+    "videocam-outline", "wallet-outline", "watch-outline", "wine-outline",
+  ] as const;
+  const rows = 40;
+  const cols = 9;
+  const items = [];
+  // Pseudo-random using deterministic seed per position
+  const rand = (r: number, c: number) => ((r * 131 + c * 97 + 37) % 256) / 256;
+  for (let r = 0; r < rows; r++) {
+    const isOffset = r % 2 === 1;
+    for (let c = 0; c < cols; c++) {
+      const idx = Math.floor(rand(r, c) * icons.length) % icons.length;
+      const rot = Math.floor(rand(r + 5, c + 3) * 360) - 180;
+      const size = 11 + Math.floor(rand(r + 2, c + 7) * 5); // 11-15
+      items.push(
+        <View
+          key={`${r}-${c}`}
+          style={{
+            width: `${100 / cols}%` as any,
+            height: 28,
+            alignItems: "center",
+            justifyContent: "center",
+            marginLeft: isOffset && c === 0 ? 16 : 0,
+          }}
+        >
+          <Ionicons
+            name={icons[idx]}
+            size={size}
+            color="#ffffff"
+            style={{ transform: [{ rotate: `${rot}deg` }] }}
+          />
+        </View>
+      );
+    }
+  }
+  return (
+    <View
+      style={{
+        position: "absolute",
+        top: 0, left: 0, right: 0, bottom: 0,
+        flexDirection: "row",
+        flexWrap: "wrap",
+        opacity: 0.04,
+        paddingTop: 2,
+      }}
+      pointerEvents="none"
+    >
+      {items}
+    </View>
+  );
+}
+
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const haptics = useHaptics();
   const queryClient = useQueryClient();
   const [inputText, setInputText] = useState("");
   const [title, setTitle] = useState("Chat");
+  const [isGroup, setIsGroup] = useState(false);
+  const [memberCount, setMemberCount] = useState(0);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [reactionTargetId, setReactionTargetId] = useState<string | null>(null);
@@ -69,6 +190,12 @@ export default function ChatScreen() {
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [editingMessage, setEditingMessage] = useState<Message | null>(null);
   const [editText, setEditText] = useState("");
+  const [forwardMessage, setForwardMessage] = useState<Message | null>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [searchMode, setSearchMode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<number[]>([]);
+  const [searchIndex, setSearchIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const lastTypingSentRef = useRef(0);
@@ -81,11 +208,17 @@ export default function ChatScreen() {
         if (conv.type === "DIRECT") {
           const other = conv.members?.find((m) => m.userId !== user?.id);
           setTitle(other?.user?.name || "Chat directo");
+          setIsGroup(false);
         } else {
           setTitle(conv.name || "Chat");
+          setIsGroup(true);
+          setMemberCount(conv.members?.length ?? 0);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.error("[Chat] Failed to load conversation:", err);
+        setTitle("Chat");
+      });
   }, [id, user?.id]);
 
   // Members for mentions
@@ -109,7 +242,10 @@ export default function ChatScreen() {
       enabled: !!id,
     });
 
-  const allMessages = data?.pages.flat() ?? [];
+  const realMessages = data?.pages.flat() ?? [];
+  const allMessages = realMessages;
+
+  
 
   // Send message
   const sendMutation = useMutation({
@@ -476,45 +612,214 @@ export default function ChatScreen() {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={["top", "bottom"]}>
-      <ChatHeader title={title} conversationId={id!} />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#111820" }} edges={["top"]}>
+      <ChatHeader
+        title={title}
+        conversationId={id!}
+        isGroup={isGroup}
+        isOrvitBot={id === "mock-orvit"}
+        memberCount={memberCount}
+        typingNames={typingUsers}
+        onSearchPress={() => {
+          setSearchMode(true);
+          setSearchQuery("");
+          setSearchResults([]);
+          setSearchIndex(0);
+        }}
+      />
 
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={{ flex: 1, backgroundColor: "#0b1014" }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
+        <View style={{ flex: 1, position: "relative" }}>
+        <ChatBackgroundPattern />
         <FlatList
           ref={flatListRef}
           data={allMessages}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <MessageBubble
-              message={item}
-              isMe={item.senderId === user?.id}
-              userId={user?.id ?? 0}
-              onReply={(msg) => setReplyTo(msg)}
-              onReaction={(msg) => {
-                setReactionTargetId(msg.id);
-                setShowReactionPicker(true);
-              }}
-              onToggleReaction={handleToggleReaction}
-              onEdit={handleStartEdit}
-              onDelete={handleDelete}
-              onImagePreview={(url) => setImagePreviewUrl(url)}
-            />
-          )}
+          renderItem={({ item, index }) => {
+            // Date separator: show when date changes from next message (inverted list)
+            const nextMsg = allMessages[index + 1];
+            const showDate =
+              !nextMsg ||
+              new Date(item.createdAt).toDateString() !==
+                new Date(nextMsg.createdAt).toDateString();
+
+            return (
+              <>
+                <MessageBubble
+                  message={item}
+                  isMe={item.senderId === (user?.id ?? 1)}
+                  userId={user?.id ?? 0}
+                  highlighted={searchMode && searchResults.includes(index)}
+                  onReply={(msg) => setReplyTo(msg)}
+                  onForward={(msg) => setForwardMessage(msg)}
+                  onReaction={(msg) => {
+                    setReactionTargetId(msg.id);
+                    setShowReactionPicker(true);
+                  }}
+                  onToggleReaction={handleToggleReaction}
+                  onEdit={handleStartEdit}
+                  onDelete={handleDelete}
+                  onImagePreview={(url) => setImagePreviewUrl(url)}
+                  showSender={isGroup}
+                />
+                {showDate && (
+                  <DateSeparator date={item.createdAt} isDark={isDark} />
+                )}
+              </>
+            );
+          }}
           inverted
           onEndReached={() => {
             if (hasNextPage && !isFetchingNextPage) fetchNextPage();
           }}
           onEndReachedThreshold={0.3}
-          contentContainerStyle={{ paddingHorizontal: 8, paddingVertical: 8 }}
+          contentContainerStyle={{ paddingHorizontal: 4, paddingVertical: 6 }}
+          onScroll={(e) => {
+            const offsetY = e.nativeEvent.contentOffset.y;
+            setShowScrollBtn(offsetY > 300);
+          }}
+          scrollEventThrottle={100}
           ListHeaderComponent={
             typingUsers.length > 0 ? (
-              <TypingIndicator />
+              <TypingIndicator names={typingUsers} />
             ) : null
           }
         />
+
+        {/* Scroll to bottom button */}
+        {showScrollBtn && (
+          <Animated.View
+            entering={FadeIn.duration(200)}
+            exiting={FadeOut.duration(150)}
+            style={{
+              position: "absolute",
+              bottom: 12,
+              right: 12,
+              zIndex: 10,
+            }}
+          >
+            <AnimatedPressable
+              onPress={() => flatListRef.current?.scrollToOffset({ offset: 0, animated: true })}
+              haptic="light"
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: "#111820",
+                justifyContent: "center",
+                alignItems: "center",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+                elevation: 4,
+              }}
+            >
+              <Ionicons name="chevron-down" size={22} color="#fff" />
+            </AnimatedPressable>
+          </Animated.View>
+        )}
+        </View>
+
+        {/* Search bar overlay */}
+        {searchMode && (
+          <Animated.View
+            entering={FadeIn.duration(200)}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: "#111820",
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              gap: 8,
+              borderBottomWidth: 1,
+              borderBottomColor: "rgba(255,255,255,0.06)",
+            }}
+          >
+            <Ionicons name="search" size={18} color="rgba(255,255,255,0.5)" />
+            <TextInput
+              style={{
+                flex: 1,
+                color: "#fff",
+                fontSize: 14,
+                backgroundColor: "#1c1c1e",
+                borderRadius: 8,
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                height: 34,
+              }}
+              placeholder="Buscar en la conversación..."
+              placeholderTextColor="rgba(255,255,255,0.35)"
+              value={searchQuery}
+              onChangeText={(text) => {
+                setSearchQuery(text);
+                if (!text.trim()) {
+                  setSearchResults([]);
+                  setSearchIndex(0);
+                  return;
+                }
+                const q = text.toLowerCase();
+                const indices: number[] = [];
+                allMessages.forEach((m, i) => {
+                  if (
+                    !m.isDeleted &&
+                    m.content.toLowerCase().includes(q)
+                  ) {
+                    indices.push(i);
+                  }
+                });
+                setSearchResults(indices);
+                setSearchIndex(0);
+                if (indices.length > 0) {
+                  flatListRef.current?.scrollToIndex({ index: indices[0], animated: true });
+                }
+              }}
+              autoFocus
+            />
+            {searchResults.length > 0 && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+                <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>
+                  {searchIndex + 1}/{searchResults.length}
+                </Text>
+                <AnimatedPressable
+                  onPress={() => {
+                    const next = (searchIndex + 1) % searchResults.length;
+                    setSearchIndex(next);
+                    flatListRef.current?.scrollToIndex({ index: searchResults[next], animated: true });
+                  }}
+                  haptic="light"
+                  style={{ padding: 4 }}
+                >
+                  <Ionicons name="chevron-down" size={18} color="#fff" />
+                </AnimatedPressable>
+                <AnimatedPressable
+                  onPress={() => {
+                    const prev = searchIndex === 0 ? searchResults.length - 1 : searchIndex - 1;
+                    setSearchIndex(prev);
+                    flatListRef.current?.scrollToIndex({ index: searchResults[prev], animated: true });
+                  }}
+                  haptic="light"
+                  style={{ padding: 4 }}
+                >
+                  <Ionicons name="chevron-up" size={18} color="#fff" />
+                </AnimatedPressable>
+              </View>
+            )}
+            <AnimatedPressable
+              onPress={() => {
+                setSearchMode(false);
+                setSearchQuery("");
+                setSearchResults([]);
+              }}
+              haptic="light"
+            >
+              <Ionicons name="close" size={22} color="#fff" />
+            </AnimatedPressable>
+          </Animated.View>
+        )}
 
         {/* Mention list */}
         {mentionFilter !== null && members && (
@@ -535,9 +840,7 @@ export default function ChatScreen() {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              backgroundColor: colors.bgSecondary,
-              borderTopWidth: 1,
-              borderTopColor: colors.border,
+              backgroundColor: colors.chatBg,
               paddingHorizontal: 16,
               paddingVertical: 8,
               gap: 8,
@@ -586,6 +889,16 @@ export default function ChatScreen() {
           />
         )}
       </KeyboardAvoidingView>
+
+      <ForwardMessageModal
+        visible={!!forwardMessage}
+        message={forwardMessage}
+        onClose={() => setForwardMessage(null)}
+        onForwarded={() => {
+          haptics.success();
+          setForwardMessage(null);
+        }}
+      />
 
       <ReactionPicker
         visible={showReactionPicker}

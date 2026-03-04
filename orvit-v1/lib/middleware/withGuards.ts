@@ -191,13 +191,23 @@ export function withGuards(
 
     // ── 1. Extract JWT token ─────────────────────────────────────────────
     let token: string | undefined;
-    try {
-      const cookieStore = await cookies();
-      token =
-        cookieStore.get('accessToken')?.value ||
-        cookieStore.get('token')?.value;
-    } catch {
-      // cookies() can throw outside of request context
+
+    // Try Bearer header first (mobile app)
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.slice(7);
+    }
+
+    // Fall back to cookies (web app)
+    if (!token) {
+      try {
+        const cookieStore = await cookies();
+        token =
+          cookieStore.get('accessToken')?.value ||
+          cookieStore.get('token')?.value;
+      } catch {
+        // cookies() can throw outside of request context
+      }
     }
 
     if (!token) {

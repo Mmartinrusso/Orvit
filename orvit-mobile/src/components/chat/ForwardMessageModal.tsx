@@ -1,0 +1,259 @@
+import { useState, useMemo } from "react";
+import {
+  View,
+  Text,
+  Modal,
+  FlatList,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+import { useQuery } from "@tanstack/react-query";
+import { Ionicons } from "@expo/vector-icons";
+import { getConversations, sendMessage } from "@/api/chat";
+import { useAuth } from "@/contexts/AuthContext";
+import AnimatedPressable from "@/components/ui/AnimatedPressable";
+import type { Message, Conversation } from "@/types/chat";
+
+const C = {
+  bg: "#0b1014",
+  card: "#111820",
+  border: "rgba(255,255,255,0.06)",
+  text: "#ffffff",
+  muted: "rgba(255,255,255,0.5)",
+  accent: "#3b82f6",
+  input: "#1c1c1e",
+};
+
+interface Props {
+  visible: boolean;
+  message: Message | null;
+  onClose: () => void;
+  onForwarded: (conversationId: string) => void;
+}
+
+export default function ForwardMessageModal({
+  visible,
+  message,
+  onClose,
+  onForwarded,
+}: Props) {
+  const { user } = useAuth();
+  const [search, setSearch] = useState("");
+  const [sending, setSending] = useState<string | null>(null);
+
+  const { data } = useQuery({
+    queryKey: ["conversations-forward"],
+    queryFn: () => getConversations({ limit: 100 }),
+    enabled: visible,
+  });
+
+  const conversations = useMemo(() => {
+    const list = data?.conversations ?? [];
+    if (!search.trim()) return list;
+    const q = search.toLowerCase();
+    return list.filter((c) => {
+      const name =
+        c.type === "DIRECT"
+          ? c.members?.find((m) => m.userId !== user?.id)?.user?.name || ""
+          : c.name || "";
+      return name.toLowerCase().includes(q);
+    });
+  }, [data, search, user?.id]);
+
+  const getConvName = (c: Conversation) => {
+    if (c.type === "DIRECT") {
+      return c.members?.find((m) => m.userId !== user?.id)?.user?.name || "Chat directo";
+    }
+    return c.name || "Grupo";
+  };
+
+  const handleForward = async (conv: Conversation) => {
+    if (!message || sending) return;
+    setSending(conv.id);
+    try {
+      const prefix = `↪️ *Reenviado*\n`;
+      let content = prefix;
+
+      if (message.type === "text") {
+        content += message.content;
+      } else if (message.type === "audio") {
+        content += "🎤 Audio";
+      } else if (message.type === "image") {
+        content += "📷 Imagen";
+      } else if (message.type === "file") {
+        content += `📎 ${message.fileName || "Archivo"}`;
+      }
+
+      await sendMessage(conv.id, {
+        content,
+        type: message.type === "text" ? "text" : message.type,
+        fileUrl: message.fileUrl || undefined,
+        fileName: message.fileName || undefined,
+        fileSize: message.fileSize || undefined,
+        fileDuration: message.fileDuration || undefined,
+      });
+
+      onForwarded(conv.id);
+      onClose();
+      setSearch("");
+    } catch {
+      Alert.alert("Error", "No se pudo reenviar el mensaje");
+    } finally {
+      setSending(null);
+    }
+  };
+
+  const renderItem = ({ item }: { item: Conversation }) => {
+    const name = getConvName(item);
+    const isGroup = item.type !== "DIRECT";
+    const isSending = sending === item.id;
+
+    return (
+      <AnimatedPressable
+        onPress={() => handleForward(item)}
+        haptic="light"
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 16,
+          paddingVertical: 12,
+          gap: 12,
+          opacity: isSending ? 0.5 : 1,
+        }}
+      >
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: isGroup ? "rgba(255,255,255,0.08)" : C.accent,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Ionicons
+            name={isGroup ? "people" : "person"}
+            size={20}
+            color="#fff"
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: C.text, fontSize: 15, fontWeight: "500" }}>
+            {name}
+          </Text>
+          {isGroup && (
+            <Text style={{ color: C.muted, fontSize: 12, marginTop: 1 }}>
+              Grupo
+            </Text>
+          )}
+        </View>
+        {isSending && <ActivityIndicator size="small" color={C.accent} />}
+      </AnimatedPressable>
+    );
+  };
+
+  if (!message) return null;
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <View style={{ flex: 1, backgroundColor: C.bg }}>
+        {/* Header */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 12,
+            backgroundColor: C.card,
+            gap: 12,
+          }}
+        >
+          <AnimatedPressable onPress={onClose} haptic="light">
+            <Ionicons name="close" size={24} color={C.text} />
+          </AnimatedPressable>
+          <Text style={{ flex: 1, color: C.text, fontSize: 18, fontWeight: "600" }}>
+            Reenviar a...
+          </Text>
+        </View>
+
+        {/* Search */}
+        <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: C.card }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: C.input,
+              borderRadius: 10,
+              paddingHorizontal: 12,
+              height: 36,
+            }}
+          >
+            <Ionicons name="search" size={16} color={C.muted} />
+            <TextInput
+              style={{
+                flex: 1,
+                color: C.text,
+                fontSize: 14,
+                marginLeft: 8,
+                height: 36,
+              }}
+              placeholder="Buscar conversación..."
+              placeholderTextColor={C.muted}
+              value={search}
+              onChangeText={setSearch}
+            />
+          </View>
+        </View>
+
+        {/* Message preview */}
+        <View
+          style={{
+            marginHorizontal: 16,
+            marginTop: 8,
+            marginBottom: 4,
+            backgroundColor: C.card,
+            borderRadius: 10,
+            padding: 12,
+            borderLeftWidth: 3,
+            borderLeftColor: C.accent,
+          }}
+        >
+          <Text style={{ color: C.muted, fontSize: 12, marginBottom: 2 }}>
+            {message.sender?.name || "Mensaje"}
+          </Text>
+          <Text style={{ color: C.text, fontSize: 13 }} numberOfLines={2}>
+            {message.type === "audio"
+              ? "🎤 Audio"
+              : message.type === "image"
+              ? "📷 Imagen"
+              : message.type === "file"
+              ? `📎 ${message.fileName || "Archivo"}`
+              : message.content}
+          </Text>
+        </View>
+
+        {/* Conversation list */}
+        <FlatList
+          data={conversations}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingTop: 4 }}
+          ListEmptyComponent={
+            <View style={{ padding: 32, alignItems: "center" }}>
+              <Text style={{ color: C.muted, fontSize: 14 }}>
+                No se encontraron conversaciones
+              </Text>
+            </View>
+          }
+        />
+      </View>
+    </Modal>
+  );
+}

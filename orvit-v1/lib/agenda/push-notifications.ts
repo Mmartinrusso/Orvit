@@ -49,6 +49,7 @@ export async function sendTaskPushNotification(payload: TaskPushPayload) {
         body: bodyMap[type].slice(0, 100),
         data: { taskId, type },
         sound: "default",
+        channelId: "task-notifications",
       });
     }
 
