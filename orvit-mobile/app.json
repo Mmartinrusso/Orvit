@@ -32,7 +32,6 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "googleServicesFile": "./google-services.json",
       "package": "com.orvit.chat",
       "versionCode": 1,
       "permissions": [
