@@ -25,6 +25,17 @@ export const dynamic = "force-dynamic";
 // Mobile refresh token: 30 days (vs 1 day web)
 const MOBILE_REFRESH_EXPIRES_MS = 30 * 24 * 60 * 60 * 1000;
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// Handle CORS preflight
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: corsHeaders });
+}
+
 export async function POST(request: NextRequest) {
   const ipAddress = getClientIdentifier(request);
   const userAgent = request.headers.get("user-agent");
@@ -42,7 +53,7 @@ export async function POST(request: NextRequest) {
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email y contraseña son requeridos" },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       );
     }
 
@@ -54,7 +65,7 @@ export async function POST(request: NextRequest) {
           error: "Demasiados intentos. Intentá de nuevo más tarde.",
           retryAfter: rateLimitResult.retryAfter,
         },
-        { status: 429, headers: { "Retry-After": String(rateLimitResult.retryAfter || 60) } }
+        { status: 429, headers: { ...corsHeaders, "Retry-After": String(rateLimitResult.retryAfter || 60) } }
       );
     }
 
@@ -67,7 +78,7 @@ export async function POST(request: NextRequest) {
           error: "Demasiados intentos para esta cuenta. Intentá de nuevo más tarde.",
           retryAfter: emailRateLimit.retryAfter,
         },
-        { status: 429, headers: { "Retry-After": String(emailRateLimit.retryAfter || 60) } }
+        { status: 429, headers: { ...corsHeaders, "Retry-After": String(emailRateLimit.retryAfter || 60) } }
       );
     }
 
@@ -84,7 +95,7 @@ export async function POST(request: NextRequest) {
       await incrementRateLimit(ipAddress, "login");
       await incrementRateLimit(emailNormalized, "loginByEmail");
       loggers.auth.warn({ ip: ipAddress, email, source: "mobile" }, "Mobile login failed");
-      return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
+      return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401, headers: corsHeaders });
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
@@ -92,7 +103,7 @@ export async function POST(request: NextRequest) {
       await incrementRateLimit(ipAddress, "login");
       await incrementRateLimit(emailNormalized, "loginByEmail");
       loggers.auth.warn({ ip: ipAddress, email, userId: user.id, source: "mobile" }, "Mobile login: invalid password");
-      return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401 });
+      return NextResponse.json({ error: "Credenciales inválidas" }, { status: 401, headers: corsHeaders });
     }
 
     // === LOGIN SUCCESS ===
@@ -175,13 +186,13 @@ export async function POST(request: NextRequest) {
         refreshExpiresAt: tokens.refreshTokenExpires.toISOString(),
       },
       sessionId,
-    });
+    }, { headers: corsHeaders });
   } catch (error) {
     console.error("[MOBILE-LOGIN] Error:", error);
     loggers.auth.error({ err: error, source: "mobile" }, "Mobile login error");
     return NextResponse.json(
       { error: "Error al iniciar sesión" },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
