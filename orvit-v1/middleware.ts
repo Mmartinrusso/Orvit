@@ -216,7 +216,6 @@ export async function middleware(request: NextRequest) {
     '/api/auth/mobile-login',
     '/api/auth/logout',
     '/api/auth/refresh',
-    '/api/whatsapp',
     // '/api/cron' removido - ahora se valida con CRON_SECRET más abajo
     '/api/webhooks',       // Webhooks externos
     '/api/telegram',       // Bot de Telegram
