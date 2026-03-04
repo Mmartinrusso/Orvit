@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 // GET /api/tools/suppliers/[id] - Obtener un proveedor específico
 export async function GET(
@@ -128,6 +129,8 @@ export async function PUT(
       }
     });
 
+    triggerCompanyEvent(parseInt(companyId), "tools", "tool:updated", { id: supplierId });
+
     return NextResponse.json({
       success: true,
       supplier: updatedSupplier,
@@ -199,6 +202,8 @@ export async function DELETE(
         id: supplierId
       }
     });
+
+    triggerCompanyEvent(parseInt(companyId), "tools", "tool:updated", { id: supplierId });
 
     return NextResponse.json({
       success: true,

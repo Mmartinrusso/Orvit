@@ -244,7 +244,7 @@ import { Toaster } from 'sonner';
 
 ## 🚀 Orden de Carga
 
-Cuando el usuario navega a `/mantenimiento/fallas`:
+Cuando el usuario navega a `/mantenimiento/incidentes`:
 
 1. **Página carga** (`page.tsx`)
 2. **KPIs fetch** (`GET /api/failure-occurrences/stats`)

@@ -331,7 +331,7 @@ export function SolutionDetailDialog({
 
   const navigateToFailure = (failureId: number) => {
     onOpenChange(false);
-    router.push(`/mantenimiento/fallas?failure=${failureId}`);
+    router.push(`/mantenimiento/incidentes?failure=${failureId}`);
   };
 
   const handleFileUpload = (type: 'image' | 'video' | 'document') => {

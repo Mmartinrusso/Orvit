@@ -226,7 +226,7 @@ async function handleDiagnosis(
       type: 'FAILURE',
       id: f.id,
       name: f.description || `Falla #${f.id}`,
-      url: `/mantenimiento/fallas/${f.id}`,
+      url: `/mantenimiento/incidentes/${f.id}`,
     })),
     confidence: 0.75,
   };

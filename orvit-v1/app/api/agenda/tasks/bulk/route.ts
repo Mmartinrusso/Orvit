@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/tasks/auth-helper';
 import { hasPermission } from '@/lib/permissions';
 import { z } from 'zod';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -129,6 +130,15 @@ export async function PATCH(request: NextRequest) {
         });
         affected = result.count;
         break;
+      }
+    }
+
+    // Pusher realtime trigger for each affected task
+    const companyId = tasks[0]?.companyId;
+    if (companyId) {
+      const eventName = action === 'delete' ? 'task:deleted' : 'task:updated';
+      for (const id of accessibleIds) {
+        triggerCompanyEvent(companyId, "tasks", eventName, { id });
       }
     }
 

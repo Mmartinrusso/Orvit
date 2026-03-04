@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,6 +108,8 @@ export async function POST(
           : {}),
       },
     });
+
+    triggerCompanyEvent(companyId, "tools", "tool:updated", { id: sessionId });
 
     return NextResponse.json({
       success: true,

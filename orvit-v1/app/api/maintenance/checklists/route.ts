@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -533,6 +534,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Pusher realtime trigger
+    triggerCompanyEvent(checklist.companyId, 'maintenance', 'maintenance:updated', { id: checklist.id });
+
     // Retornar el checklist con el formato esperado
     return NextResponse.json({
       id: checklist.id,
@@ -601,9 +605,12 @@ export async function DELETE(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `Checklist eliminado correctamente. Se eliminaron ${deletedExecutionsCount} ejecuciones del historial.` 
+    // Pusher realtime trigger
+    triggerCompanyEvent(deletedChecklist.companyId, 'maintenance', 'maintenance:updated', { id: deletedChecklist.id });
+
+    return NextResponse.json({
+      success: true,
+      message: `Checklist eliminado correctamente. Se eliminaron ${deletedExecutionsCount} ejecuciones del historial.`
     });
   } catch (error) {
     console.error('Error deleting checklist:', error);
@@ -713,8 +720,11 @@ export async function PUT(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({ 
-      success: true, 
+    // Pusher realtime trigger
+    triggerCompanyEvent(updatedChecklist.companyId, 'maintenance', 'maintenance:updated', { id: updatedChecklist.id });
+
+    return NextResponse.json({
+      success: true,
       message: 'Checklist actualizado correctamente',
       checklist: {
         id: updatedChecklist.id,

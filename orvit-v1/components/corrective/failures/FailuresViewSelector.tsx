@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
 import { List, Repeat, Copy } from 'lucide-react';
 
 export type FailuresView = 'reportes' | 'reincidencias' | 'duplicados';
@@ -53,7 +52,7 @@ export function FailuresViewSelector({ className }: FailuresViewSelectorProps) {
   const setView = useSetFailuresView();
 
   return (
-    <div className={cn('flex bg-muted/40 border border-border rounded-lg p-0.5', className)}>
+    <div className={className} style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
       {VIEWS.map((view) => {
         const Icon = view.icon;
         const isActive = currentView === view.id;
@@ -62,16 +61,21 @@ export function FailuresViewSelector({ className }: FailuresViewSelectorProps) {
           <button
             key={view.id}
             onClick={() => setView(view.id)}
-            className={cn(
-              'flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
-              'hover:text-foreground',
-              isActive
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground'
-            )}
             title={view.description}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 14px',
+              fontSize: 13, fontWeight: isActive ? 600 : 500,
+              color: isActive ? '#111827' : '#9CA3AF',
+              background: 'transparent',
+              border: 'none',
+              borderBottom: isActive ? '2px solid #111827' : '2px solid transparent',
+              cursor: 'pointer',
+              transition: 'all 150ms ease',
+              whiteSpace: 'nowrap',
+            }}
           >
-            <Icon className="h-3.5 w-3.5" />
+            <Icon style={{ width: 14, height: 14 }} />
             <span>{view.label}</span>
           </button>
         );

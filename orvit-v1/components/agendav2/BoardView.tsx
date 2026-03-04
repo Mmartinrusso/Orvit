@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { LayoutGrid, AlignJustify, BarChart2, SlidersHorizontal, AlertCircle, X, Check, CheckSquare, Square, Trash2, ChevronDown } from 'lucide-react';
+import { LayoutGrid, AlignJustify, BarChart2, SlidersHorizontal, AlertCircle, X, Check, CheckSquare, Square, Trash2, ChevronDown, MessageCircle, Calendar, ListChecks } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getAssigneeName } from '@/lib/agenda/types';
@@ -73,7 +73,19 @@ export function BoardView({
   const [filterAssignees, setFilterAssignees] = useState<string[]>([]);
   const [filterProgress, setFilterProgress] = useState<('none' | 'in_progress' | 'done')[]>([]);
   const filterRef = useRef<HTMLDivElement>(null);
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const [timelineWidth, setTimelineWidth] = useState(0);
   const filtersInitialized = useRef(false);
+
+  // Measure timeline container width for dynamic column sizing
+  useEffect(() => {
+    if (subView !== 'timeline' || !timelineRef.current) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setTimelineWidth(entry.contentRect.width);
+    });
+    ro.observe(timelineRef.current);
+    return () => ro.disconnect();
+  }, [subView]);
 
   useEffect(() => {
     if (!showFilter) return;
@@ -669,76 +681,192 @@ export function BoardView({
           }}
         >
           {subView === 'timeline' ? (() => {
-            const DAYS = 28;
+            const DAYS = 30;
             const start = addDays(new Date(), -7);
             const cols = Array.from({ length: DAYS }, (_, i) => addDays(start, i));
-            const ROW_H = 38;
-            const COL_W = 42;
-            const LABEL_W = 200;
+            const ROW_H = 48;
+            const LABEL_W = 220;
+            const MIN_COL_W = 36;
+            // Dynamic column width: fill available space, with a minimum
+            const selectW = isSelectMode ? 40 : 0;
+            const COL_W = timelineWidth > 0
+              ? Math.max(MIN_COL_W, Math.floor((timelineWidth - LABEL_W - selectW) / DAYS))
+              : 48;
             const tasksWithDate = visibleTasks.filter(t => t.dueDate);
+            const TL_STATUS_COLOR: Record<string, string> = { PENDING: '#9CA3AF', IN_PROGRESS: '#7C3AED', WAITING: '#D97706', COMPLETED: '#059669', CANCELLED: '#9CA3AF' };
+            const TL_STATUS_BG: Record<string, string> = { PENDING: '#F3F4F680', IN_PROGRESS: '#7C3AED18', WAITING: '#D9770618', COMPLETED: '#05966918', CANCELLED: '#F3F4F6' };
+            const TL_PRIORITY_DOT: Record<string, string> = { LOW: '#9CA3AF', MEDIUM: '#7C3AED', HIGH: '#D97706', URGENT: '#DC2626' };
+
+            // Group days by week for header
+            const weeks: { start: number; end: number; label: string }[] = [];
+            let weekStart = 0;
+            for (let d = 0; d < DAYS; d++) {
+              const day = cols[d];
+              const isLastDay = d === DAYS - 1;
+              const isSunday = day.getDay() === 0;
+              if (isSunday || isLastDay) {
+                weeks.push({ start: weekStart, end: d, label: `${format(cols[weekStart], 'd MMM')} — ${format(day, 'd MMM')}` });
+                weekStart = d + 1;
+              }
+            }
+
             return (
-              <div style={{ overflowX: 'auto' }}>
-                <div style={{ minWidth: LABEL_W + COL_W * DAYS, fontSize: '12px' }}>
-                  {/* Date header */}
-                  <div style={{ display: 'flex', borderBottom: '1px solid #F0F0F0', position: 'sticky', top: 0, background: '#FFFFFF', zIndex: 2 }}>
+              <div ref={timelineRef} style={{ overflowX: 'auto', width: '100%' }} className="no-scrollbar">
+                <div style={{ minWidth: LABEL_W + COL_W * DAYS, width: '100%', fontSize: '12px' }}>
+                  {/* Week header row */}
+                  <div style={{ display: 'flex', borderBottom: '1px solid #F0F0F0', position: 'sticky', top: 0, background: '#FAFAFA', zIndex: 3 }}>
+                    {isSelectMode && <div style={{ width: 40, flexShrink: 0 }} />}
+                    <div style={{ width: LABEL_W, flexShrink: 0 }} />
+                    {weeks.map((w, wi) => (
+                      <div key={wi} style={{ width: COL_W * (w.end - w.start + 1), flexShrink: 0, textAlign: 'center', padding: '8px 0', fontSize: '10px', fontWeight: 600, color: '#9CA3AF', borderLeft: wi > 0 ? '1px solid #E4E4E8' : 'none', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                        {w.label}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Day header */}
+                  <div style={{ display: 'flex', borderBottom: '1.5px solid #E4E4E8', position: 'sticky', top: 32, background: '#FFFFFF', zIndex: 2 }}>
                     {isSelectMode && <div style={{ width: 40, flexShrink: 0, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <div onClick={() => selectedIds.size === tasksWithDate.length ? setSelectedIds(new Set()) : setSelectedIds(new Set(tasksWithDate.map(t => t.id)))} style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${selectedIds.size === tasksWithDate.length && tasksWithDate.length > 0 ? '#111827' : '#CCCCCC'}`, background: selectedIds.size === tasksWithDate.length && tasksWithDate.length > 0 ? '#111827' : '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {selectedIds.size === tasksWithDate.length && tasksWithDate.length > 0 && <Check className="h-2.5 w-2.5" style={{ color: '#FFF' }} />}
                       </div>
                     </div>}
-                    <div style={{ width: LABEL_W, flexShrink: 0, padding: '8px 16px', fontWeight: 600, fontSize: '11px', color: '#9CA3AF' }}>Tarea</div>
+                    <div style={{ width: LABEL_W, flexShrink: 0, padding: '8px 16px', fontWeight: 600, fontSize: '11px', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Tarea</div>
                     {cols.map(day => {
                       const today = isToday(day);
+                      const isWeekend = day.getDay() === 0 || day.getDay() === 6;
                       return (
-                        <div key={day.toISOString()} style={{ width: COL_W, flexShrink: 0, textAlign: 'center', padding: '8px 0', fontWeight: today ? 700 : 500, color: today ? '#111827' : '#9CA3AF', borderLeft: '1px solid #F4F4F6', background: today ? '#F8F8F8' : 'transparent' }}>
-                          <div style={{ fontSize: '10px' }}>{format(day, 'EEE').slice(0, 2)}</div>
-                          <div style={{ fontSize: '11px' }}>{format(day, 'd')}</div>
+                        <div key={day.toISOString()} style={{ width: COL_W, flexShrink: 0, textAlign: 'center', padding: '6px 0', fontWeight: today ? 700 : 400, color: today ? '#FFFFFF' : isWeekend ? '#C9CDD3' : '#6B7280', borderLeft: '1px solid #F0F0F4', background: today ? '#111827' : isWeekend ? '#FAFBFC' : 'transparent', borderRadius: today ? '8px' : '0' }}>
+                          <div style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.8 }}>{format(day, 'EEE').slice(0, 2)}</div>
+                          <div style={{ fontSize: '13px', fontWeight: today ? 800 : 500 }}>{format(day, 'd')}</div>
                         </div>
                       );
                     })}
                   </div>
                   {/* Task rows */}
                   {tasksWithDate.length === 0 ? (
-                    <div style={{ padding: '32px 16px', textAlign: 'center', color: '#9CA3AF' }}>Sin tareas con fecha</div>
+                    <div style={{ padding: '56px 16px', textAlign: 'center', color: '#9CA3AF' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                        <BarChart2 className="h-10 w-10" style={{ color: '#D1D5DB' }} />
+                        <span style={{ fontSize: '13px' }}>Sin tareas con fecha asignada</span>
+                      </div>
+                    </div>
                   ) : tasksWithDate.map((task, i) => {
                     const due = parseISO(task.dueDate!);
                     const dayIdx = differenceInCalendarDays(due, start);
                     const inRange = dayIdx >= 0 && dayIdx < DAYS;
-                    const STATUS_COLOR: Record<string, string> = { PENDING: '#9CA3AF', IN_PROGRESS: '#7C3AED', WAITING: '#D97706', COMPLETED: '#059669', CANCELLED: '#9CA3AF' };
+                    const color = TL_STATUS_COLOR[task.status] ?? '#9CA3AF';
+                    const bgColor = TL_STATUS_BG[task.status] ?? '#F3F4F6';
+                    const priorDot = TL_PRIORITY_DOT[task.priority] ?? '#9CA3AF';
+                    // Bar: from creation date (or 3 days before due) to due date
+                    const created = task.createdAt ? parseISO(typeof task.createdAt === 'string' ? task.createdAt : new Date(task.createdAt).toISOString()) : addDays(due, -3);
+                    const barStartIdx = Math.max(0, differenceInCalendarDays(created, start));
+                    const barEndIdx = Math.min(DAYS - 1, dayIdx);
+                    const barLen = Math.max(1, barEndIdx - barStartIdx + 1);
+                    const barW = barLen * COL_W;
+                    const isOverdue = task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && due < new Date();
+                    const assigneeName = getAssigneeName(task);
+                    const initials = assigneeName ? assigneeName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase() : '';
+                    // Subtask progress
+                    const stCount = task._count?.subtasks ?? task.subtasks?.length ?? 0;
+                    const stDone = task._count?.subtasksDone ?? task.subtasks?.filter((s: any) => s.done).length ?? 0;
+                    const pct = stCount > 0 ? Math.round((stDone / stCount) * 100) : (task.status === 'COMPLETED' ? 100 : 0);
                     return (
-                      <div key={task.id} onClick={() => isSelectMode ? toggleTaskSelection(task.id) : onTaskClick(task)} style={{ display: 'flex', alignItems: 'center', borderBottom: i < tasksWithDate.length - 1 ? '1px solid #F3F4F6' : 'none', height: ROW_H, cursor: 'pointer', transition: 'background 120ms ease', animation: 'item-fade-up 340ms cubic-bezier(0.22,1,0.36,1) both', animationDelay: `${Math.min(i, 8) * 45}ms`, background: selectedIds.has(task.id) ? '#F3F4F6' : 'transparent' }}
-                        onMouseEnter={e => { if (!selectedIds.has(task.id)) e.currentTarget.style.background = '#F9FAFB'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = selectedIds.has(task.id) ? '#F3F4F6' : 'transparent'; }}
+                      <div key={task.id} onClick={() => isSelectMode ? toggleTaskSelection(task.id) : onTaskClick(task)} style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid #F3F4F6', height: ROW_H, cursor: 'pointer', transition: 'background 120ms ease', animation: 'item-fade-up 340ms cubic-bezier(0.22,1,0.36,1) both', animationDelay: `${Math.min(i, 8) * 45}ms`, background: selectedIds.has(task.id) ? '#F0F0FF' : 'transparent' }}
+                        onMouseEnter={e => { if (!selectedIds.has(task.id)) e.currentTarget.style.background = '#FAFAFA'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = selectedIds.has(task.id) ? '#F0F0FF' : 'transparent'; }}
                       >
                         {/* Checkbox in select mode */}
                         {isSelectMode && (
                           <div style={{ width: 40, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${selectedIds.has(task.id) ? '#111827' : '#CCCCCC'}`, background: selectedIds.has(task.id) ? '#111827' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${selectedIds.has(task.id) ? '#7C3AED' : '#D1D5DB'}`, background: selectedIds.has(task.id) ? '#7C3AED' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 150ms ease' }}>
                               {selectedIds.has(task.id) && <Check className="h-2.5 w-2.5" style={{ color: '#FFF' }} />}
                             </div>
                           </div>
                         )}
-                        {/* Label */}
-                        <div style={{ width: LABEL_W, flexShrink: 0, padding: '0 16px', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontWeight: 500, color: '#111827' }}>{task.title}</div>
-                        {/* Grid cells */}
-                        {cols.map((day, ci) => {
-                          const today = isToday(day);
-                          const isDue = ci === dayIdx;
-                          return (
-                            <div key={ci} style={{ width: COL_W, flexShrink: 0, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', borderLeft: '1px solid #F4F4F6', background: today ? '#FAFAFA' : 'transparent', position: 'relative' }}>
-                              {today && <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, background: '#111827', opacity: 0.12, transform: 'translateX(-50%)' }} />}
-                              {isDue && inRange && (
-                                <div style={{ width: 10, height: 10, borderRadius: '50%', background: STATUS_COLOR[task.status] ?? '#9CA3AF', boxShadow: `0 0 0 3px ${STATUS_COLOR[task.status] ?? '#9CA3AF'}22`, zIndex: 1 }} />
+                        {/* Label + status + priority dot */}
+                        <div style={{ width: LABEL_W, flexShrink: 0, padding: '0 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          {/* Priority dot */}
+                          <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: priorDot, flexShrink: 0, boxShadow: `0 0 0 2px ${priorDot}30` }} />
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', fontWeight: 500, color: task.status === 'COMPLETED' ? '#9CA3AF' : '#111827', fontSize: '12px', textDecoration: task.status === 'COMPLETED' ? 'line-through' : 'none' }}>{task.title}</div>
+                            <div style={{ fontSize: '10px', color: isOverdue ? '#DC2626' : '#9CA3AF', fontWeight: isOverdue ? 600 : 400, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                              {isOverdue && <AlertCircle className="h-2.5 w-2.5" />}
+                              <span>{format(due, 'd MMM')}</span>
+                              {assigneeName && (
+                                <>
+                                  <span style={{ color: '#D1D5DB' }}>·</span>
+                                  <span style={{ color: '#9CA3AF', fontWeight: 400 }}>{assigneeName.split(' ')[0]}</span>
+                                </>
                               )}
                             </div>
-                          );
-                        })}
-                        {/* Out-of-range badge */}
-                        {!inRange && (
-                          <div style={{ position: 'absolute', right: 16, fontSize: '10px', color: '#9CA3AF', fontWeight: 500 }}>
-                            {format(due, 'd MMM')}
                           </div>
-                        )}
+                        </div>
+                        {/* Grid cells with Gantt bar */}
+                        <div style={{ display: 'flex', flex: 1, position: 'relative', height: '100%' }}>
+                          {cols.map((day, ci) => {
+                            const today = isToday(day);
+                            const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+                            return (
+                              <div key={ci} style={{ width: COL_W, flexShrink: 0, height: '100%', borderLeft: '1px solid #F0F0F4', background: today ? 'rgba(17,24,39,0.04)' : isWeekend ? '#FAFBFC' : 'transparent', position: 'relative' }}>
+                                {today && <div style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 2, background: '#111827', opacity: 0.2, transform: 'translateX(-50%)' }} />}
+                              </div>
+                            );
+                          })}
+                          {/* Gantt bar overlay */}
+                          {inRange && (
+                            <div style={{
+                              position: 'absolute',
+                              left: barStartIdx * COL_W + 3,
+                              width: barLen * COL_W - 6,
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              height: '28px',
+                              background: bgColor,
+                              borderRadius: '7px',
+                              border: `1.5px solid ${isOverdue ? '#FCA5A5' : `${color}40`}`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              padding: '0 8px',
+                              zIndex: 1,
+                              transition: 'all 200ms ease',
+                              overflow: 'hidden',
+                            }}>
+                              {/* Progress fill */}
+                              {pct > 0 && pct < 100 && (
+                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${pct}%`, background: `${color}12`, borderRadius: '7px 0 0 7px' }} />
+                              )}
+                              {/* Assignee initials */}
+                              {initials && barW > 80 && (
+                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, position: 'relative', zIndex: 1 }}>
+                                  <span style={{ fontSize: '8px', fontWeight: 700, color }}>{initials}</span>
+                                </div>
+                              )}
+                              {/* Title */}
+                              {barW > 100 && (
+                                <span style={{ fontSize: '10px', fontWeight: 600, color, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', position: 'relative', zIndex: 1 }}>
+                                  {task.title}
+                                </span>
+                              )}
+                              {/* Due date end marker */}
+                              <div style={{
+                                position: 'absolute',
+                                right: -1,
+                                top: -1,
+                                bottom: -1,
+                                width: '5px',
+                                borderRadius: '0 7px 7px 0',
+                                background: isOverdue ? '#EF4444' : color,
+                              }} />
+                            </div>
+                          )}
+                          {/* Out-of-range badge */}
+                          {!inRange && (
+                            <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: '10px', color: '#9CA3AF', fontWeight: 500, background: '#F3F4F6', padding: '3px 10px', borderRadius: '6px' }}>
+                              {format(due, 'd MMM')}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -787,71 +915,232 @@ export function BoardView({
               </DragOverlay>
             </DndContext>
           ) : (
-            /* Spreadsheet view — simple table */
+            /* Spreadsheet view — polished table */
             // eslint-disable-next-line no-constant-condition
             subView === 'spreadsheet' &&
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #F0F0F0' }}>
-                  {isSelectMode && (
-                    <th style={{ padding: '10px 12px', width: '40px' }}>
-                      <div
-                        onClick={() => selectedIds.size === visibleTasks.length ? setSelectedIds(new Set()) : selectAllVisible()}
-                        style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${selectedIds.size === visibleTasks.length && visibleTasks.length > 0 ? '#111827' : '#CCCCCC'}`, background: selectedIds.size === visibleTasks.length && visibleTasks.length > 0 ? '#111827' : '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {selectedIds.size === visibleTasks.length && visibleTasks.length > 0 && <Check className="h-2.5 w-2.5" style={{ color: '#FFF' }} />}
+            (() => {
+              const LIST_STATUS: Record<string, { bg: string; color: string; dot: string; label: string; border: string }> = {
+                PENDING:     { bg: '#F8F8FA', color: '#6B7280', dot: '#9CA3AF', label: 'Por hacer', border: '#E5E7EB' },
+                IN_PROGRESS: { bg: '#EDE9FE', color: '#7C3AED', dot: '#7C3AED', label: 'En progreso', border: '#C4B5FD' },
+                WAITING:     { bg: '#FEF3C7', color: '#92400E', dot: '#D97706', label: 'En revisión', border: '#FCD34D' },
+                COMPLETED:   { bg: '#D1FAE5', color: '#065F46', dot: '#059669', label: 'Completado', border: '#6EE7B7' },
+                CANCELLED:   { bg: '#F3F4F6', color: '#9CA3AF', dot: '#9CA3AF', label: 'Cancelado', border: '#D1D5DB' },
+              };
+              const LIST_PRIORITY: Record<string, { bg: string; color: string; label: string; icon: string }> = {
+                LOW:    { bg: '#F8F8FA', color: '#6B7280', label: 'Baja', icon: '↓' },
+                MEDIUM: { bg: '#EDE9FE', color: '#7C3AED', label: 'Media', icon: '→' },
+                HIGH:   { bg: '#FEF3C7', color: '#92400E', label: 'Alta', icon: '↑' },
+                URGENT: { bg: '#FEE2E2', color: '#DC2626', label: 'Urgente', icon: '⚡' },
+              };
+              const PRIORITY_ACCENT: Record<string, string> = { LOW: '#D1D5DB', MEDIUM: '#7C3AED', HIGH: '#D97706', URGENT: '#DC2626' };
+              const gridCols = isSelectMode
+                ? '44px minmax(320px,3fr) 130px 110px 150px minmax(140px,1.2fr) 180px'
+                : 'minmax(320px,3fr) 130px 110px 150px minmax(140px,1.2fr) 180px';
+              return (
+                <div style={{ padding: '0' }}>
+                  {/* Header row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: gridCols, fontSize: '13px', borderBottom: '1.5px solid #E4E4E8' }}>
+                    {isSelectMode && (
+                      <div style={{ padding: '10px 12px', background: '#F8F8FA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div
+                          onClick={() => selectedIds.size === visibleTasks.length ? setSelectedIds(new Set()) : selectAllVisible()}
+                          style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${selectedIds.size === visibleTasks.length && visibleTasks.length > 0 ? '#111827' : '#CCCCCC'}`, background: selectedIds.size === visibleTasks.length && visibleTasks.length > 0 ? '#111827' : '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {selectedIds.size === visibleTasks.length && visibleTasks.length > 0 && <Check className="h-2.5 w-2.5" style={{ color: '#FFF' }} />}
+                        </div>
                       </div>
-                    </th>
-                  )}
-                  {['Tarea', 'Estado', 'Prioridad', 'Vencimiento', 'Asignado a'].map(col => (
-                    <th key={col} style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: '#9CA3AF', whiteSpace: 'nowrap' }}>{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {visibleTasks.length === 0 ? (
-                  <tr><td colSpan={isSelectMode ? 6 : 5} style={{ padding: '32px 16px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>Sin tareas</td></tr>
-                ) : visibleTasks.map((task, i) => {
-                  const isSelected = selectedIds.has(task.id);
-                  return (
-                    <tr
-                      key={task.id}
-                      onClick={() => isSelectMode ? toggleTaskSelection(task.id) : onTaskClick(task)}
-                      style={{ borderBottom: i < visibleTasks.length - 1 ? '1px solid #F3F4F6' : 'none', cursor: 'pointer', transition: 'background 120ms ease', animation: 'item-fade-up 320ms cubic-bezier(0.22,1,0.36,1) both', animationDelay: `${Math.min(i, 10) * 35}ms`, background: isSelected ? '#F3F4F6' : 'transparent' }}
-                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#F9FAFB'; }}
-                      onMouseLeave={e => { e.currentTarget.style.background = isSelected ? '#F3F4F6' : 'transparent'; }}
-                    >
-                      {isSelectMode && (
-                        <td style={{ padding: '10px 12px', width: '40px' }}>
-                          <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${isSelected ? '#111827' : '#CCCCCC'}`, background: isSelected ? '#111827' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {isSelected && <Check className="h-2.5 w-2.5" style={{ color: '#FFF' }} />}
+                    )}
+                    {['Tarea', 'Estado', 'Prioridad', 'Vencimiento', 'Progreso', 'Asignado a'].map(col => (
+                      <div key={col} style={{ padding: '10px 16px', fontSize: '10px', fontWeight: 600, color: '#9CA3AF', whiteSpace: 'nowrap', background: '#F8F8FA', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center' }}>{col}</div>
+                    ))}
+                  </div>
+                  {/* Body */}
+                  {visibleTasks.length === 0 ? (
+                    <div style={{ padding: '56px 16px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                        <AlignJustify className="h-9 w-9" style={{ color: '#D1D5DB' }} />
+                        <span>Sin tareas para mostrar</span>
+                      </div>
+                    </div>
+                  ) : visibleTasks.map((task, i) => {
+                    const isSelected = selectedIds.has(task.id);
+                    const statusInfo = LIST_STATUS[task.status] ?? LIST_STATUS.PENDING;
+                    const priorityInfo = LIST_PRIORITY[task.priority] ?? LIST_PRIORITY.LOW;
+                    const accentColor = PRIORITY_ACCENT[task.priority] ?? '#D1D5DB';
+                    const isOverdue = task.dueDate && task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && new Date(task.dueDate) < new Date();
+                    const subtaskCount = task._count?.subtasks ?? task.subtasks?.length ?? 0;
+                    const subtasksDone = task._count?.subtasksDone ?? task.subtasks?.filter((s: any) => s.done).length ?? 0;
+                    const progress = subtaskCount > 0 ? Math.round((subtasksDone / subtaskCount) * 100) : task.status === 'COMPLETED' ? 100 : 0;
+                    const assigneeName = getAssigneeName(task);
+                    const assigneeInitials = assigneeName ? assigneeName.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase() : '';
+                    const isCompleted = task.status === 'COMPLETED';
+                    const commentCount = task._count?.comments ?? 0;
+                    // Description preview (first 80 chars)
+                    const descPreview = task.description ? task.description.replace(/\n/g, ' ').slice(0, 80) + (task.description.length > 80 ? '…' : '') : null;
+                    // Relative date label
+                    const dueDateLabel = task.dueDate ? (() => {
+                      const diff = differenceInCalendarDays(parseISO(task.dueDate), new Date());
+                      if (diff === 0) return 'Hoy';
+                      if (diff === 1) return 'Mañana';
+                      if (diff === -1) return 'Ayer';
+                      if (diff > 1 && diff <= 7) return `En ${diff} días`;
+                      if (diff < -1) return `Hace ${Math.abs(diff)} días`;
+                      return null;
+                    })() : null;
+                    return (
+                      <div
+                        key={task.id}
+                        onClick={() => isSelectMode ? toggleTaskSelection(task.id) : onTaskClick(task)}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: gridCols,
+                          alignItems: 'center',
+                          borderBottom: '1px solid #F0F0F4',
+                          cursor: 'pointer',
+                          transition: 'all 120ms ease',
+                          animation: 'item-fade-up 320ms cubic-bezier(0.22,1,0.36,1) both',
+                          animationDelay: `${Math.min(i, 10) * 35}ms`,
+                          background: isSelected ? '#F5F3FF' : 'transparent',
+                          borderLeft: `3px solid ${isSelected ? '#7C3AED' : accentColor}`,
+                          position: 'relative',
+                        }}
+                        onMouseEnter={e => {
+                          if (!isSelected) {
+                            e.currentTarget.style.background = '#FAFAFA';
+                            e.currentTarget.style.borderLeftColor = '#7C3AED';
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          e.currentTarget.style.background = isSelected ? '#F5F3FF' : 'transparent';
+                          e.currentTarget.style.borderLeftColor = isSelected ? '#7C3AED' : accentColor;
+                        }}
+                      >
+                        {isSelectMode && (
+                          <div style={{ padding: '14px 12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div style={{ width: '16px', height: '16px', borderRadius: '4px', border: `2px solid ${isSelected ? '#7C3AED' : '#D1D5DB'}`, background: isSelected ? '#7C3AED' : '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 150ms ease' }}>
+                              {isSelected && <Check className="h-2.5 w-2.5" style={{ color: '#FFF' }} />}
+                            </div>
                           </div>
-                        </td>
-                      )}
-                      <td style={{ padding: '10px 16px', fontWeight: 500, color: '#111827', maxWidth: '260px' }}>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>{task.title}</span>
-                        {task.category && <span style={{ fontSize: '11px', color: '#9CA3AF' }}>{task.category}</span>}
-                      </td>
-                      <td style={{ padding: '10px 16px', whiteSpace: 'nowrap' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '999px', border: '1.5px solid #D8D8D8' }}>
-                          {{ PENDING: 'Por hacer', IN_PROGRESS: 'En progreso', WAITING: 'En revisión', COMPLETED: 'Completado', CANCELLED: 'Cancelado' }[task.status]}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px 16px', whiteSpace: 'nowrap' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: '999px', border: '1.5px solid #E5E7EB', color: { LOW: '#6B7280', MEDIUM: '#7C3AED', HIGH: '#D97706', URGENT: '#DC2626' }[task.priority] }}>
-                          {{ LOW: 'Baja', MEDIUM: 'Media', HIGH: 'Alta', URGENT: 'Urgente' }[task.priority]}
-                        </span>
-                      </td>
-                      <td style={{ padding: '10px 16px', color: task.dueDate ? '#6B7280' : '#D1D5DB', whiteSpace: 'nowrap', fontSize: '12px' }}>
-                        {task.dueDate ? format(parseISO(task.dueDate), 'd MMM yyyy') : '—'}
-                      </td>
-                      <td style={{ padding: '10px 16px', color: '#6B7280', fontSize: '12px', whiteSpace: 'nowrap' }}>
-                        {getAssigneeName(task)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        )}
+                        {/* Task name + description + metadata pills */}
+                        <div style={{ padding: '12px 16px', minWidth: 0, display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                          {/* Status dot */}
+                          <div style={{ width: '9px', height: '9px', borderRadius: '50%', background: statusInfo.dot, flexShrink: 0, marginTop: '5px', boxShadow: `0 0 0 3px ${statusInfo.dot}15` }} />
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            {/* Title */}
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', fontSize: '13px', fontWeight: 600, color: isCompleted ? '#9CA3AF' : '#111827', textDecoration: isCompleted ? 'line-through' : 'none', lineHeight: '1.35' }}>{task.title}</span>
+                            {/* Description preview */}
+                            {descPreview && (
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', fontSize: '11px', color: '#9CA3AF', lineHeight: '1.4', marginTop: '2px', maxWidth: '100%' }}>{descPreview}</span>
+                            )}
+                            {/* Metadata row: group pill + indicators */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '5px', flexWrap: 'wrap' }}>
+                              {(task.group?.name || task.category) && (
+                                <span style={{ fontSize: '10px', color: '#6B7280', background: '#F3F4F6', padding: '2px 7px', borderRadius: '4px', fontWeight: 500, border: '1px solid #E5E7EB' }}>
+                                  {task.group?.name || task.category}
+                                </span>
+                              )}
+                              {subtaskCount > 0 && (
+                                <span style={{ fontSize: '10px', color: '#6B7280', display: 'inline-flex', alignItems: 'center', gap: '3px', background: '#F3F4F6', padding: '2px 6px', borderRadius: '4px' }}>
+                                  <ListChecks style={{ width: '10px', height: '10px', color: '#9CA3AF' }} />
+                                  {subtasksDone}/{subtaskCount}
+                                </span>
+                              )}
+                              {commentCount > 0 && (
+                                <span style={{ fontSize: '10px', color: '#6B7280', display: 'inline-flex', alignItems: 'center', gap: '3px', background: '#F3F4F6', padding: '2px 6px', borderRadius: '4px' }}>
+                                  <MessageCircle style={{ width: '10px', height: '10px', color: '#9CA3AF' }} />
+                                  {commentCount}
+                                </span>
+                              )}
+                              {task.createdBy?.name && (
+                                <span style={{ fontSize: '10px', color: '#B0B0B8' }}>
+                                  por {task.createdBy.name.split(' ')[0]}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {/* Status chip */}
+                        <div style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '6px', background: statusInfo.bg, color: statusInfo.color, border: `1px solid ${statusInfo.border}`, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusInfo.dot }} />
+                            {statusInfo.label}
+                          </span>
+                        </div>
+                        {/* Priority chip */}
+                        <div style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 600, padding: '4px 10px', borderRadius: '6px', background: priorityInfo.bg, color: priorityInfo.color, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '10px' }}>{priorityInfo.icon}</span>
+                            {priorityInfo.label}
+                          </span>
+                        </div>
+                        {/* Due date */}
+                        <div style={{ padding: '14px 16px', whiteSpace: 'nowrap', fontSize: '12px' }}>
+                          {task.dueDate ? (
+                            <div>
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '5px', color: isOverdue ? '#DC2626' : '#374151', fontWeight: 500, fontSize: '12px' }}>
+                                <Calendar style={{ width: '12px', height: '12px', color: isOverdue ? '#DC2626' : '#9CA3AF', flexShrink: 0 }} />
+                                {format(parseISO(task.dueDate), 'd MMM yyyy')}
+                              </span>
+                              {dueDateLabel && (
+                                <span style={{ fontSize: '10px', color: isOverdue ? '#EF4444' : '#9CA3AF', fontWeight: isOverdue ? 600 : 400, marginTop: '2px', display: 'block', paddingLeft: '17px' }}>
+                                  {dueDateLabel}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span style={{ color: '#D1D5DB', fontSize: '11px' }}>Sin fecha</span>
+                          )}
+                        </div>
+                        {/* Progress */}
+                        <div style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                          {subtaskCount > 0 ? (
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ flex: 1, height: '6px', borderRadius: '3px', background: '#F0F0F4', overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', borderRadius: '3px', background: progress === 100 ? '#059669' : '#7C3AED', width: `${progress}%`, transition: 'width 300ms ease' }} />
+                                </div>
+                                <span style={{ fontSize: '11px', fontWeight: 700, color: progress === 100 ? '#059669' : '#6B7280', minWidth: '32px', textAlign: 'right' }}>{progress}%</span>
+                              </div>
+                              <span style={{ fontSize: '10px', color: '#9CA3AF', marginTop: '3px', display: 'block' }}>{subtasksDone} de {subtaskCount} subtareas</span>
+                            </div>
+                          ) : isCompleted ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Check style={{ width: '10px', height: '10px', color: '#059669' }} />
+                              </div>
+                              <span style={{ fontSize: '11px', fontWeight: 600, color: '#059669' }}>Completada</span>
+                            </div>
+                          ) : (
+                            <span style={{ color: '#D1D5DB', fontSize: '11px' }}>—</span>
+                          )}
+                        </div>
+                        {/* Assignee */}
+                        <div style={{ padding: '14px 16px', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                          {assigneeName ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: `linear-gradient(135deg, #EDE9FE, #DDD6FE)`, border: '1.5px solid #C4B5FD', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <span style={{ fontSize: '9px', fontWeight: 700, color: '#7C3AED' }}>{assigneeInitials}</span>
+                              </div>
+                              <div>
+                                <span style={{ color: '#374151', fontWeight: 500, fontSize: '12px', display: 'block' }}>{assigneeName}</span>
+                                <span style={{ color: '#B0B0B8', fontSize: '10px', display: 'block', marginTop: '1px' }}>Responsable</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#F3F4F6', border: '1.5px dashed #D1D5DB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span style={{ fontSize: '12px', color: '#D1D5DB' }}>?</span>
+                              </div>
+                              <span style={{ color: '#D1D5DB', fontSize: '11px' }}>Sin asignar</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()
           )}
         </div>
       </div>

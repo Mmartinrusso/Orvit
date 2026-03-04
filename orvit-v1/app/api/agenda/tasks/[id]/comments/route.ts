@@ -5,6 +5,7 @@ import { CreateAgendaTaskCommentSchema } from '@/lib/validations/agenda-tasks';
 import { validateRequest } from '@/lib/validations/helpers';
 import { logTaskActivity } from '@/lib/agenda/activity-logger';
 import { sendDMByDiscordIdViaBotService } from '@/lib/discord/bot-service-client';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -227,6 +228,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         );
       }).catch(() => {}); // never block the response
     }
+
+    // Pusher realtime trigger (comment change = task updated)
+    triggerCompanyEvent(task.companyId, "tasks", "task:updated", { id: taskId });
 
     return NextResponse.json(
       {

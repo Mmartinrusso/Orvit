@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,6 +88,8 @@ export async function POST(request: NextRequest) {
     //     console.error('Error enviando notificación de stock:', notificationError);
     //   }
     // }
+
+    triggerCompanyEvent(tool.companyId, "tools", "tool:updated", { id: tool.id });
 
     return NextResponse.json({
       success: true,

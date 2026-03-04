@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -132,6 +133,8 @@ export async function POST(request: NextRequest) {
         originalName: `Solicitud: ${toolName} - companyId:${companyId}`
       }
     });
+
+    triggerCompanyEvent(parseInt(companyId), "tools", "tool:updated", { id: toolRequest.id });
 
     return NextResponse.json({
       success: true,

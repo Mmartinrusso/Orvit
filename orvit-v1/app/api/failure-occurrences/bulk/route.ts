@@ -10,6 +10,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -143,6 +144,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`✅ Bulk ${data.operation}: ${result.updated} fallas actualizadas por usuario ${userId}`);
+
+    // Pusher realtime trigger
+    triggerCompanyEvent(companyId, "failures", "failure:updated", { ids: validIds });
 
     return NextResponse.json({
       success: true,

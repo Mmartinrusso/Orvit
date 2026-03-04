@@ -83,9 +83,6 @@ export async function handleDowntime(params: HandleDowntimeParams) {
   }
 
   // 3. Notificación Discord - Downtime iniciado
-  // NOTA: Desactivada porque la notificación de "Nueva Falla" ya incluye info de downtime
-  // Si se quiere notificación separada de downtime, descomentar el bloque siguiente
-  /*
   try {
     const machine = await prisma.machine.findUnique({
       where: { id: machineId },
@@ -111,7 +108,6 @@ export async function handleDowntime(params: HandleDowntimeParams) {
   } catch (discordError) {
     console.warn('⚠️ Error enviando notificación Discord downtime:', discordError);
   }
-  */
 
   return downtime;
 }

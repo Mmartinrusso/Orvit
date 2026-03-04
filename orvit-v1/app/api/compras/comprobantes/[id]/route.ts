@@ -166,6 +166,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
         total: true,
         proveedorId: true,
         docType: true,
+        moneda: true,
+        tipoCambio: true,
         proveedor: {
           select: {
             id: true,
@@ -818,6 +820,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       prorratear,
       prorrateoMeses,
       prorrateoFechaInicio,
+      moneda,
+      tipoCambio,
     } = body;
 
     // Actualizar el comprobante principal
@@ -836,6 +840,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (typeof estado === 'string') data.estado = estado;
     if (typeof observaciones === 'string' || observaciones === null) {
       data.observaciones = observaciones;
+    }
+    if (typeof moneda === 'string') data.moneda = moneda === 'USD' ? 'USD' : 'ARS';
+    if (moneda === 'USD' && tipoCambio) {
+      data.tipoCambio = parseFloat(tipoCambio);
+    } else if (moneda === 'ARS') {
+      data.tipoCambio = null;
     }
     if (neto !== undefined && neto !== null && neto !== '') data.neto = parseFloat(neto);
     if (iva21 !== undefined && iva21 !== null && iva21 !== '') data.iva21 = parseFloat(iva21);

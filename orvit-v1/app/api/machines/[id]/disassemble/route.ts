@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 // Validar token desde cookies
 async function validateTokenFromCookie() {
@@ -574,6 +575,7 @@ export async function POST(
       // Ignorar si la tabla no existe
     }
 
+    triggerCompanyEvent(user.companyId, "machines", "machine:updated", { id: machineId });
     return NextResponse.json({ success: true, ...result });
 
   } catch (error: any) {

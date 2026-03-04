@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -257,6 +258,8 @@ export async function POST(request: NextRequest) {
         }
       });
 
+      triggerCompanyEvent(companyId, "tools", "tool:updated", { id: parseInt(toolId) });
+
       return NextResponse.json({
         success: true,
         data: updated,
@@ -294,6 +297,8 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    triggerCompanyEvent(companyId, "tools", "tool:updated", { id: parseInt(toolId) });
 
     return NextResponse.json({
       success: true,

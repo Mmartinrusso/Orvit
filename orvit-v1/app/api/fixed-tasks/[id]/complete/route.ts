@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resetCompletedTask, calculateNextExecution, normalizeFrequency } from '@/lib/task-scheduler';
 import { getUserFromToken } from '@/lib/tasks/auth-helper';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -100,6 +101,9 @@ export async function POST(
     const updatedTask = await prisma.fixedTask.findUnique({
       where: { id: parseInt(taskId) },
     });
+
+    // Pusher realtime trigger
+    triggerCompanyEvent(currentTask.companyId, 'tasks', 'task:updated', { id: parseInt(taskId) });
 
     return NextResponse.json({
       success: true,

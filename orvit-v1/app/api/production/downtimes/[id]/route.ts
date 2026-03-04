@@ -4,6 +4,7 @@ import { requirePermission } from '@/lib/auth/shared-helpers';
 import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { logProductionEvent } from '@/lib/production/event-logger';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -224,6 +225,9 @@ ${existingDowntime.machine ? `- Máquina: ${existingDowntime.machine.name}` : ''
         });
       }
 
+      // Fire-and-forget Pusher realtime trigger
+      triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: downtimeId });
+
       return NextResponse.json({
         success: true,
         downtime: updatedDowntime,
@@ -275,6 +279,9 @@ ${existingDowntime.machine ? `- Máquina: ${existingDowntime.machine.name}` : ''
         });
       }
     }
+
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: downtimeId });
 
     return NextResponse.json({
       success: true,
@@ -330,6 +337,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     await prisma.productionDowntime.delete({
       where: { id: downtimeId },
     });
+
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: downtimeId });
 
     return NextResponse.json({
       success: true,

@@ -255,7 +255,7 @@ export async function notifyNewFailure(data: NewFailureData): Promise<void> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : 'https://orvit.app';
-  const failureUrl = `${baseUrl}/mantenimiento/fallas/${data.id}`;
+  const failureUrl = `${baseUrl}/mantenimiento/incidentes/${data.id}`;
 
   // Construir ubicación: Máquina > Componente > Subcomponente
   let ubicacion = data.machineName;
@@ -309,7 +309,7 @@ export async function notifyFailureResolved(data: FailureResolvedData): Promise<
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : 'https://orvit.app';
-  const failureUrl = `${baseUrl}/mantenimiento/fallas/${data.id}`;
+  const failureUrl = `${baseUrl}/mantenimiento/incidentes/${data.id}`;
 
   // Construir ubicación: Máquina > Componente > Subcomponente
   let ubicacion = data.machineName;
@@ -450,21 +450,28 @@ export async function notifyOTAssigned(data: OTAssignedData): Promise<void> {
 
   // 2. Enviar DM al técnico asignado
   if (data.assignedToId) {
-    const dmEmbed = {
-      title: `📋 Nueva asignación - OT #${data.id}`,
-      description: data.description?.substring(0, 300) || data.title,
-      color,
-      fields: [
-        ...(data.machineName ? [{ name: `${DISCORD_EMOJIS.MAQUINA} Máquina`, value: data.machineName, inline: true }] : []),
-        { name: `${emoji} Prioridad`, value: data.priority, inline: true },
-        ...(data.scheduledDate ? [{ name: '📅 Programado', value: data.scheduledDate, inline: true }] : []),
-        ...(data.slaDeadline ? [{ name: '⏰ SLA', value: data.slaDeadline, inline: true }] : []),
-      ],
-      footer: `Asignado por ${data.assignedBy}`,
-      timestamp: true,
-    };
+    try {
+      const dmEmbed = {
+        title: `📋 Nueva asignación - OT #${data.id}`,
+        description: data.description?.substring(0, 300) || data.title,
+        color,
+        fields: [
+          ...(data.machineName ? [{ name: `${DISCORD_EMOJIS.MAQUINA} Máquina`, value: data.machineName, inline: true }] : []),
+          { name: `${emoji} Prioridad`, value: data.priority, inline: true },
+          ...(data.scheduledDate ? [{ name: '📅 Programado', value: data.scheduledDate, inline: true }] : []),
+          ...(data.slaDeadline ? [{ name: '⏰ SLA', value: data.slaDeadline, inline: true }] : []),
+        ],
+        footer: `Asignado por ${data.assignedBy}`,
+        timestamp: true,
+      };
 
-    await sendTechnicianDM(data.assignedToId, { embed: dmEmbed });
+      const dmResult = await sendTechnicianDM(data.assignedToId, { embed: dmEmbed });
+      if (!dmResult.success) {
+        console.warn(`⚠️ [notifyOTAssigned] DM falló para técnico ${data.assignedToId} (OT #${data.id}): ${dmResult.error}`);
+      }
+    } catch (dmError) {
+      console.warn(`⚠️ [notifyOTAssigned] Error enviando DM a técnico ${data.assignedToId} (OT #${data.id}):`, dmError);
+    }
   }
 }
 

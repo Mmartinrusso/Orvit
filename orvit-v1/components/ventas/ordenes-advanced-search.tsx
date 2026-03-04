@@ -45,6 +45,9 @@ interface OrdenesAdvancedSearchProps {
   vendedores?: any[];
 }
 
+const EMPTY_CLIENTES: any[] = [];
+const EMPTY_VENDEDORES: any[] = [];
+
 const ESTADOS = [
   { value: 'BORRADOR', label: 'Borrador' },
   { value: 'CONFIRMADA', label: 'Confirmada' },
@@ -56,7 +59,7 @@ const ESTADOS = [
   { value: 'CANCELADA', label: 'Cancelada' },
 ];
 
-export function OrdenesAdvancedSearch({ onSearch, clientes = [], vendedores = [] }: OrdenesAdvancedSearchProps) {
+export function OrdenesAdvancedSearch({ onSearch, clientes = EMPTY_CLIENTES, vendedores = EMPTY_VENDEDORES }: OrdenesAdvancedSearchProps) {
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState<AdvancedSearchFilters>({});
   const [savedFilters, setSavedFilters] = useState<Array<{ name: string; filters: AdvancedSearchFilters }>>([]);

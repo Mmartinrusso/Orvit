@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
 import { batchUpdateSchema, batchDeleteSchema, validateSafe } from '@/lib/work-stations/validations';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 // ============================================================
 // PUT /api/work-stations/batch - Actualizar múltiples puestos
@@ -74,6 +75,9 @@ export async function PUT(request: NextRequest) {
       }
     });
 
+    if (payload.companyId) {
+      triggerCompanyEvent(Number(payload.companyId), "machines", "machine:updated", { ids });
+    }
     return NextResponse.json({
       message: `${result.count} puesto(s) actualizado(s) correctamente`,
       updated: result.count
@@ -152,6 +156,9 @@ export async function DELETE(request: NextRequest) {
       })
     ]);
 
+    if (payload.companyId) {
+      triggerCompanyEvent(Number(payload.companyId), "machines", "machine:updated", { ids });
+    }
     return NextResponse.json({
       message: `${result[3].count} puesto(s) eliminado(s) correctamente`,
       deleted: result[3].count,

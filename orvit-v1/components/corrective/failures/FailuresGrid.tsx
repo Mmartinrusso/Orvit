@@ -90,11 +90,11 @@ interface FailuresGridProps {
 const priorityConfig: Record<string, { color: string; bg: string; label: string }> = {
   P1: { color: 'bg-destructive', bg: 'bg-destructive/10', label: 'Urgente' },
   P2: { color: 'bg-warning', bg: 'bg-warning-muted', label: 'Alta' },
-  P3: { color: 'bg-warning', bg: 'bg-warning-muted', label: 'Media' },
+  P3: { color: 'bg-blue-500', bg: 'bg-blue-500/10', label: 'Media' },
   P4: { color: 'bg-info', bg: 'bg-info-muted', label: 'Baja' },
   URGENT: { color: 'bg-destructive', bg: 'bg-destructive/10', label: 'Urgente' },
   HIGH: { color: 'bg-warning', bg: 'bg-warning-muted', label: 'Alta' },
-  MEDIUM: { color: 'bg-warning', bg: 'bg-warning-muted', label: 'Media' },
+  MEDIUM: { color: 'bg-blue-500', bg: 'bg-blue-500/10', label: 'Media' },
   LOW: { color: 'bg-info', bg: 'bg-info-muted', label: 'Baja' },
 };
 
@@ -117,6 +117,9 @@ const formatPriority = (priority: string) => {
   return map[priority] || priority;
 };
 
+// Hoist default empty array to avoid re-renders (rerender-memo-with-default-value)
+const EMPTY_IDS: number[] = [];
+
 export function FailuresGrid({
   failures,
   onSelectFailure,
@@ -130,7 +133,7 @@ export function FailuresGrid({
   canDelete = false,
   className,
   selectionMode = false,
-  selectedIds = [],
+  selectedIds = EMPTY_IDS,
   onToggleSelect,
 }: FailuresGridProps) {
   if (failures.length === 0) {
@@ -160,10 +163,12 @@ export function FailuresGrid({
           <Card
             key={failure.id}
             className={cn(
-              'overflow-hidden cursor-pointer hover:shadow-md transition-all group',
+              'overflow-hidden cursor-pointer transition-all duration-200 group rounded-lg',
+              'hover:shadow-md hover:-translate-y-0.5',
               failure.causedDowntime && 'ring-1 ring-rose-200 dark:ring-rose-900/50',
               selectionMode && isSelected && 'ring-2 ring-primary bg-primary/5'
             )}
+            style={{ border: '1.5px solid #D8D8DE' }}
             onClick={selectionMode ? () => onToggleSelect?.(failure.id) : () => onSelectFailure?.(failure.id)}
           >
             {/* Header */}

@@ -82,7 +82,7 @@ export function ReopenFailureDialog({
     },
     onSuccess: () => {
       toast.success('Falla reabierta exitosamente');
-      queryClient.invalidateQueries({ queryKey: ['failure-occurrences'] });
+      queryClient.invalidateQueries({ queryKey: ['failures-grid'] });
       queryClient.invalidateQueries({ queryKey: ['failure-stats'] });
       queryClient.invalidateQueries({ queryKey: ['failure-detail', failureId] });
       onOpenChange(false);

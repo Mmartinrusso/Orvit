@@ -357,6 +357,8 @@ model Company {
   // Controles de Seguimiento de Soluciones
   solutionControlInstances SolutionControlInstance[]
 
+  // Chat Empresarial
+  conversations Conversation[]
 
   @@index([subscriptionId])
   @@index([primaryAdminId])
@@ -752,6 +754,12 @@ model User {
 
   // Controles de Seguimiento de Soluciones
   solutionControlsCompleted SolutionControlInstance[] @relation("SolutionControlCompletedBy")
+
+  // Chat Empresarial
+  conversationMembers ConversationMember[]
+  sentMessages        Message[]             @relation("MessageSender")
+  messageReactions    MessageReaction[]     @relation("MessageReactions")
+  userDevices         UserDevice[]
 
   @@index([role, isActive])
   @@index([isActive])
@@ -3049,6 +3057,7 @@ model CompanySettingsCosting {
   autoCreateDO              Boolean    @default(true)
   autoReserveStock          Boolean    @default(true)
   cogsMethod                String     @default("COST_HISTORY")
+  tipoCambioUSD             Decimal?   @db.Decimal(15, 4)
   createdAt                 DateTime   @default(now())
   updatedAt                 DateTime
   Company                   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -4832,6 +4841,9 @@ model PurchaseReceipt {
   // Centro de costo / Proyecto
   costCenterId               Int?
   projectId                  Int?
+  // Moneda de la factura (ARS o USD)
+  moneda                     String                     @default("ARS") @db.VarChar(10)
+  tipoCambio                 Decimal?                   @db.Decimal(15, 4)
   // ViewMode - optional para legacy (null = T1)
   docType                    DocType?                   @default(T1)
   companyId                  Int
@@ -16397,5 +16409,152 @@ model StockCountItem {
   @@unique([sessionId, toolId])
   @@index([sessionId])
   @@map("stock_count_items")
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// CHAT EMPRESARIAL
+// ═════════════════════════════════════════════════════════════════════════════
+
+enum ConversationType {
+  DIRECT     // 1:1
+  CHANNEL    // Grupo/canal
+  CONTEXTUAL // Asociado a entidad (OT, Falla, Máquina)
+}
+
+model Conversation {
+  id            String             @id @default(cuid())
+  companyId     Int                @map("company_id")
+  type          ConversationType
+  name          String?            @db.VarChar(150)
+  description   String?            @db.Text
+
+  // Contextual link (solo para type=CONTEXTUAL)
+  entityType    String?            @db.VarChar(30) // "work_order" | "failure" | "machine"
+  entityId      Int?
+
+  // DIRECT uniqueness — evita duplicados de chat 1:1
+  directUserAId Int?               @map("direct_user_a_id") // min(userId1, userId2)
+  directUserBId Int?               @map("direct_user_b_id") // max(userId1, userId2)
+
+  // Denormalized for inbox performance
+  lastMessageAt   DateTime?        @map("last_message_at")
+  lastMessageText String?          @db.VarChar(100) @map("last_message_text")
+  lastMessageBy   String?          @db.VarChar(100) @map("last_message_by")
+
+  // Retention
+  retentionDays Int                @default(365) @map("retention_days")
+
+  isArchived    Boolean            @default(false) @map("is_archived")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+  createdBy     Int                @map("created_by")
+
+  company       Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  members       ConversationMember[]
+  messages      Message[]
+
+  @@unique([companyId, directUserAId, directUserBId])
+  @@index([companyId, isArchived, lastMessageAt(sort: Desc)])
+  @@index([companyId, entityType, entityId])
+  @@index([companyId, type])
+  @@map("conversations")
+}
+
+model ConversationMember {
+  id               String       @id @default(cuid())
+  conversationId   String       @map("conversation_id")
+  userId           Int          @map("user_id")
+
+  role             String       @default("member") @db.VarChar(20) // "admin" | "member"
+
+  // Read tracking
+  lastReadAt         DateTime?  @map("last_read_at")
+  lastReadMessageId  String?    @map("last_read_message_id")
+  unreadCount        Int        @default(0) @map("unread_count")
+
+  // Notification prefs per conversation
+  muted            Boolean      @default(false)
+  mutedUntil       DateTime?    @map("muted_until")
+
+  joinedAt         DateTime     @default(now()) @map("joined_at")
+  leftAt           DateTime?    @map("left_at")
+
+  conversation     Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user             User         @relation(fields: [userId], references: [id])
+
+  @@unique([conversationId, userId])
+  @@index([userId, leftAt])
+  @@map("conversation_members")
+}
+
+model Message {
+  id               String       @id @default(cuid())
+  conversationId   String       @map("conversation_id")
+  senderId         Int?         @map("sender_id") // null para system messages
+  companyId        Int          @map("company_id")
+
+  type             String       @default("text") @db.VarChar(20) // "text" | "system" | "image" | "file" | "audio"
+  content          String       @db.Text
+
+  // File/Audio attachments
+  fileUrl          String?      @map("file_url") @db.Text
+  fileName         String?      @map("file_name") @db.VarChar(255)
+  fileSize         Int?         @map("file_size") // bytes
+  fileDuration     Float?       @map("file_duration") // seconds (audio only)
+
+  // Replies
+  replyToId        String?      @map("reply_to_id")
+  replyTo          Message?     @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies          Message[]    @relation("MessageReplies")
+
+  // Mentions (user IDs mentioned in this message)
+  mentions         Int[]        @default([])
+
+  isDeleted        Boolean      @default(false) @map("is_deleted")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  editedAt         DateTime?    @map("edited_at")
+
+  conversation     Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender           User?        @relation("MessageSender", fields: [senderId], references: [id])
+  reactions        MessageReaction[]
+
+  @@index([conversationId, createdAt(sort: Desc)])
+  @@index([companyId, createdAt(sort: Desc)])
+  @@map("messages")
+}
+
+model MessageReaction {
+  id          String   @id @default(cuid())
+  messageId   String   @map("message_id")
+  userId      Int      @map("user_id")
+  emoji       String   @db.VarChar(10)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user        User     @relation("MessageReactions", fields: [userId], references: [id])
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@map("message_reactions")
+}
+
+model UserDevice {
+  id           String   @id @default(cuid())
+  userId       Int      @map("user_id")
+  companyId    Int      @map("company_id")
+
+  pushToken    String   @map("push_token")
+  platform     String   @db.VarChar(10) // "ios" | "android"
+  deviceName   String?  @db.VarChar(100) @map("device_name")
+
+  isActive     Boolean  @default(true) @map("is_active")
+  lastUsedAt   DateTime @default(now()) @map("last_used_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pushToken])
+  @@index([userId, isActive])
+  @@map("user_devices")
 }
 

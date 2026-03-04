@@ -729,7 +729,7 @@ INSTRUCCIONES:
           type: 'failure_occurrence',
           id: f.id,
           title: f.title,
-          url: `/mantenimiento/fallas/${f.id}`,
+          url: `/mantenimiento/incidentes/${f.id}`,
         }))),
         ...(deepContext.relatedWorkOrders.slice(0, 3).map(wo => ({
           type: 'work_order',

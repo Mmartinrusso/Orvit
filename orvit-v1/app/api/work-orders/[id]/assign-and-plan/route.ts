@@ -13,6 +13,7 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
 import { notifyOTAssigned } from '@/lib/discord/notifications';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -268,6 +269,9 @@ export async function POST(
     if (slaDueAt) {
       console.log(`   SLA: ${slaDueAt.toISOString()}`);
     }
+
+    // Pusher realtime trigger (fire-and-forget)
+    triggerCompanyEvent(companyId, "work-orders", "work-order:updated", { id: workOrderId });
 
     // Notificación Discord (fire-and-forget)
     notifyOTAssigned({

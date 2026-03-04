@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
 import { deductSparePartsFromInventory } from '@/lib/corrective/inventory-integration';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
@@ -308,6 +309,9 @@ export async function POST(
         // No falla la operación principal, solo loguea el error
       }
     }
+
+    // Pusher realtime trigger (fire-and-forget)
+    triggerCompanyEvent(workOrder.companyId, "work-orders", "work-order:updated", { id: workOrderId });
 
     return NextResponse.json({
       success: true,

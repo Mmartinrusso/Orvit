@@ -1,0 +1,88 @@
+{
+  "expo": {
+    "name": "ORVIT",
+    "slug": "orvit-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "orvit",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f172a"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.orvit.chat",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "ORVIT necesita acceso a la cámara para enviar fotos en el chat.",
+        "NSMicrophoneUsageDescription": "ORVIT necesita acceso al micrófono para grabar mensajes de audio.",
+        "NSPhotoLibraryUsageDescription": "ORVIT necesita acceso a tus fotos para enviar imágenes en el chat.",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.orvit.chat",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "root": "./src/app"
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#6366f1"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ORVIT necesita acceso a tus fotos para enviar imágenes en el chat.",
+          "cameraPermission": "ORVIT necesita acceso a la cámara para enviar fotos en el chat."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "ORVIT necesita acceso al micrófono para grabar mensajes de audio."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "000ae057-7558-4995-bd34-d8450e559eab"
+      },
+      "router": {
+        "root": "./src/app"
+      }
+    },
+    "runtimeVersion": "1.0.0",
+    "owner": "maartinrusso10"
+  }
+}

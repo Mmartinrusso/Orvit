@@ -15,6 +15,7 @@ import { validateCanClose } from '@/lib/corrective/downtime-manager';
 import { requiresQA } from '@/lib/corrective/qa-rules';
 import { calculateWorkOrderCost } from '@/lib/maintenance-costs/calculator';
 import { notifyOTCompleted } from '@/lib/discord/notifications';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -483,6 +484,8 @@ export async function POST(
     };
     // Fire-and-forget
     sendDiscordNotification().catch(() => {});
+
+    triggerCompanyEvent(companyId, "work-orders", "work-order:closed", { id: workOrderId });
 
     // 13. Retornar resultado
     return NextResponse.json({

@@ -12,7 +12,7 @@ Se implementó el **frontend completo** del sistema de Mantenimiento Correctivo 
 
 ### ✅ Lo que está COMPLETO:
 
-1. **Página de Fallas** (`/mantenimiento/fallas`) ✅
+1. **Página de Fallas** (`/mantenimiento/incidentes`) ✅
 2. **QuickReportDialog** (modo rápido 20-30s) ✅
 3. **DuplicateDetectionModal** ✅
 4. **FailureDetailSheet** (con tabs) ✅
@@ -95,7 +95,7 @@ npm run dev
 ### 2. Navegar a la página de Fallas
 
 ```
-http://localhost:3000/mantenimiento/fallas
+http://localhost:3000/mantenimiento/incidentes
 ```
 
 ### 3. Flujo de Prueba Completo
@@ -372,7 +372,7 @@ Cuando pruebes, verifica estos flujos:
 
 ### ✅ Flujo Happy Path
 
-1. [ ] Página /mantenimiento/fallas carga correctamente
+1. [ ] Página /mantenimiento/incidentes carga correctamente
 2. [ ] KPIs muestran números (aunque sean 0)
 3. [ ] Tabla muestra fallas (si hay en BD)
 4. [ ] Click "Nueva Falla" abre QuickReportDialog

@@ -213,6 +213,7 @@ export async function middleware(request: NextRequest) {
   // Rutas de API que no requieren autenticación
   const publicApiPaths = [
     '/api/auth/login',
+    '/api/auth/mobile-login',
     '/api/auth/logout',
     '/api/auth/refresh',
     '/api/whatsapp',

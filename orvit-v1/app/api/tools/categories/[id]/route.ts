@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 // GET /api/tools/categories/[id] - Obtener una categoría específica
 export async function GET(
@@ -128,6 +129,8 @@ export async function PUT(
       }
     });
 
+    triggerCompanyEvent(parseInt(companyId), "tools", "tool:updated", { id: categoryId });
+
     return NextResponse.json({
       success: true,
       category: updatedCategory,
@@ -199,6 +202,8 @@ export async function DELETE(
         id: categoryId
       }
     });
+
+    triggerCompanyEvent(parseInt(companyId), "tools", "tool:updated", { id: categoryId });
 
     return NextResponse.json({
       success: true,

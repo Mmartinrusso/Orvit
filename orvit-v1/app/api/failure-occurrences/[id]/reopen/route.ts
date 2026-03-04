@@ -11,6 +11,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -177,6 +178,9 @@ export async function POST(
     });
 
     console.log(`🔄 Falla ${occurrenceId} reabierta por usuario ${userId}`);
+
+    // Pusher realtime trigger
+    triggerCompanyEvent(companyId, "failures", "failure:updated", { id: occurrenceId });
 
     return NextResponse.json({
       success: true,

@@ -368,7 +368,7 @@ export function buildFailureCreatedEmbed(
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.orvit.com'
-  const failureUrl = `${baseUrl}/mantenimiento/fallas/${occurrence.id}`
+  const failureUrl = `${baseUrl}/mantenimiento/incidentes/${occurrence.id}`
 
   // Construir texto de componente
   let componentText: string | null = null

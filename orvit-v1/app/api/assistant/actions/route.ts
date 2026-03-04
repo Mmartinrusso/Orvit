@@ -443,7 +443,7 @@ async function executeCreateFailure(data: any, context: ActionContext) {
       success: true,
       entityId: failure.id,
       entityType: 'failure_occurrence',
-      entityUrl: `/mantenimiento/fallas/${failure.id}`,
+      entityUrl: `/mantenimiento/incidentes/${failure.id}`,
       message: `Falla #${failure.id} reportada correctamente`,
     }
   } catch (error) {

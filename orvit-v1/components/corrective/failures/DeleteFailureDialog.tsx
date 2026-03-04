@@ -45,8 +45,8 @@ export function DeleteFailureDialog({
     },
     onSuccess: () => {
       toast.success('Falla eliminada correctamente');
-      queryClient.invalidateQueries({ queryKey: ['failure-occurrences'] });
-      queryClient.invalidateQueries({ queryKey: ['failure-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['failures-grid'] });
+      queryClient.invalidateQueries({ queryKey: ['failure-stats'] });
       onOpenChange(false);
       onSuccess?.();
     },

@@ -2,7 +2,7 @@
 
 import { Dashboard } from '../dashboard/Dashboard';
 import { ConsolidatedDashboardV2 } from './ConsolidatedDashboardV2';
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useDashboardMetrics } from '@/hooks/use-dashboard-metrics';
 import { useCostConfig } from '@/hooks/use-cost-consolidation';
 import { Loader2 } from 'lucide-react';
@@ -20,7 +20,6 @@ export function ExecutiveDashboard({
   companyId,
   version: propVersion
 }: ExecutiveDashboardProps) {
-  const [dashboardData, setDashboardData] = useState<any[]>([]);
   const [currentMonth, setCurrentMonth] = useState(selectedMonth || new Date().toISOString().slice(0, 7));
 
   // Obtener configuración de versión
@@ -37,28 +36,19 @@ export function ExecutiveDashboard({
     !useV2Dashboard && (!data || data.length === 0) // Solo fetch para V1
   );
 
-  useEffect(() => {
-    // Si usamos V2, no necesitamos dashboardData
-    if (useV2Dashboard) return;
-
-    // Si hay data proporcionada, usarla directamente
-    if (data && data.length > 0) {
-      setDashboardData(data);
-      return;
-    }
-
-    // Si hay metricsData, convertir al formato esperado
+  // Derive dashboardData from props/query data (useMemo instead of useState+useEffect)
+  const dashboardData = useMemo(() => {
+    if (useV2Dashboard) return [];
+    if (data && data.length > 0) return data;
     if (metricsData && metricsData.dailyData) {
-      const historicalData = metricsData.dailyData.map((day: any) => ({
+      return metricsData.dailyData.map((day: any) => ({
         month: day.date,
         ventas: day.value,
         costos: 0,
         total: day.value
       }));
-      setDashboardData(historicalData);
-    } else if (metricsData) {
-      setDashboardData([]);
     }
+    return [];
   }, [data, metricsData, useV2Dashboard]);
 
   // Loading state

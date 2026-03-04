@@ -238,6 +238,15 @@ export default function UserEditDialog({ isOpen, onClose, userId, onUserUpdated 
     if (!currentUser) return;
 
     // Validaciones básicas
+    if (!currentCompany?.id) {
+      toast({
+        title: 'Error',
+        description: 'No hay empresa seleccionada. Selecciona una empresa antes de continuar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!formData.name.trim() || !formData.email.trim()) {
       toast({
         title: 'Error',

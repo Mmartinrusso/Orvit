@@ -11,6 +11,7 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
 import { notifyOTAssigned } from '@/lib/discord/notifications';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -151,6 +152,8 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`✅ Bulk ${data.operation}: ${result.updated} OTs actualizadas por usuario ${userId}`);
+
+    triggerCompanyEvent(companyId, "work-orders", "work-order:updated", { ids: validIds, operation: data.operation });
 
     // Notificaciones Discord para bulk assign (fire-and-forget)
     if (data.operation === 'assign' && data.assignToId) {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -39,7 +39,7 @@ export function MonthSelector({
   const [availableMonths, setAvailableMonths] = useState<string[]>([]);
   const [monthData, setMonthData] = useState<MonthData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // Derive currentIndex from selectedMonth (instead of useState+useEffect sync)
   
   // ✨ OPTIMIZADO: Flag para evitar múltiples fetches simultáneos
   const fetchingRef = useRef(false);
@@ -135,27 +135,20 @@ export function MonthSelector({
     fetchAvailableMonths();
   }, [fetchAvailableMonths]);
 
-  useEffect(() => {
-    // Find current month index
+  const currentIndex = useMemo(() => {
     const index = availableMonths.findIndex(month => month === selectedMonth);
-    if (index !== -1) {
-      setCurrentIndex(index);
-    }
+    return index !== -1 ? index : 0;
   }, [selectedMonth, availableMonths]);
 
   const goToPreviousMonth = () => {
     if (currentIndex < availableMonths.length - 1) {
-      const newIndex = currentIndex + 1;
-      setCurrentIndex(newIndex);
-      onMonthChange(availableMonths[newIndex]);
+      onMonthChange(availableMonths[currentIndex + 1]);
     }
   };
 
   const goToNextMonth = () => {
     if (currentIndex > 0) {
-      const newIndex = currentIndex - 1;
-      setCurrentIndex(newIndex);
-      onMonthChange(availableMonths[newIndex]);
+      onMonthChange(availableMonths[currentIndex - 1]);
     }
   };
 
@@ -239,7 +232,6 @@ export function MonthSelector({
                     variant={isSelected ? "default" : "outline"}
                     size="sm"
                     onClick={() => {
-                      setCurrentIndex(index);
                       onMonthChange(month);
                     }}
                     className={cn(

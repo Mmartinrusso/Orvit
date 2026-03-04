@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/tasks/auth-helper';
 import { hasPermission } from '@/lib/permissions';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -125,6 +126,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       createdAt: duplicate.createdAt.toISOString(),
       updatedAt: duplicate.updatedAt.toISOString(),
     };
+
+    // Pusher realtime trigger
+    triggerCompanyEvent(duplicate.companyId, "tasks", "task:created", { id: duplicate.id });
 
     return NextResponse.json(response, { status: 201 });
   } catch (error) {

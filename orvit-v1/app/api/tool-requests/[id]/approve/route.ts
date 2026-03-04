@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { jwtVerify } from 'jose';
 import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
@@ -211,6 +212,8 @@ export async function POST(
         console.error('Error enviando notificación de stock:', notificationError);
       }
     }
+
+    triggerCompanyEvent(tool.companyId, "tools", "tool:updated", { id: tool.id });
 
     return NextResponse.json({
       success: true,

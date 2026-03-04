@@ -2,19 +2,17 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Search,
   SlidersHorizontal,
   X,
+  ChevronDown,
 } from 'lucide-react';
 import { useCompany } from '@/contexts/CompanyContext';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -100,6 +98,7 @@ export function FailureFiltersBar({
     if (debouncedSearch !== filters.search) {
       onFiltersChange({ ...filters, search: debouncedSearch || undefined });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Only react to debounced value changes
   }, [debouncedSearch]);
 
   // Update filter
@@ -118,125 +117,264 @@ export function FailureFiltersBar({
     updateFilter(key, current === true ? undefined : true);
   };
 
-  // Get current status value for select (single select now)
-  const currentStatus = filters.status?.length === 1 ? filters.status[0] : 'ALL';
-  const currentPriority = filters.priority?.length === 1 ? filters.priority[0] : 'ALL';
+  // Multi-select toggle helpers
+  const toggleStatus = (value: string) => {
+    const current = filters.status || [];
+    const next = current.includes(value)
+      ? current.filter(s => s !== value)
+      : [...current, value];
+    updateFilter('status', next.length > 0 ? next : undefined);
+  };
+
+  const togglePriority = (value: string) => {
+    const current = filters.priority || [];
+    const next = current.includes(value)
+      ? current.filter(p => p !== value)
+      : [...current, value];
+    updateFilter('priority', next.length > 0 ? next : undefined);
+  };
+
+  const statusCount = filters.status?.length || 0;
+  const priorityCount = filters.priority?.length || 0;
+
+  const activeFilterCount = statusCount + priorityCount
+    + (filters.causedDowntime ? 1 : 0)
+    + (filters.isIntermittent ? 1 : 0)
+    + (filters.machineId ? 1 : 0);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
       {/* Búsqueda */}
-      <div className="relative flex-1 min-w-0">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-        <Input
+      <div className="relative flex-1 min-w-[180px]">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 pointer-events-none" style={{ color: '#9CA3AF' }} />
+        <input
           placeholder="Buscar por título, notas..."
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
-          className="pl-9 h-9 text-xs bg-background"
+          style={{
+            width: '100%',
+            height: 34,
+            paddingLeft: 32,
+            paddingRight: searchInput ? 28 : 10,
+            fontSize: 12,
+            fontWeight: 400,
+            color: '#374151',
+            border: '1px solid #E4E4E8',
+            borderRadius: 7,
+            background: '#FAFAFA',
+            outline: 'none',
+            transition: 'border-color 150ms',
+          }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = '#D1D5DB'; e.currentTarget.style.background = '#FFFFFF'; }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = '#E4E4E8'; e.currentTarget.style.background = '#FAFAFA'; }}
         />
         {searchInput && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+          <button
+            className="absolute right-1.5 top-1/2 -translate-y-1/2"
             onClick={() => {
               setSearchInput('');
               updateFilter('search', undefined);
             }}
+            style={{
+              height: 20, width: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: 4, border: 'none', background: 'transparent', color: '#9CA3AF', cursor: 'pointer',
+            }}
           >
             <X className="h-3 w-3" />
-          </Button>
+          </button>
         )}
       </div>
 
-      {/* Estado — oculto en móvil, disponible en AdvancedFiltersSheet */}
-      <Select
-        value={currentStatus}
-        onValueChange={(value) =>
-          updateFilter('status', value === 'ALL' ? undefined : [value])
-        }
-      >
-        <SelectTrigger className="hidden sm:flex h-9 w-[120px] text-xs bg-background">
-          <SelectValue placeholder="Estado" />
-        </SelectTrigger>
-        <SelectContent>
-          {STATUS_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
+      {/* Estado — Multi-select */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="hidden sm:flex"
+            style={{
+              height: 34, padding: '0 10px', fontSize: 12, fontWeight: 500,
+              border: '1px solid #E4E4E8', borderRadius: 7,
+              background: '#FAFAFA', color: '#6B7280',
+              display: 'flex', alignItems: 'center', gap: 4,
+              cursor: 'pointer', transition: '120ms', whiteSpace: 'nowrap',
+            }}
+          >
+            Estado
+            {statusCount > 0 && (
+              <span style={{
+                fontSize: 10, fontWeight: 600, padding: '1px 5px',
+                borderRadius: 4, background: '#111827', color: '#FFFFFF',
+                lineHeight: '14px',
+              }}>
+                {statusCount}
+              </span>
+            )}
+            <ChevronDown className="h-3 w-3" style={{ color: '#9CA3AF', marginLeft: 2 }} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {STATUS_OPTIONS.filter(o => o.value !== 'ALL').map((option) => (
+            <DropdownMenuCheckboxItem
+              key={option.value}
+              checked={filters.status?.includes(option.value) || false}
+              onCheckedChange={() => toggleStatus(option.value)}
+            >
               {option.label}
-            </SelectItem>
+            </DropdownMenuCheckboxItem>
           ))}
-        </SelectContent>
-      </Select>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Máquina — oculto en móvil */}
-      <Select
-        value={filters.machineId?.toString() || 'ALL'}
-        onValueChange={(value) =>
-          updateFilter('machineId', value === 'ALL' ? undefined : parseInt(value))
-        }
-      >
-        <SelectTrigger className="hidden sm:flex h-9 w-[140px] text-xs bg-background">
-          <SelectValue placeholder="Máquina" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="ALL">Todas</SelectItem>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="hidden sm:flex"
+            style={{
+              height: 34, padding: '0 10px', fontSize: 12, fontWeight: 500,
+              border: '1px solid #E4E4E8', borderRadius: 7,
+              background: '#FAFAFA', color: '#6B7280',
+              display: 'flex', alignItems: 'center', gap: 4,
+              cursor: 'pointer', transition: '120ms', whiteSpace: 'nowrap',
+              minWidth: 100,
+            }}
+          >
+            <span style={{ flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {filters.machineId
+                ? machines?.find((m) => m.id === filters.machineId)?.name || 'Máquina'
+                : 'Todas'}
+            </span>
+            <ChevronDown className="h-3 w-3" style={{ color: '#9CA3AF', flexShrink: 0 }} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="max-h-[280px] overflow-y-auto">
+          <DropdownMenuCheckboxItem
+            checked={!filters.machineId}
+            onCheckedChange={() => updateFilter('machineId', undefined)}
+          >
+            Todas
+          </DropdownMenuCheckboxItem>
           {machines?.map((machine) => (
-            <SelectItem key={machine.id} value={machine.id.toString()}>
+            <DropdownMenuCheckboxItem
+              key={machine.id}
+              checked={filters.machineId === machine.id}
+              onCheckedChange={() =>
+                updateFilter('machineId', filters.machineId === machine.id ? undefined : machine.id)
+              }
+            >
               {machine.name}
-            </SelectItem>
+            </DropdownMenuCheckboxItem>
           ))}
-        </SelectContent>
-      </Select>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      {/* Prioridad — oculto en móvil */}
-      <Select
-        value={currentPriority}
-        onValueChange={(value) =>
-          updateFilter('priority', value === 'ALL' ? undefined : [value])
-        }
-      >
-        <SelectTrigger className="hidden sm:flex h-9 w-[120px] text-xs bg-background">
-          <SelectValue placeholder="Prioridad" />
-        </SelectTrigger>
-        <SelectContent>
-          {PRIORITY_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
+      {/* Prioridad — Multi-select */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="hidden sm:flex"
+            style={{
+              height: 34, padding: '0 10px', fontSize: 12, fontWeight: 500,
+              border: '1px solid #E4E4E8', borderRadius: 7,
+              background: '#FAFAFA', color: '#6B7280',
+              display: 'flex', alignItems: 'center', gap: 4,
+              cursor: 'pointer', transition: '120ms', whiteSpace: 'nowrap',
+            }}
+          >
+            Prioridad
+            {priorityCount > 0 && (
+              <span style={{
+                fontSize: 10, fontWeight: 600, padding: '1px 5px',
+                borderRadius: 4, background: '#111827', color: '#FFFFFF',
+                lineHeight: '14px',
+              }}>
+                {priorityCount}
+              </span>
+            )}
+            <ChevronDown className="h-3 w-3" style={{ color: '#9CA3AF', marginLeft: 2 }} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          {PRIORITY_OPTIONS.filter(o => o.value !== 'ALL').map((option) => (
+            <DropdownMenuCheckboxItem
+              key={option.value}
+              checked={filters.priority?.includes(option.value) || false}
+              onCheckedChange={() => togglePriority(option.value)}
+            >
               {option.label}
-            </SelectItem>
+            </DropdownMenuCheckboxItem>
           ))}
-        </SelectContent>
-      </Select>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-      {/* Toggle Downtime — oculto en móvil */}
-      <Button
-        variant={filters.causedDowntime ? 'default' : 'outline'}
-        size="sm"
-        className="hidden sm:inline-flex h-9 text-xs"
+      {/* Toggle Downtime */}
+      <button
+        className="hidden sm:inline-flex"
         onClick={() => toggleBooleanFilter('causedDowntime')}
+        style={{
+          height: 34, padding: '0 10px', fontSize: 12, fontWeight: 500,
+          border: filters.causedDowntime ? '1px solid #111827' : '1px solid #E4E4E8',
+          borderRadius: 7,
+          background: filters.causedDowntime ? '#111827' : '#FAFAFA',
+          color: filters.causedDowntime ? '#FFFFFF' : '#6B7280',
+          cursor: 'pointer', transition: '120ms', whiteSpace: 'nowrap',
+          display: 'inline-flex', alignItems: 'center',
+        }}
       >
         Downtime
-      </Button>
+      </button>
 
-      {/* Toggle Intermitente — oculto en móvil */}
-      <Button
-        variant={filters.isIntermittent ? 'default' : 'outline'}
-        size="sm"
-        className="hidden sm:inline-flex h-9 text-xs"
+      {/* Toggle Intermitente */}
+      <button
+        className="hidden sm:inline-flex"
         onClick={() => toggleBooleanFilter('isIntermittent')}
+        style={{
+          height: 34, padding: '0 10px', fontSize: 12, fontWeight: 500,
+          border: filters.isIntermittent ? '1px solid #111827' : '1px solid #E4E4E8',
+          borderRadius: 7,
+          background: filters.isIntermittent ? '#111827' : '#FAFAFA',
+          color: filters.isIntermittent ? '#FFFFFF' : '#6B7280',
+          cursor: 'pointer', transition: '120ms', whiteSpace: 'nowrap',
+          display: 'inline-flex', alignItems: 'center',
+        }}
       >
         Intermitente
-      </Button>
+      </button>
 
-      {/* Botón Filtros Avanzados — siempre visible */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="h-9 text-xs gap-1 sm:px-3 px-2.5"
+      {/* Botón Filtros Avanzados */}
+      <button
         onClick={onAdvancedFiltersOpen}
         aria-label="Filtros avanzados"
+        style={{
+          height: 34, padding: '0 10px', fontSize: 12, fontWeight: 500,
+          border: '1px solid #E4E4E8', borderRadius: 7,
+          background: '#FAFAFA', color: '#6B7280',
+          cursor: 'pointer', transition: '120ms', whiteSpace: 'nowrap',
+          display: 'inline-flex', alignItems: 'center', gap: 5,
+        }}
       >
-        <SlidersHorizontal className="h-3.5 w-3.5" />
+        <SlidersHorizontal className="h-3.5 w-3.5" style={{ color: '#9CA3AF' }} />
         <span className="hidden sm:inline">Avanzados</span>
-      </Button>
+      </button>
+
+      {/* Active filter count indicator */}
+      {activeFilterCount > 0 && (
+        <button
+          onClick={() => {
+            onFiltersChange({});
+            setSearchInput('');
+          }}
+          style={{
+            height: 24, padding: '0 8px', fontSize: 10, fontWeight: 600,
+            borderRadius: 12, border: 'none',
+            background: '#F3F4F6', color: '#9CA3AF',
+            cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
+            transition: '120ms',
+          }}
+        >
+          {activeFilterCount} filtro{activeFilterCount !== 1 ? 's' : ''}
+          <X className="h-2.5 w-2.5" />
+        </button>
+      )}
     </div>
   );
 }

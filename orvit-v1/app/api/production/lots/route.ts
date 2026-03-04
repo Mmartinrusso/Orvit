@@ -5,6 +5,7 @@ import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { generateLotCode } from '@/lib/production/order-code-generator';
 import { logProductionEvent } from '@/lib/production/event-logger';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -200,6 +201,9 @@ export async function POST(request: NextRequest) {
       productionOrderId: validatedData.productionOrderId,
       companyId: user!.companyId,
     });
+
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: lot.id });
 
     return NextResponse.json({
       success: true,

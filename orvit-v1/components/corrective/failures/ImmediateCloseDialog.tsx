@@ -38,7 +38,9 @@ import { toast } from 'sonner';
 
 const immediateCloseSchema = z.object({
   diagnosis: z.string().min(5, 'Mínimo 5 caracteres'),
+  confirmedCause: z.string().optional(),
   solution: z.string().min(5, 'Mínimo 5 caracteres'),
+  fixType: z.enum(['DEFINITIVA', 'PARCHE']).default('DEFINITIVA'),
   outcome: z.enum(['FUNCIONÓ', 'PARCIAL', 'NO_FUNCIONÓ']),
   actualMinutes: z.number().int().positive().optional(),
   closeDowntime: z.boolean().default(false),
@@ -74,9 +76,11 @@ export function ImmediateCloseDialog({
     resolver: zodResolver(immediateCloseSchema),
     defaultValues: {
       diagnosis: '',
+      confirmedCause: '',
       solution: '',
-      outcome: 'FUNCIONÓ',
-      closeDowntime: hasActiveDowntime, // Auto-marcar si hay downtime
+      fixType: 'DEFINITIVA' as const,
+      outcome: 'FUNCIONÓ' as const,
+      closeDowntime: hasActiveDowntime,
       notes: '',
     },
   });
@@ -104,7 +108,7 @@ export function ImmediateCloseDialog({
     },
     onSuccess: (data) => {
       toast.success('Falla resuelta exitosamente');
-      queryClient.invalidateQueries({ queryKey: ['failure-occurrences'] });
+      queryClient.invalidateQueries({ queryKey: ['failures-grid'] });
       queryClient.invalidateQueries({ queryKey: ['failure-stats'] });
       queryClient.invalidateQueries({ queryKey: ['failure-detail', failureId] });
       onOpenChange(false);
@@ -169,6 +173,25 @@ export function ImmediateCloseDialog({
                 )}
               />
 
+              {/* Causa confirmada */}
+              <FormField
+                control={form.control}
+                name="confirmedCause"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Causa confirmada</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ej: Rodamiento desgastado, fuga de aceite..."
+                        className="h-10 text-sm"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* Solución */}
               <FormField
                 control={form.control}
@@ -189,8 +212,34 @@ export function ImmediateCloseDialog({
                 )}
               />
 
-              {/* Resultado y Tiempo en grid */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Tipo de fix y Resultado en grid */}
+              <div className="grid grid-cols-3 gap-4">
+                {/* Tipo de fix */}
+                <FormField
+                  control={form.control}
+                  name="fixType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Tipo de fix</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Seleccione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="DEFINITIVA">Definitiva</SelectItem>
+                          <SelectItem value="PARCHE">Parche</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 {/* Resultado */}
                 <FormField
                   control={form.control}

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/tasks/auth-helper';
 import { CreateAgendaSubtaskSchema } from '@/lib/validations/agenda-tasks';
 import { validateRequest } from '@/lib/validations/helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -136,6 +137,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         },
       },
     });
+
+    // Pusher realtime trigger (subtask change = task updated)
+    triggerCompanyEvent(task.companyId, "tasks", "task:updated", { id: taskId });
 
     return NextResponse.json(
       {

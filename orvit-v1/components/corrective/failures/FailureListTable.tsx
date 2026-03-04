@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import {
@@ -40,6 +40,9 @@ import {
   Pencil,
   Trash2,
   MoreHorizontal,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -48,10 +51,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FailureFilters } from './FailureFiltersBar';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 
 // Pagination defaults
@@ -122,16 +126,21 @@ interface FailureListTableProps {
   canCreate?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
+  // Selection mode
+  selectionMode?: boolean;
+  selectedIds?: number[];
+  onToggleSelect?: (id: number) => void;
+  onSelectAllPage?: (ids: number[]) => void;
 }
 
 const priorityColors: Record<string, string> = {
   P1: 'bg-destructive',
   P2: 'bg-warning',
-  P3: 'bg-warning',
+  P3: 'bg-blue-500',
   P4: 'bg-info',
   URGENT: 'bg-destructive',
   HIGH: 'bg-warning',
-  MEDIUM: 'bg-warning',
+  MEDIUM: 'bg-blue-500',
   LOW: 'bg-info',
 };
 
@@ -150,6 +159,8 @@ const statusLabels: Record<string, string> = {
   RESOLVED: 'Resuelta',
   CANCELLED: 'Cancelada',
 };
+
+const EMPTY_IDS: number[] = [];
 
 // Build query string from filters with pagination
 function buildQueryString(
@@ -204,8 +215,34 @@ export function FailureListTable({
   canCreate = true, // Por defecto true para compatibilidad
   canEdit = true,   // Por defecto true para compatibilidad
   canDelete = false, // Por defecto false para seguridad
+  selectionMode = false,
+  selectedIds = EMPTY_IDS,
+  onToggleSelect,
+  onSelectAllPage,
 }: FailureListTableProps) {
   const router = useRouter();
+
+  // Sorting state
+  type SortField = 'priority' | 'title' | 'status' | 'reportedAt' | 'machine';
+  type SortDir = 'asc' | 'desc';
+  const [sortField, setSortField] = useState<SortField>('reportedAt');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  const toggleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir(field === 'reportedAt' ? 'desc' : 'asc');
+    }
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 text-muted-foreground/50" />;
+    return sortDir === 'asc'
+      ? <ArrowUp className="h-3 w-3 ml-1 text-foreground" />
+      : <ArrowDown className="h-3 w-3 ml-1 text-foreground" />;
+  };
 
   // Pagination state
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
@@ -220,7 +257,7 @@ export function FailureListTable({
   const offset = (currentPage - 1) * pageSize;
 
   // Build query key that includes filters and pagination for cache separation
-  const queryKey = ['failure-occurrences', filters, { offset, limit: pageSize }];
+  const queryKey = ['failures-grid', filters, { offset, limit: pageSize }];
 
   const { data: response, isLoading } = useQuery<FailureListResponse>({
     queryKey,
@@ -243,8 +280,34 @@ export function FailureListTable({
     },
   });
 
-  // Extract data and pagination
-  const data = response?.data || [];
+  // Extract data and pagination, then sort client-side
+  const rawData = response?.data || [];
+
+  const priorityOrder: Record<string, number> = { P1: 1, P2: 2, P3: 3, P4: 4, URGENT: 1, HIGH: 2, MEDIUM: 3, LOW: 4 };
+  const statusOrder: Record<string, number> = { REPORTED: 1, OPEN: 1, IN_PROGRESS: 2, RESOLVED: 3, CANCELLED: 4 };
+
+  const data = useMemo(() => [...rawData].sort((a, b) => {
+    let cmp = 0;
+    switch (sortField) {
+      case 'priority':
+        cmp = (priorityOrder[a.priority] || 5) - (priorityOrder[b.priority] || 5);
+        break;
+      case 'title':
+        cmp = (a.title || '').localeCompare(b.title || '', 'es');
+        break;
+      case 'status':
+        cmp = (statusOrder[a.status] || 5) - (statusOrder[b.status] || 5);
+        break;
+      case 'machine':
+        cmp = (a.machine?.name || '').localeCompare(b.machine?.name || '', 'es');
+        break;
+      case 'reportedAt':
+        cmp = new Date(a.reportedAt).getTime() - new Date(b.reportedAt).getTime();
+        break;
+    }
+    return sortDir === 'asc' ? cmp : -cmp;
+  }), [rawData, sortField, sortDir]);
+
   const pagination = response?.pagination;
   const totalCount = pagination?.total || 0;
   const totalPages = Math.ceil(totalCount / pageSize);
@@ -331,12 +394,30 @@ export function FailureListTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[60px] text-xs">P</TableHead>
-              <TableHead className="text-xs">Título</TableHead>
-              <TableHead className="text-xs">Máquina</TableHead>
+              {selectionMode && (
+                <TableHead className="w-[40px]">
+                  <Checkbox
+                    checked={data.length > 0 && data.every(f => selectedIds.includes(f.id))}
+                    onCheckedChange={() => onSelectAllPage?.(data.map(f => f.id))}
+                  />
+                </TableHead>
+              )}
+              <TableHead className="w-[60px] text-xs cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('priority')}>
+                <span className="flex items-center">P<SortIcon field="priority" /></span>
+              </TableHead>
+              <TableHead className="text-xs cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('title')}>
+                <span className="flex items-center">Título<SortIcon field="title" /></span>
+              </TableHead>
+              <TableHead className="text-xs cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('machine')}>
+                <span className="flex items-center">Máquina<SortIcon field="machine" /></span>
+              </TableHead>
               <TableHead className="text-xs">Componente</TableHead>
-              <TableHead className="text-xs">Estado</TableHead>
-              <TableHead className="text-xs">Reportada</TableHead>
+              <TableHead className="text-xs cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('status')}>
+                <span className="flex items-center">Estado<SortIcon field="status" /></span>
+              </TableHead>
+              <TableHead className="text-xs cursor-pointer select-none hover:text-foreground" onClick={() => toggleSort('reportedAt')}>
+                <span className="flex items-center">Reportada<SortIcon field="reportedAt" /></span>
+              </TableHead>
               <TableHead className="text-right text-xs">Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -361,9 +442,27 @@ export function FailureListTable({
               return (
                 <TableRow
                   key={failure.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => onSelectFailure?.(failure.id)}
+                  className={cn(
+                    "cursor-pointer hover:bg-muted/50",
+                    selectionMode && selectedIds.includes(failure.id) && "bg-primary/5"
+                  )}
+                  onClick={() => {
+                    if (selectionMode) {
+                      onToggleSelect?.(failure.id);
+                    } else {
+                      onSelectFailure?.(failure.id);
+                    }
+                  }}
                 >
+                  {/* Checkbox */}
+                  {selectionMode && (
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.includes(failure.id)}
+                        onCheckedChange={() => onToggleSelect?.(failure.id)}
+                      />
+                    </TableCell>
+                  )}
                   {/* Prioridad */}
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -487,12 +586,19 @@ export function FailureListTable({
 
                   {/* Reportada hace */}
                   <TableCell>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(failure.reportedAt), {
-                        addSuffix: true,
-                        locale: es,
-                      })}
-                    </span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="text-xs text-muted-foreground cursor-help">
+                          {formatDistanceToNow(new Date(failure.reportedAt), {
+                            addSuffix: true,
+                            locale: es,
+                          })}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {format(new Date(failure.reportedAt), "dd/MM/yyyy HH:mm", { locale: es })}
+                      </TooltipContent>
+                    </Tooltip>
                   </TableCell>
 
                   {/* Acciones */}
@@ -524,7 +630,7 @@ export function FailureListTable({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {/* Editar */}
-                          {onEditFailure && (
+                          {onEditFailure && canEdit && (
                             <DropdownMenuItem
                               onClick={() => onEditFailure(failure.id)}
                             >
@@ -564,7 +670,7 @@ export function FailureListTable({
                           )}
 
                           {/* Separador antes de eliminar */}
-                          {onDeleteFailure && (
+                          {onDeleteFailure && canDelete && (
                             <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem

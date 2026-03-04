@@ -356,7 +356,12 @@ export function AgendaV2Page() {
   }
 
   // ── Sync agenda sidebar state to context (renders in main Sidebar.tsx) ─────
+  // Skip on mobile — mobile has its own navigation (BottomNav + AgendaDrawer)
   useEffect(() => {
+    if (isMobile) {
+      setAgendaSidebar(null);
+      return;
+    }
     setAgendaSidebar({
       view,
       tasks: safeTasks,
@@ -385,7 +390,7 @@ export function AgendaV2Page() {
     });
     return () => setAgendaSidebar(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, safeTasks, groups, selectedGroupId, loadingGroups, setAgendaSidebar, changeView]);
+  }, [view, safeTasks, groups, selectedGroupId, loadingGroups, setAgendaSidebar, changeView, isMobile]);
 
   // ── Mobile render ──────────────────────────────────────────────────────────
   if (isMobile) {
@@ -393,6 +398,10 @@ export function AgendaV2Page() {
       <>
         <AgendaMobilePage
           tasks={safeTasks}
+          stats={stats}
+          groups={groups}
+          loadingGroups={loadingGroups}
+          isLoading={loadingTasks}
           onToggleComplete={(taskId) => {
             const task = safeTasks.find((t) => t.id === taskId);
             const newStatus: AgendaTaskStatus =
@@ -400,6 +409,15 @@ export function AgendaV2Page() {
             statusMutation.mutate({ taskId, status: newStatus });
           }}
           onCreateTask={() => setIsCreateOpen(true)}
+          onStatusChange={(taskId, status) => statusMutation.mutate({ taskId, status })}
+          onEditTask={handleEditTask}
+          onDeleteTask={handleTaskDelete}
+          onDuplicateTask={handleDuplicateTask}
+          onSelectGroup={setSelectedGroupId}
+          onCreateGroup={(isProject) => {
+            setCreateGroupIsProject(isProject);
+            setIsCreateGroupOpen(true);
+          }}
         />
         {/* Create task modal — shared with desktop */}
         <CreateTaskModal
@@ -411,6 +429,32 @@ export function AgendaV2Page() {
           groups={groups}
           onSave={async (data) => { await createMutation.mutateAsync({ ...data, companyId: companyId! }); }}
           isSaving={createMutation.isPending}
+          onRequestCreateGroup={() => setIsCreateGroupOpen(true)}
+        />
+        {/* Edit task modal — shared with desktop */}
+        <CreateTaskModal
+          open={isEditOpen}
+          onOpenChange={(open) => { setIsEditOpen(open); if (!open) setEditingTask(null); }}
+          editTask={editingTask ?? undefined}
+          groups={groups}
+          onSave={async (data) => {
+            if (!editingTask) return;
+            await editMutation.mutateAsync({
+              id: editingTask.id,
+              data: {
+                title: data.title,
+                description: data.description,
+                priority: data.priority,
+                dueDate: data.dueDate ?? null,
+                category: data.category,
+                status: data.status,
+                assignedToUserId: data.assignedToUserId ?? null,
+                groupId: data.groupId ?? null,
+                isCompanyVisible: data.isCompanyVisible,
+              },
+            });
+          }}
+          isSaving={editMutation.isPending}
           onRequestCreateGroup={() => setIsCreateGroupOpen(true)}
         />
         <CreateGroupModal
@@ -427,11 +471,10 @@ export function AgendaV2Page() {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div
+      className="flex bg-background"
       style={{
-        display: 'flex',
         height: 'calc(100vh - 4rem)',
         overflow: 'hidden',
-        background: '#FFFFFF',
       }}
     >
       {/* Main panel — position:relative so expanded panel covers only this area */}
@@ -441,11 +484,11 @@ export function AgendaV2Page() {
           {/* Scrollable main content */}
           <div
             key={`view-${view}-${viewAnimKey}`}
+            className="bg-background"
             style={{
               flex: 1,
               overflow: 'auto',
               padding: '20px',
-              background: '#FFFFFF',
               animation: 'view-fade-in 220ms cubic-bezier(0.22,1,0.36,1) both',
             }}
           >
@@ -462,14 +505,14 @@ export function AgendaV2Page() {
                     }}
                   />
                 )}
-                <h1 style={{ fontSize: '18px', fontWeight: 700, color: '#111827' }}>{pageTitle}</h1>
+                <h1 className="text-lg font-bold text-foreground">{pageTitle}</h1>
                 {selectedGroupId && (
-                  <span style={{ fontSize: '11px', color: '#9CA3AF', background: '#F3F4F6', padding: '2px 8px', borderRadius: '20px' }}>
+                  <span className="text-[11px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                     {groups.find(g => g.id === selectedGroupId)?.isProject ? 'Proyecto' : 'Grupo'}
                   </span>
                 )}
               </div>
-              <p style={{ fontSize: '12px', color: '#9CA3AF' }}>
+              <p className="text-xs text-muted-foreground">
                 {filteredTasks.length} tarea{filteredTasks.length !== 1 ? 's' : ''}
               </p>
             </div>

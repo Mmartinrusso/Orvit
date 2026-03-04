@@ -44,9 +44,11 @@ const editFailureSchema = z.object({
   title: z.string().min(5, 'Mínimo 5 caracteres').max(100),
   description: z.string().optional(),
   priority: z.enum(['P1', 'P2', 'P3', 'P4']),
-  status: z.enum(['REPORTED', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED']),
+  status: z.enum(['REPORTED', 'IN_PROGRESS', 'CANCELLED']),
+  incidentType: z.enum(['FALLA', 'ROTURA']),
   causedDowntime: z.boolean(),
   isIntermittent: z.boolean(),
+  isObservation: z.boolean(),
   isSafetyRelated: z.boolean(),
 });
 
@@ -62,15 +64,15 @@ interface EditFailureDialogProps {
 const priorityOptions = [
   { value: 'P1', label: 'P1 - Urgente', color: 'text-destructive' },
   { value: 'P2', label: 'P2 - Alta', color: 'text-warning-muted-foreground' },
-  { value: 'P3', label: 'P3 - Media', color: 'text-warning-muted-foreground' },
+  { value: 'P3', label: 'P3 - Media', color: 'text-blue-600' },
   { value: 'P4', label: 'P4 - Baja', color: 'text-info-muted-foreground' },
 ];
 
 const statusOptions = [
   { value: 'REPORTED', label: 'Reportada' },
   { value: 'IN_PROGRESS', label: 'En Proceso' },
-  { value: 'RESOLVED', label: 'Resuelta' },
   { value: 'CANCELLED', label: 'Cancelada' },
+  // RESOLVED is not available here — use "Resolver Inmediatamente" or close from OT
 ];
 
 export function EditFailureDialog({
@@ -83,7 +85,7 @@ export function EditFailureDialog({
 
   // Cargar datos de la falla
   const { data: failure, isLoading } = useQuery({
-    queryKey: ['failure-occurrence', failureId],
+    queryKey: ['failure-detail', failureId],
     queryFn: async () => {
       if (!failureId) return null;
       const res = await fetch(`/api/failure-occurrences/${failureId}`);
@@ -100,8 +102,10 @@ export function EditFailureDialog({
       description: '',
       priority: 'P3',
       status: 'REPORTED',
+      incidentType: 'FALLA',
       causedDowntime: false,
       isIntermittent: false,
+      isObservation: false,
       isSafetyRelated: false,
     },
   });
@@ -114,8 +118,10 @@ export function EditFailureDialog({
         description: failure.description || '',
         priority: failure.priority || 'P3',
         status: failure.status || 'REPORTED',
+        incidentType: failure.incidentType || 'FALLA',
         causedDowntime: failure.causedDowntime || false,
         isIntermittent: failure.isIntermittent || false,
+        isObservation: failure.isObservation || false,
         isSafetyRelated: failure.isSafetyRelated || false,
       });
     }
@@ -138,9 +144,9 @@ export function EditFailureDialog({
     },
     onSuccess: () => {
       toast.success('Falla actualizada correctamente');
-      queryClient.invalidateQueries({ queryKey: ['failure-occurrences'] });
-      queryClient.invalidateQueries({ queryKey: ['failure-occurrence', failureId] });
-      queryClient.invalidateQueries({ queryKey: ['failure-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['failures-grid'] });
+      queryClient.invalidateQueries({ queryKey: ['failure-detail', failureId] });
+      queryClient.invalidateQueries({ queryKey: ['failure-stats'] });
       onOpenChange(false);
       onSuccess?.();
     },
@@ -212,8 +218,8 @@ export function EditFailureDialog({
                 )}
               />
 
-              {/* Prioridad y Estado */}
-              <div className="grid grid-cols-2 gap-4">
+              {/* Prioridad, Estado, Tipo */}
+              <div className="grid grid-cols-3 gap-4">
                 <FormField
                   control={form.control}
                   name="priority"
@@ -271,6 +277,31 @@ export function EditFailureDialog({
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="incidentType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="FALLA">Falla</SelectItem>
+                          <SelectItem value="ROTURA">Rotura</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               {/* Switches */}
@@ -305,6 +336,27 @@ export function EditFailureDialog({
                         <FormLabel className="text-sm">Intermitente</FormLabel>
                         <p className="text-xs text-muted-foreground">
                           ¿La falla ocurre de forma intermitente?
+                        </p>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="isObservation"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-sm">Observación</FormLabel>
+                        <p className="text-xs text-muted-foreground">
+                          ¿Es solo una observación preventiva?
                         </p>
                       </div>
                       <FormControl>

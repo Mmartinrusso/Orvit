@@ -4,6 +4,7 @@ import { requirePermission } from '@/lib/auth/shared-helpers';
 import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateRoutineExecutionSchema } from '@/lib/validations/production';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -304,6 +305,9 @@ export async function POST(request: Request) {
       // Post-processing errors should not fail the routine save
       console.error('Error in post-processing (attendance/notifications):', postProcessError);
     }
+
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(companyId, "production", "production:updated", { id: routine.id });
 
     return NextResponse.json({
       success: true,

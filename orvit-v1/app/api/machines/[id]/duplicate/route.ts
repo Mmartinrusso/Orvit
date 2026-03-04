@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -162,6 +163,7 @@ export async function POST(
       },
     });
 
+    triggerCompanyEvent(auth.companyId, "machines", "machine:created", { id: duplicatedMachine.id });
     return NextResponse.json({
       success: true,
       message: 'Máquina duplicada correctamente',

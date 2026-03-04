@@ -4,6 +4,7 @@ import { requirePermission } from '@/lib/auth/shared-helpers';
 import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { validateRequest } from '@/lib/validations/helpers';
 import { UpdateDailyEntrySchema } from '@/lib/validations/production';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -120,6 +121,9 @@ export async function PUT(
       },
     });
 
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(companyId, "production", "production:updated", { id });
+
     return NextResponse.json({ success: true, entry });
   } catch (error) {
     console.error('Error updating daily production entry:', error);
@@ -165,6 +169,9 @@ export async function DELETE(
     await prisma.dailyProductionEntry.delete({
       where: { id },
     });
+
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(companyId, "production", "production:updated", { id });
 
     return NextResponse.json({ success: true, message: 'Registro eliminado' });
   } catch (error) {

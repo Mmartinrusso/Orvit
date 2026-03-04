@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hasPermission } from '@/lib/permissions';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 import {
   mapFrequencyToDb,
   mapFrequencyToFrontend,
@@ -173,6 +174,9 @@ export async function PUT(
       isCompleted: updatedTask.isCompleted,
     };
 
+    // Pusher realtime trigger
+    triggerCompanyEvent(updatedTask.companyId, 'tasks', 'task:updated', { id: taskId });
+
     return NextResponse.json({ success: true, task: transformedTask });
   } catch (error) {
     console.error('[API] Error en PUT /api/fixed-tasks/[id]:', error);
@@ -203,7 +207,7 @@ export async function DELETE(
     // Verificar que la tarea existe
     const taskExists = await (prisma as any).fixedTask.findUnique({
       where: { id: taskId },
-      select: { id: true },
+      select: { id: true, companyId: true },
     });
 
     if (!taskExists) {
@@ -212,6 +216,9 @@ export async function DELETE(
 
     // Eliminar tarea (cascadea a executions e instructives via onDelete: Cascade)
     await (prisma as any).fixedTask.delete({ where: { id: taskId } });
+
+    // Pusher realtime trigger
+    triggerCompanyEvent(taskExists.companyId, 'tasks', 'task:deleted', { id: taskId });
 
     // Limpiar notificaciones relacionadas (best-effort, fuera de transacción)
     try {

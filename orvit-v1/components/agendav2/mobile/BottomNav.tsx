@@ -1,85 +1,99 @@
 'use client';
 
-import { Home, ListTodo, Plus, BarChart2, User } from 'lucide-react';
+import { CircleUserRound, Columns3, Plus, PieChart, AlignJustify } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-export type MobileTab = 'home' | 'tasks' | 'dashboard' | 'profile';
+export type MobileTab = 'home' | 'board' | 'dashboard' | 'more';
 
 interface BottomNavProps {
   activeTab: MobileTab;
   onTabChange: (tab: MobileTab) => void;
   onCreateTask: () => void;
+  onMenuPress: () => void;
+  hidden?: boolean;
 }
 
 const LEFT_TABS = [
-  { id: 'home' as MobileTab, icon: Home, label: 'Inicio' },
-  { id: 'tasks' as MobileTab, icon: ListTodo, label: 'Tareas' },
+  { id: 'home' as const, icon: CircleUserRound, label: 'Mi día' },
+  { id: 'board' as const, icon: Columns3, label: 'Board' },
 ];
 
 const RIGHT_TABS = [
-  { id: 'dashboard' as MobileTab, icon: BarChart2, label: 'Dashboard' },
-  { id: 'profile' as MobileTab, icon: User, label: 'Perfil' },
+  { id: 'dashboard' as const, icon: PieChart, label: 'Resumen' },
+  { id: 'more' as const, icon: AlignJustify, label: 'Menú' },
 ];
 
-export function BottomNav({ activeTab, onTabChange, onCreateTask }: BottomNavProps) {
+export function BottomNav({ activeTab, onTabChange, onCreateTask, onMenuPress, hidden }: BottomNavProps) {
+  const handlePress = (id: MobileTab) => {
+    if (id === 'more') {
+      onMenuPress();
+    } else {
+      onTabChange(id);
+    }
+  };
+
+  const renderTab = (tab: { id: MobileTab; icon: typeof CircleUserRound; label: string }) => {
+    const isActive = activeTab === tab.id && tab.id !== 'more';
+
+    return (
+      <button
+        key={tab.id}
+        onClick={() => handlePress(tab.id)}
+        className={cn(
+          'relative flex flex-col items-center gap-1 flex-1 pt-2.5 pb-1 group transition-all duration-200',
+          'active:opacity-70'
+        )}
+      >
+        <tab.icon
+          className={cn(
+            'h-[22px] w-[22px] transition-colors duration-200',
+            isActive ? 'text-foreground' : 'text-muted-foreground/50'
+          )}
+          strokeWidth={isActive ? 2 : 1.5}
+        />
+        <span
+          className={cn(
+            'text-[10px] leading-none transition-colors duration-200',
+            isActive ? 'font-semibold text-foreground' : 'font-medium text-muted-foreground/50'
+          )}
+        >
+          {tab.label}
+        </span>
+      </button>
+    );
+  };
+
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around"
-      style={{
-        backgroundColor: '#FFFFFF',
-        boxShadow: '0 -1px 0 rgba(0,0,0,0.06), 0 -4px 16px rgba(0,0,0,0.04)',
-        paddingTop: '8px',
-        paddingBottom: 'max(env(safe-area-inset-bottom), 12px)',
-        paddingLeft: '8px',
-        paddingRight: '8px',
-      }}
+      className={cn(
+        'fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ease-out',
+        hidden && 'translate-y-full pointer-events-none'
+      )}
     >
-      {LEFT_TABS.map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => onTabChange(tab.id)}
-          className="flex flex-col items-center gap-0.5 min-w-[56px] py-1"
-          style={{ color: activeTab === tab.id ? '#0f172a' : '#94a3b8' }}
-        >
-          <tab.icon
-            className="h-5 w-5"
-            strokeWidth={activeTab === tab.id ? 2.5 : 1.75}
-          />
-          <span style={{ fontSize: '10px', fontWeight: activeTab === tab.id ? 600 : 400 }}>
-            {tab.label}
-          </span>
-        </button>
-      ))}
-
-      {/* Central FAB */}
-      <button
-        onClick={onCreateTask}
-        className="flex items-center justify-center -mt-4 rounded-full active:scale-95 transition-transform"
-        style={{
-          width: '52px',
-          height: '52px',
-          backgroundColor: '#06b6d4',
-          boxShadow: '0 4px 16px rgba(6,182,212,0.4)',
-        }}
+      <div
+        className="bg-background border-t border-border/50"
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 6px)' }}
       >
-        <Plus className="h-5 w-5 text-white" strokeWidth={2.5} />
-      </button>
+        <div className="flex items-end">
+          {LEFT_TABS.map(renderTab)}
 
-      {RIGHT_TABS.map((tab) => (
-        <button
-          key={tab.id}
-          onClick={() => onTabChange(tab.id)}
-          className="flex flex-col items-center gap-0.5 min-w-[56px] py-1"
-          style={{ color: activeTab === tab.id ? '#0f172a' : '#94a3b8' }}
-        >
-          <tab.icon
-            className="h-5 w-5"
-            strokeWidth={activeTab === tab.id ? 2.5 : 1.75}
-          />
-          <span style={{ fontSize: '10px', fontWeight: activeTab === tab.id ? 600 : 400 }}>
-            {tab.label}
-          </span>
-        </button>
-      ))}
+          {/* Center FAB */}
+          <div className="flex items-center justify-center flex-1 -mt-4 pb-1">
+            <button
+              onClick={onCreateTask}
+              className={cn(
+                'flex items-center justify-center w-[48px] h-[48px] rounded-full',
+                'bg-foreground text-background',
+                'shadow-sm active:scale-[0.92] transition-transform duration-150'
+              )}
+            >
+              <Plus className="h-5 w-5" strokeWidth={2.5} />
+            </button>
+          </div>
+
+          {RIGHT_TABS.map(renderTab)}
+        </div>
+      </div>
     </div>
   );
 }

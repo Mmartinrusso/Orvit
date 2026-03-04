@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       where: {
         OR: [
           { discordResumenDiaWebhook: { not: null } },
-          { discordResumenChannelId: { not: null } }
+          { discordGeneralChannelId: { not: null } }
         ]
       },
       select: {

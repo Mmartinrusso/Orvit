@@ -7,6 +7,7 @@ import {
   listWorkStationsSchema,
   validateSafe
 } from '@/lib/work-stations/validations';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -230,6 +231,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    triggerCompanyEvent(companyId, "machines", "machine:created", { id: workStation.id });
     return NextResponse.json({
       workStation,
       message: 'Puesto de trabajo creado correctamente'

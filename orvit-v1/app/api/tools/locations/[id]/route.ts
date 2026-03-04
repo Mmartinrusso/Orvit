@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 // GET /api/tools/locations/[id] - Obtener una ubicación específica
 export async function GET(
@@ -127,6 +128,8 @@ export async function PUT(
       }
     });
 
+    triggerCompanyEvent(parseInt(companyId), "tools", "tool:updated", { id: locationId });
+
     return NextResponse.json({
       success: true,
       location: updatedLocation,
@@ -198,6 +201,8 @@ export async function DELETE(
         id: locationId
       }
     });
+
+    triggerCompanyEvent(parseInt(companyId), "tools", "tool:updated", { id: locationId });
 
     return NextResponse.json({
       success: true,

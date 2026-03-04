@@ -227,6 +227,9 @@ export async function GET(request: NextRequest) {
         pagoUrgente: true,
         // ViewMode docType
         docType: true,
+        // Moneda
+        moneda: true,
+        tipoCambio: true,
         // Control de ingreso de stock
         ingresoConfirmado: true,
         ingresoConfirmadoAt: true,
@@ -576,6 +579,8 @@ export async function POST(request: NextRequest) {
       tipoCuentaId,
       observaciones,
       docType,  // T1 (documentado) o T2 (extendido)
+      moneda,    // ARS o USD
+      tipoCambio, // Tipo de cambio al momento de la factura (solo USD)
       esIndirecto,
       indirectCategory,
       prorratear,
@@ -761,6 +766,8 @@ export async function POST(request: NextRequest) {
           estado: tipoPago === 'contado' ? 'pagada' : 'pendiente',
           observaciones: observaciones || null,
           docType: 'T1',  // Siempre T1 en BD principal
+          moneda: moneda === 'USD' ? 'USD' : 'ARS',
+          tipoCambio: moneda === 'USD' && tipoCambio ? parseFloat(tipoCambio) : null,
           esIndirecto: Boolean(esIndirecto),
           indirectCategory: esIndirecto ? (indirectCategory || null) : null,
           prorratear: Boolean(prorratear),

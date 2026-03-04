@@ -63,6 +63,7 @@ interface RecurrenceGroup {
   avgDaysBetween: number;
   totalDowntimes: number;
   workOrdersCreated: number;
+  uniqueWorkOrderIds: Set<number>;
 }
 
 type TimeWindow = '30' | '60' | '90' | '180' | '365';
@@ -123,6 +124,7 @@ export function FailuresReincidenciasView({
           avgDaysBetween: 0,
           totalDowntimes: 0,
           workOrdersCreated: 0,
+          uniqueWorkOrderIds: new Set<number>(),
         });
       }
 
@@ -137,11 +139,16 @@ export function FailuresReincidenciasView({
         group.totalDowntimes++;
       }
       if (failure.failureId) {
-        group.workOrdersCreated++;
+        group.uniqueWorkOrderIds.add(failure.failureId);
       }
       if (new Date(failure.reportedAt) > new Date(group.lastOccurrence)) {
         group.lastOccurrence = failure.reportedAt;
       }
+    });
+
+    // Set workOrdersCreated from unique set and calculate avg days
+    groups.forEach((group) => {
+      group.workOrdersCreated = group.uniqueWorkOrderIds.size;
     });
 
     // Calculate average days between occurrences
@@ -423,12 +430,12 @@ function RecurrenceGroupCard({
                           variant="outline"
                           className={cn(
                             'text-xs',
-                            occ.status === 'OPEN' && 'border-info text-info-muted-foreground',
+                            (occ.status === 'OPEN' || occ.status === 'REPORTED') && 'border-info text-info-muted-foreground',
                             occ.status === 'IN_PROGRESS' && 'border-warning-muted text-warning-muted-foreground',
                             occ.status === 'RESOLVED' && 'border-success text-success'
                           )}
                         >
-                          {occ.status}
+                          {occ.status === 'OPEN' ? 'Abierta' : occ.status === 'REPORTED' ? 'Reportada' : occ.status === 'IN_PROGRESS' ? 'En Proceso' : occ.status === 'RESOLVED' ? 'Resuelta' : occ.status}
                         </Badge>
                         <span className="text-xs font-medium truncate max-w-[200px]">
                           {occ.title || `Falla #${occ.id}`}

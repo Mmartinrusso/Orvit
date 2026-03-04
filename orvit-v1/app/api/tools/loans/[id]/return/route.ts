@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 // POST /api/tools/loans/[id]/return - Devolver herramienta prestada
 export async function POST(
@@ -133,6 +134,8 @@ export async function POST(
         description: `ID Préstamo: ${loan.id}${returnNotes ? ` - ${returnNotes}` : ''}${condition ? ` - Estado: ${condition}` : ''}`
       }
     });
+
+    triggerCompanyEvent(loan.tool.companyId, "tools", "tool:updated", { id: loan.toolId });
 
     return NextResponse.json({
       success: true,

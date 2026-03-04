@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-// V2: Redirect a la vista unificada de fallas con vista reincidencias
+// Redirect a la nueva URL de incidentes con vista reincidencias
 export default function ReincidenciasRedirect() {
-  redirect('/mantenimiento/fallas?view=reincidencias');
+  redirect('/mantenimiento/incidentes?view=reincidencias');
 }

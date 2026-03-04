@@ -1,8 +1,10 @@
 /**
  * API: /api/failure-occurrences/[id]/comments
  *
- * GET - Lista de comentarios de una falla (via WorkOrder asociado)
+ * GET - Lista de comentarios de una falla (usando FailureOccurrenceComment)
  * POST - Crear nuevo comentario
+ * PATCH - Editar comentario existente
+ * DELETE - Eliminar comentario
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -10,16 +12,26 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Schema para crear comentario
+ * Schema para crear/editar comentario
  */
 const createCommentSchema = z.object({
   content: z.string().min(1, 'El comentario no puede estar vacío').max(2000),
   type: z.enum(['comment', 'update', 'issue']).optional().default('comment'),
-  mentions: z.array(z.number().int().positive()).optional(), // IDs de usuarios mencionados
+  mentions: z.array(z.number().int().positive()).optional(),
+});
+
+const updateCommentSchema = z.object({
+  commentId: z.number().int().positive(),
+  content: z.string().min(1, 'El comentario no puede estar vacío').max(2000),
+});
+
+const deleteCommentSchema = z.object({
+  commentId: z.number().int().positive(),
 });
 
 /**
@@ -31,7 +43,6 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // 1. Verificar autenticación
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
@@ -51,16 +62,10 @@ export async function GET(
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
     }
 
-    // 2. Obtener la falla para conseguir el workOrderId
+    // Verify the failure belongs to this company
     const occurrence = await prisma.failureOccurrence.findFirst({
-      where: {
-        id: occurrenceId,
-        companyId,
-      },
-      select: {
-        id: true,
-        failureId: true, // Este es el workOrderId
-      },
+      where: { id: occurrenceId, companyId },
+      select: { id: true },
     });
 
     if (!occurrence) {
@@ -70,11 +75,9 @@ export async function GET(
       );
     }
 
-    // 3. Obtener comentarios del WorkOrder asociado
-    const comments = await prisma.workOrderComment.findMany({
-      where: {
-        workOrderId: occurrence.failureId,
-      },
+    // Get comments directly from FailureOccurrenceComment
+    const comments = await prisma.failureOccurrenceComment.findMany({
+      where: { failureOccurrenceId: occurrenceId },
       include: {
         author: {
           select: {
@@ -84,17 +87,15 @@ export async function GET(
           },
         },
       },
-      orderBy: {
-        createdAt: 'asc',
-      },
+      orderBy: { createdAt: 'asc' },
     });
 
-    // 4. Transformar respuesta
     const transformedComments = comments.map((comment) => ({
       id: comment.id,
       content: comment.content,
       type: comment.type,
       createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
       author: comment.author
         ? {
             id: comment.author.id,
@@ -110,9 +111,8 @@ export async function GET(
     });
   } catch (error: any) {
     console.error('❌ Error en GET /api/failure-occurrences/[id]/comments:', error);
-    // Si es error de columna/tabla no existente, retornar vacío
     if (error?.code === 'P2010' || error?.code === 'P2022' || error?.message?.includes('column') || error?.message?.includes('does not exist') || error?.message?.includes('relation')) {
-      console.warn('⚠️ Columnas de failure_occurrences faltan. Ejecutar: npx prisma db push');
+      console.warn('⚠️ Tabla failure_occurrence_comments no existe. Ejecutar: npx prisma db push');
       return NextResponse.json({
         data: [],
         count: 0,
@@ -135,7 +135,6 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    // 1. Verificar autenticación
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
 
@@ -156,7 +155,6 @@ export async function POST(
       return NextResponse.json({ error: 'ID inválido' }, { status: 400 });
     }
 
-    // 2. Parsear y validar body
     const body = await request.json();
     const validationResult = createCommentSchema.safeParse(body);
 
@@ -172,17 +170,10 @@ export async function POST(
 
     const data = validationResult.data;
 
-    // 3. Obtener la falla para conseguir el workOrderId
+    // Verify the failure belongs to this company
     const occurrence = await prisma.failureOccurrence.findFirst({
-      where: {
-        id: occurrenceId,
-        companyId,
-      },
-      select: {
-        id: true,
-        failureId: true, // Este es el workOrderId
-        title: true,
-      },
+      where: { id: occurrenceId, companyId },
+      select: { id: true, title: true },
     });
 
     if (!occurrence) {
@@ -192,13 +183,14 @@ export async function POST(
       );
     }
 
-    // 4. Crear comentario en el WorkOrder asociado
-    const comment = await prisma.workOrderComment.create({
+    // Create comment directly on FailureOccurrenceComment
+    const comment = await prisma.failureOccurrenceComment.create({
       data: {
-        workOrderId: occurrence.failureId,
+        failureOccurrenceId: occurrenceId,
         content: data.content,
         type: data.type,
         authorId: userId,
+        mentionedUserIds: data.mentions && data.mentions.length > 0 ? data.mentions : undefined,
       },
       include: {
         author: {
@@ -211,11 +203,11 @@ export async function POST(
       },
     });
 
-    // 5. Si hay menciones, crear notificaciones para cada usuario mencionado
+    // Create notifications for mentioned users
     if (data.mentions && data.mentions.length > 0) {
       const authorName = comment.author?.name || 'Alguien';
       const mentionNotifications = data.mentions
-        .filter((mentionedUserId: number) => mentionedUserId !== userId) // No notificar al autor
+        .filter((mentionedUserId: number) => mentionedUserId !== userId)
         .map((mentionedUserId: number) =>
           prisma.notification.create({
             data: {
@@ -236,11 +228,11 @@ export async function POST(
           })
         );
 
-      // Fire-and-forget
       Promise.all(mentionNotifications).catch(() => {});
     }
 
-    console.log(`💬 Comentario creado en falla ${occurrenceId}:`, comment.id);
+    // Pusher realtime trigger
+    triggerCompanyEvent(companyId, "failures", "failure:updated", { id: occurrenceId });
 
     return NextResponse.json(
       {
@@ -249,6 +241,7 @@ export async function POST(
           content: comment.content,
           type: comment.type,
           createdAt: comment.createdAt,
+          updatedAt: comment.updatedAt,
           author: comment.author,
         },
       },
@@ -258,6 +251,153 @@ export async function POST(
     console.error('❌ Error en POST /api/failure-occurrences/[id]/comments:', error);
     return NextResponse.json(
       { error: 'Error al crear comentario', detail: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PATCH /api/failure-occurrences/[id]/comments
+ * Editar un comentario existente (solo el autor puede editar)
+ */
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    }
+
+    const payload = await verifyToken(token);
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+    }
+
+    const userId = payload.userId as number;
+    const companyId = payload.companyId as number;
+    const occurrenceId = parseInt(params.id);
+
+    const body = await request.json();
+    const validationResult = updateCommentSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos' },
+        { status: 400 }
+      );
+    }
+
+    const { commentId, content } = validationResult.data;
+
+    // Verify the comment exists and belongs to this user
+    const existingComment = await prisma.failureOccurrenceComment.findFirst({
+      where: { id: commentId, authorId: userId },
+    });
+
+    if (!existingComment) {
+      return NextResponse.json(
+        { error: 'Comentario no encontrado o no tenés permiso para editarlo' },
+        { status: 404 }
+      );
+    }
+
+    const updated = await prisma.failureOccurrenceComment.update({
+      where: { id: commentId },
+      data: { content },
+      include: {
+        author: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    });
+
+    // Pusher realtime trigger
+    triggerCompanyEvent(companyId, "failures", "failure:updated", { id: occurrenceId });
+
+    return NextResponse.json({
+      data: {
+        id: updated.id,
+        content: updated.content,
+        type: updated.type,
+        createdAt: updated.createdAt,
+        updatedAt: updated.updatedAt,
+        author: updated.author,
+      },
+    });
+  } catch (error: any) {
+    console.error('❌ Error en PATCH /api/failure-occurrences/[id]/comments:', error);
+    return NextResponse.json(
+      { error: 'Error al editar comentario', detail: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/failure-occurrences/[id]/comments
+ * Eliminar un comentario (solo el autor puede eliminar)
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    }
+
+    const payload = await verifyToken(token);
+    if (!payload || !payload.userId) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
+    }
+
+    const userId = payload.userId as number;
+    const companyId = payload.companyId as number;
+    const occurrenceId = parseInt(params.id);
+
+    const body = await request.json();
+    const validationResult = deleteCommentSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: 'Datos inválidos' },
+        { status: 400 }
+      );
+    }
+
+    const { commentId } = validationResult.data;
+
+    // Verify the comment exists and belongs to this user
+    const existingComment = await prisma.failureOccurrenceComment.findFirst({
+      where: { id: commentId, authorId: userId },
+    });
+
+    if (!existingComment) {
+      return NextResponse.json(
+        { error: 'Comentario no encontrado o no tenés permiso para eliminarlo' },
+        { status: 404 }
+      );
+    }
+
+    await prisma.failureOccurrenceComment.delete({
+      where: { id: commentId },
+    });
+
+    // Pusher realtime trigger
+    triggerCompanyEvent(companyId, "failures", "failure:updated", { id: occurrenceId });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('❌ Error en DELETE /api/failure-occurrences/[id]/comments:', error);
+    return NextResponse.json(
+      { error: 'Error al eliminar comentario', detail: error.message },
       { status: 500 }
     );
   }

@@ -5,6 +5,7 @@ import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { generateOrderCode } from '@/lib/production/order-code-generator';
 import { logProductionEvent } from '@/lib/production/event-logger';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -287,6 +288,9 @@ export async function POST(request: NextRequest) {
       productionOrderId: order.id,
       companyId: user!.companyId,
     });
+
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: order.id });
 
     return NextResponse.json({
       success: true,

@@ -373,10 +373,8 @@ export function FailureQuickReportDialog({
         return;
       }
 
-      queryClient.invalidateQueries({ queryKey: ['failure-occurrences'] });
-      queryClient.invalidateQueries({ queryKey: ['failure-stats'] });
-      queryClient.invalidateQueries({ queryKey: ['failure-kpis'] });
       queryClient.invalidateQueries({ queryKey: ['failures-grid'] });
+      queryClient.invalidateQueries({ queryKey: ['failure-stats'] });
       queryClient.invalidateQueries({ queryKey: ['work-orders'] });
 
       if (data.wasLinkedToExisting && data.linkedTo) {
@@ -438,7 +436,7 @@ export function FailureQuickReportDialog({
   const handleViewFailure = () => {
     if (creationResult?.occurrence) {
       resetAndClose();
-      router.push(`/mantenimiento/fallas?id=${creationResult.occurrence.id}`);
+      router.push(`/mantenimiento/incidentes?id=${creationResult.occurrence.id}`);
     }
   };
 

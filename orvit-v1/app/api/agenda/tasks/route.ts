@@ -5,6 +5,8 @@ import { hasPermission } from '@/lib/permissions';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateAgendaTaskSchema } from '@/lib/validations/agenda-tasks';
 import { logTaskActivity } from '@/lib/agenda/activity-logger';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
+import { sendTaskPushNotification } from '@/lib/agenda/push-notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -383,6 +385,9 @@ export async function POST(request: NextRequest) {
       updatedAt: task.updatedAt.toISOString(),
     };
 
+    // Pusher realtime trigger
+    triggerCompanyEvent(task.companyId, "tasks", "task:created", { id: task.id });
+
     // Registrar actividad de creación
     logTaskActivity({
       taskId: task.id,
@@ -409,6 +414,15 @@ export async function POST(request: NextRequest) {
       } catch (notifErr) {
         console.error('[API] Error creating assignment notification:', notifErr);
       }
+
+      // Push notification to mobile
+      sendTaskPushNotification({
+        taskId: task.id,
+        taskTitle: task.title,
+        assignedToUserId: task.assignedToUserId,
+        assignerName: user.name || 'Alguien',
+        type: 'task_assigned',
+      });
     }
 
     return NextResponse.json(response, { status: 201 });

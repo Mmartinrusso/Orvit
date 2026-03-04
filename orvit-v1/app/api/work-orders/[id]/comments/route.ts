@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { withGuards } from '@/lib/middleware/withGuards';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateWorkOrderCommentSchema } from '@/lib/validations/work-orders';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 // GET /api/work-orders/[id]/comments
 export const GET = withGuards(async (request: NextRequest, { user, params: _p }, routeContext) => {
@@ -163,6 +164,8 @@ export const POST = withGuards(async (request: NextRequest, { user, params: _p }
       createdAt: newComment.createdAt,
       workOrderId: newComment.workOrderId,
     };
+
+    triggerCompanyEvent(workOrder.companyId, "work-orders", "work-order:updated", { id: workOrder.id });
 
     return NextResponse.json(formattedComment, { status: 201 });
   } catch (error) {

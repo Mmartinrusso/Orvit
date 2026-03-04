@@ -19,6 +19,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -315,6 +316,9 @@ export async function POST(
     });
 
     console.log(`✅ RCA ${result.isNew ? 'creado' : 'actualizado'}: ID ${result.rca.id} para OT #${workOrderId}`);
+
+    // Pusher realtime trigger (fire-and-forget)
+    triggerCompanyEvent(companyId, "work-orders", "work-order:updated", { id: workOrderId });
 
     return NextResponse.json({
       success: true,

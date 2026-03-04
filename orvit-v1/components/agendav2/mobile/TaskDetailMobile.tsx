@@ -1,42 +1,103 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, Calendar, Flag } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  Check,
+  Flag,
+  MoreVertical,
+  Pencil,
+  Copy,
+  Trash2,
+  User,
+  FolderDot,
+  ListChecks,
+  MessageCircle,
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { TaskCommentThread } from '../TaskCommentThread';
 import { MentionInput } from '../MentionInput';
 import { toast } from 'sonner';
-import type { AgendaTask, AgendaTaskComment, AgendaSubtask } from '@/lib/agenda/types';
+import { cn } from '@/lib/utils';
+import { isTaskOverdue } from '@/lib/agenda/types';
+import type {
+  AgendaTask,
+  AgendaTaskComment,
+  AgendaTaskStatus,
+  AgendaSubtask,
+} from '@/lib/agenda/types';
 
 interface TaskDetailMobileProps {
   task: AgendaTask;
   members: Array<{ id: number; name: string; avatar?: string | null }>;
   onBack: () => void;
   onRefresh: () => void;
+  onStatusChange?: (taskId: number, status: AgendaTaskStatus) => void;
+  onEdit?: (task: AgendaTask) => void;
+  onDuplicate?: (task: AgendaTask) => void;
+  onDelete?: (task: AgendaTask) => void;
 }
 
-const STATUS_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING: { label: 'Pendiente', color: '#64748b', bg: '#f1f5f9' },
-  IN_PROGRESS: { label: 'En progreso', color: '#2563eb', bg: '#eff6ff' },
-  COMPLETED: { label: 'Completada', color: '#16a34a', bg: '#f0fdf4' },
-  WAITING: { label: 'En espera', color: '#d97706', bg: '#fffbeb' },
-  CANCELLED: { label: 'Cancelada', color: '#dc2626', bg: '#fef2f2' },
+/* ── Status chip config (same hex as desktop TaskDetailPanel) ── */
+const STATUS_CHIP: Record<AgendaTaskStatus, { bg: string; text: string; dot: string; label: string }> = {
+  PENDING:     { bg: '#F3F4F6', text: '#6B7280', dot: '#9CA3AF', label: 'Pendiente' },
+  IN_PROGRESS: { bg: '#111827', text: '#FFFFFF', dot: '#FFFFFF', label: 'En progreso' },
+  WAITING:     { bg: '#FFFBEB', text: '#D97706', dot: '#D97706', label: 'Esperando' },
+  COMPLETED:   { bg: '#ECFDF5', text: '#059669', dot: '#059669', label: 'Completada' },
+  CANCELLED:   { bg: '#FEE2E2', text: '#DC2626', dot: '#DC2626', label: 'Cancelada' },
 };
 
-const PRIORITY_LABELS: Record<string, { label: string; color: string; bg: string }> = {
-  LOW: { label: 'Baja', color: '#64748b', bg: '#f1f5f9' },
-  MEDIUM: { label: 'Media', color: '#2563eb', bg: '#eff6ff' },
-  HIGH: { label: 'Alta', color: '#d97706', bg: '#fffbeb' },
-  URGENT: { label: 'Urgente', color: '#dc2626', bg: '#fef2f2' },
+const PRIORITY_CHIP: Record<string, { bg: string; text: string; label: string }> = {
+  LOW:    { bg: '#F3F4F6', text: '#6B7280', label: 'Baja' },
+  MEDIUM: { bg: '#EFF6FF', text: '#1D4ED8', label: 'Media' },
+  HIGH:   { bg: '#FEF3C7', text: '#D97706', label: 'Alta' },
+  URGENT: { bg: '#FEE2E2', text: '#DC2626', label: 'Urgente' },
 };
 
-export function TaskDetailMobile({ task, members, onBack, onRefresh }: TaskDetailMobileProps) {
+const ALL_STATUSES: AgendaTaskStatus[] = ['PENDING', 'IN_PROGRESS', 'WAITING', 'COMPLETED'];
+
+export function TaskDetailMobile({
+  task,
+  members,
+  onBack,
+  onRefresh,
+  onStatusChange,
+  onEdit,
+  onDuplicate,
+  onDelete,
+}: TaskDetailMobileProps) {
   const [comments, setComments] = useState<AgendaTaskComment[]>(task.comments ?? []);
+  const [currentStatus, setCurrentStatus] = useState<AgendaTaskStatus>(task.status);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
 
-  const statusInfo = STATUS_LABELS[task.status] ?? STATUS_LABELS.PENDING;
-  const priorityInfo = task.priority ? PRIORITY_LABELS[task.priority] : null;
   const subtasks: AgendaSubtask[] = task.subtasks ?? [];
+  const completedSubtaskCount = subtasks.filter((s) => s.done).length;
+  const subtaskProgress = subtasks.length > 0 ? (completedSubtaskCount / subtasks.length) * 100 : 0;
+
+  const overdue = isTaskOverdue(task);
+  const isDone = currentStatus === 'COMPLETED';
+  const assignee = task.assignedToUser ?? task.assignedToContact ?? null;
+  const assigneeName = task.assignedToName ?? assignee?.name ?? null;
+  const groupName = task.group?.name ?? null;
+  const priorityInfo = task.priority ? PRIORITY_CHIP[task.priority] : null;
+  const statusInfo = STATUS_CHIP[currentStatus] ?? STATUS_CHIP.PENDING;
+
+  const handleStatusChange = async (status: AgendaTaskStatus) => {
+    const previous = currentStatus;
+    setCurrentStatus(status);
+    setStatusOpen(false);
+    if (onStatusChange) {
+      try { await onStatusChange(task.id, status); }
+      catch { setCurrentStatus(previous); toast.error('Error al cambiar estado'); }
+    }
+  };
+
+  const handleToggleComplete = () => {
+    handleStatusChange(isDone ? 'PENDING' : 'COMPLETED');
+  };
 
   const handleAddComment = async (content: string, mentionedUserIds: number[]) => {
     try {
@@ -48,9 +109,7 @@ export function TaskDetailMobile({ task, members, onBack, onRefresh }: TaskDetai
       if (!res.ok) throw new Error();
       const newComment: AgendaTaskComment = await res.json();
       setComments((prev) => [...prev, newComment]);
-    } catch {
-      toast.error('Error al enviar comentario');
-    }
+    } catch { toast.error('Error al enviar comentario'); }
   };
 
   const handleEditComment = async (commentId: number, content: string) => {
@@ -73,192 +132,243 @@ export function TaskDetailMobile({ task, members, onBack, onRefresh }: TaskDetai
   };
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#F5F3EF' }}>
-      {/* Header */}
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      {/* ── Header ── */}
       <div
-        className="flex items-center gap-3 px-4 py-3 sticky top-0 z-10"
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderBottom: '1px solid rgba(0,0,0,0.06)',
-          paddingTop: 'max(env(safe-area-inset-top), 12px)',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-        }}
+        className="shrink-0 flex items-center gap-3 px-4 py-2 border-b border-border"
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 10px)' }}
       >
         <button
           onClick={onBack}
-          className="flex items-center justify-center rounded-full active:scale-90 transition-transform"
-          style={{ width: '32px', height: '32px', backgroundColor: '#f1f5f9' }}
+          className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-muted active:scale-90 transition-transform"
         >
-          <ArrowLeft className="h-4 w-4" style={{ color: '#64748b' }} />
+          <ArrowLeft className="h-4 w-4 text-foreground" />
         </button>
-        <h1
-          className="flex-1 truncate"
-          style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}
-        >
-          {task.title}
-        </h1>
-      </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto" style={{ paddingBottom: '120px' }}>
-        {/* Status chips */}
-        <div className="flex flex-wrap gap-2 px-4 py-4">
-          <span
-            className="flex items-center gap-1.5 rounded-full px-3 py-1"
-            style={{
-              backgroundColor: statusInfo.bg,
-              color: statusInfo.color,
-              fontSize: '12px',
-              fontWeight: 600,
-            }}
-          >
-            {statusInfo.label}
-          </span>
-          {priorityInfo && (
-            <span
-              className="flex items-center gap-1.5 rounded-full px-3 py-1"
-              style={{
-                backgroundColor: priorityInfo.bg,
-                color: priorityInfo.color,
-                fontSize: '12px',
-                fontWeight: 600,
-              }}
-            >
-              <Flag className="h-3 w-3" />
-              {priorityInfo.label}
-            </span>
+        <span className="flex-1 text-sm font-medium text-foreground truncate">
+          {task.title}
+        </span>
+
+        {/* Complete toggle */}
+        <button
+          onClick={handleToggleComplete}
+          className={cn(
+            'shrink-0 flex items-center justify-center w-8 h-8 rounded-full active:scale-90 transition-all',
+            isDone
+              ? 'bg-emerald-500 text-white'
+              : 'bg-muted text-muted-foreground hover:text-foreground',
           )}
-          {task.dueDate && (
-            <span
-              className="flex items-center gap-1.5 rounded-full px-3 py-1"
-              style={{
-                backgroundColor: '#f1f5f9',
-                color: '#64748b',
-                fontSize: '12px',
-                fontWeight: 500,
-              }}
-            >
-              <Calendar className="h-3 w-3" />
-              {format(new Date(task.dueDate), 'd MMM', { locale: es })}
-            </span>
+        >
+          <Check className="h-4 w-4" />
+        </button>
+
+        {/* 3-dot menu */}
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-muted active:scale-90 transition-transform"
+          >
+            <MoreVertical className="h-4 w-4 text-foreground" />
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-10 z-40 w-44 rounded-xl border border-border bg-popover shadow-lg py-1">
+                {onEdit && (
+                  <button onClick={() => { setMenuOpen(false); onEdit(task); }} className="flex w-full items-center gap-3 px-3 py-2 text-sm hover:bg-accent transition-colors">
+                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" /> Editar
+                  </button>
+                )}
+                {onDuplicate && (
+                  <button onClick={() => { setMenuOpen(false); onDuplicate(task); }} className="flex w-full items-center gap-3 px-3 py-2 text-sm hover:bg-accent transition-colors">
+                    <Copy className="h-3.5 w-3.5 text-muted-foreground" /> Duplicar
+                  </button>
+                )}
+                {onDelete && (
+                  <>
+                    <div className="my-1 mx-2 border-t border-border" />
+                    <button onClick={() => { setMenuOpen(false); onDelete(task); }} className="flex w-full items-center gap-3 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors">
+                      <Trash2 className="h-3.5 w-3.5" /> Eliminar
+                    </button>
+                  </>
+                )}
+              </div>
+            </>
           )}
         </div>
+      </div>
 
-        {/* Description */}
-        {task.description && (
-          <div
-            className="mx-4 mb-3 rounded-2xl p-4"
-            style={{ backgroundColor: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
-          >
-            <p
-              style={{
-                fontSize: '12px',
-                fontWeight: 600,
-                color: '#94a3b8',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                marginBottom: '8px',
-              }}
-            >
-              Descripción
-            </p>
-            <p style={{ fontSize: '14px', color: '#334155', lineHeight: '1.6' }}>
-              {task.description}
-            </p>
-          </div>
-        )}
+      {/* ── Scrollable content ── */}
+      <div className="flex-1 overflow-y-auto pb-[90px]">
+        <div className="px-5 pt-4 space-y-4">
 
-        {/* Subtasks */}
-        {subtasks.length > 0 && (
-          <div
-            className="mx-4 mb-3 rounded-2xl p-4"
-            style={{ backgroundColor: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
-          >
-            <p
-              style={{
-                fontSize: '12px',
-                fontWeight: 600,
-                color: '#94a3b8',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                marginBottom: '10px',
-              }}
-            >
-              Subtareas ({subtasks.filter((s) => s.done).length}/{subtasks.length})
-            </p>
-            <div className="space-y-3">
-              {subtasks.map((sub) => (
-                <div key={sub.id} className="flex items-center gap-3">
-                  <div
-                    className="rounded flex items-center justify-center shrink-0"
-                    style={{
-                      width: '18px',
-                      height: '18px',
-                      border: sub.done ? 'none' : '2px solid #d1d5db',
-                      backgroundColor: sub.done ? '#10b981' : 'transparent',
-                    }}
-                  >
-                    {sub.done && (
-                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                        <path
-                          d="M1 4l3 3 5-6"
-                          stroke="white"
-                          strokeWidth="1.75"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    )}
+          {/* Row 1: Title + Status chip */}
+          <div className="flex items-start gap-2.5">
+            <h1 className={cn(
+              'flex-1 text-[15px] font-semibold leading-snug min-w-0',
+              isDone ? 'text-muted-foreground line-through' : 'text-foreground',
+            )}>
+              {task.title}
+            </h1>
+            <div className="relative shrink-0 mt-0.5">
+              <button
+                onClick={() => setStatusOpen((v) => !v)}
+                className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-semibold active:scale-95 transition-all"
+                style={{ backgroundColor: statusInfo.bg, color: statusInfo.text }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: statusInfo.dot }} />
+                {statusInfo.label}
+              </button>
+              {statusOpen && (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setStatusOpen(false)} />
+                  <div className="absolute right-0 top-full mt-1 z-30 bg-popover border border-border rounded-xl shadow-lg py-1 min-w-[130px]">
+                    {ALL_STATUSES.map((s) => {
+                      const info = STATUS_CHIP[s];
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => handleStatusChange(s)}
+                          className={cn(
+                            'flex w-full items-center gap-2 px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors',
+                            currentStatus === s && 'bg-accent',
+                          )}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: info.dot }} />
+                          {info.label}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <span
-                    style={{
-                      fontSize: '13px',
-                      color: sub.done ? '#94a3b8' : '#334155',
-                      textDecoration: sub.done ? 'line-through' : 'none',
-                    }}
-                  >
-                    {sub.title}
-                  </span>
-                </div>
-              ))}
+                </>
+              )}
             </div>
           </div>
-        )}
 
-        {/* Comments */}
-        <div
-          className="mx-4 mb-3 rounded-2xl p-4"
-          style={{ backgroundColor: '#FFFFFF', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
-        >
-          <p
-            style={{
-              fontSize: '12px',
-              fontWeight: 600,
-              color: '#94a3b8',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              marginBottom: '12px',
-            }}
-          >
-            Comentarios
-          </p>
-          <TaskCommentThread
-            comments={comments}
-            onEditComment={handleEditComment}
-            onDeleteComment={handleDeleteComment}
-          />
+          {/* Row 2: Prioridad + Fecha */}
+          <div className="flex items-center gap-2.5">
+            {priorityInfo && (
+              <span
+                className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium"
+                style={{ backgroundColor: priorityInfo.bg, color: priorityInfo.text }}
+              >
+                <Flag className="h-3 w-3" />
+                {priorityInfo.label}
+              </span>
+            )}
+            {task.dueDate && (
+              <span className={cn(
+                'inline-flex items-center gap-1 text-[12px]',
+                overdue ? 'text-red-500 font-medium' : 'text-muted-foreground',
+              )}>
+                <Calendar className="h-3 w-3" />
+                {format(new Date(task.dueDate), 'd MMM yyyy', { locale: es })}
+              </span>
+            )}
+          </div>
+
+          {/* Row 3: Grupo + Asignado */}
+          {(groupName || assigneeName) && (
+            <div className="flex items-center gap-3">
+              {groupName && (
+                <div className="flex items-center gap-1.5">
+                  <FolderDot className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-[13px] text-muted-foreground">{groupName}</span>
+                </div>
+              )}
+              {groupName && assigneeName && (
+                <span className="text-muted-foreground/40">·</span>
+              )}
+              {assigneeName && (
+                <div className="flex items-center gap-1.5">
+                  {assignee?.avatar ? (
+                    <img src={assignee.avatar} alt={assigneeName} className="h-5 w-5 rounded-full object-cover ring-1 ring-border" />
+                  ) : (
+                    <div className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 ring-1 ring-border">
+                      <User className="h-2.5 w-2.5 text-primary" />
+                    </div>
+                  )}
+                  <span className="text-[13px] text-muted-foreground">{assigneeName}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Description */}
+          {task.description && (
+            <div className="border-t border-border/40 pt-3">
+              <p className="text-[13px] text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                {task.description}
+              </p>
+            </div>
+          )}
+
+          {/* Subtasks */}
+          {subtasks.length > 0 && (
+            <div className="border-t border-border/40 pt-3">
+              <div className="flex items-center gap-2 mb-2.5">
+                <ListChecks className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-[13px] font-medium text-muted-foreground">
+                  Subtareas
+                </span>
+                <span className="text-[12px] text-muted-foreground/70">
+                  {completedSubtaskCount}/{subtasks.length}
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="h-1 w-full bg-muted rounded-full overflow-hidden mb-2.5">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-300"
+                  style={{ width: `${subtaskProgress}%` }}
+                />
+              </div>
+
+              <div className="space-y-0">
+                {subtasks.map((sub) => (
+                  <div key={sub.id} className="flex items-center gap-2.5 py-1.5">
+                    <div className={cn(
+                      'flex items-center justify-center shrink-0 w-[16px] h-[16px] rounded border-[1.5px] transition-colors',
+                      sub.done ? 'bg-primary border-primary' : 'border-gray-300 dark:border-gray-600',
+                    )}>
+                      {sub.done && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+                    </div>
+                    <span className={cn(
+                      'text-[13px]',
+                      sub.done ? 'text-muted-foreground line-through' : 'text-foreground',
+                    )}>
+                      {sub.title}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Comments */}
+          <div className="border-t border-border/40 pt-3">
+            <div className="flex items-center gap-2 mb-2.5">
+              <MessageCircle className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-[13px] font-medium text-muted-foreground">
+                Comentarios
+              </span>
+              {comments.length > 0 && (
+                <span className="text-[12px] text-muted-foreground/70">{comments.length}</span>
+              )}
+            </div>
+            <TaskCommentThread
+              comments={comments}
+              onEditComment={handleEditComment}
+              onDeleteComment={handleDeleteComment}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Sticky comment input */}
+      {/* ── Sticky comment input ── */}
       <div
-        className="fixed bottom-0 left-0 right-0 px-4 pt-3"
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderTop: '1px solid rgba(0,0,0,0.06)',
-          paddingBottom: 'max(env(safe-area-inset-bottom), 12px)',
-          boxShadow: '0 -2px 8px rgba(0,0,0,0.04)',
-        }}
+        className="shrink-0 px-4 pt-2 bg-background border-t border-border"
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}
       >
         <MentionInput
           onSubmit={handleAddComment}

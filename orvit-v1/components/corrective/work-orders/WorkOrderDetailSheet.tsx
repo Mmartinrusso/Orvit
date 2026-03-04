@@ -688,7 +688,7 @@ export function WorkOrderDetailSheet({
                             className="rounded-lg border p-3 flex items-center justify-between hover:bg-muted/50 cursor-pointer transition-colors"
                             onClick={() => {
                               onOpenChange(false);
-                              router.push(`/mantenimiento/fallas?failure=${failure.id}`);
+                              router.push(`/mantenimiento/incidentes?failure=${failure.id}`);
                             }}
                           >
                             <div>

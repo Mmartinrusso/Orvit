@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,6 +103,8 @@ export async function POST(request: Request) {
       )
     `;
 
+    triggerCompanyEvent(companyId, "tools", "tool:updated", { id: toolId });
+
     return NextResponse.json({ success: true, message: 'Loan request created' });
   } catch (error: any) {
     console.error('Error creating tool loan:', error);
@@ -164,6 +167,10 @@ export async function PATCH(request: Request) {
 
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    }
+
+    if (user?.companyId) {
+      triggerCompanyEvent(user.companyId, "tools", "tool:updated", { id: loanId });
     }
 
     return NextResponse.json({ success: true, message: `Loan ${action.toLowerCase()}ed` });

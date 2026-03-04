@@ -9,7 +9,7 @@ export function ProgressRing({
   percent,
   size = 36,
   strokeWidth = 3,
-  color = '#06b6d4',
+  color = '#7C3AED',
 }: ProgressRingProps) {
   const r = (size - strokeWidth * 2) / 2;
   const circ = 2 * Math.PI * r;
@@ -18,14 +18,12 @@ export function ProgressRing({
   const cy = size / 2;
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="text-foreground">
       {/* Track */}
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#E5E7EB" strokeWidth={strokeWidth} />
+      <circle cx={cx} cy={cy} r={r} fill="none" className="stroke-muted" strokeWidth={strokeWidth} />
       {/* Progress */}
       <circle
-        cx={cx}
-        cy={cy}
-        r={r}
+        cx={cx} cy={cy} r={r}
         fill="none"
         stroke={color}
         strokeWidth={strokeWidth}
@@ -35,16 +33,11 @@ export function ProgressRing({
         transform={`rotate(-90 ${cx} ${cy})`}
         style={{ transition: 'stroke-dashoffset 0.35s ease' }}
       />
-      {/* Percentage text */}
       <text
-        x={cx}
-        y={cy + 4}
+        x={cx} y={cy + 4}
         textAnchor="middle"
-        style={{
-          fontSize: size * 0.27,
-          fontWeight: 700,
-          fill: 'currentColor',
-        }}
+        style={{ fontSize: size * 0.27, fontWeight: 700 }}
+        fill="currentColor"
       >
         {percent}%
       </text>

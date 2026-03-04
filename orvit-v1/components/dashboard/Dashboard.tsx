@@ -18,7 +18,7 @@ import { ComprehensiveDashboard } from './ComprehensiveDashboard';
 import { MonthSelector } from './MonthSelector';
 import { useDashboardStore } from './useDashboardStore';
 import { mockKpis, mockChartData, mockCategories, mockTopMovers } from './mocks/data';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 
 interface DashboardProps {
   data?: any[];
@@ -32,7 +32,7 @@ export function Dashboard({ data, selectedMonth: initialSelectedMonth, companyId
   const { filters } = useDashboardStore();
   const [selectedRange, setSelectedRange] = useState<{start: string, end: string} | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [internalError, setInternalError] = useState(false);
+  // internalError derived directly from hasGenerationError (no useState+useEffect needed)
   const [showComparativeAnalysis, setShowComparativeAnalysis] = useState(false);
   const [currentSelectedMonth, setCurrentSelectedMonth] = useState(initialSelectedMonth || '2025-08');
 
@@ -197,12 +197,6 @@ export function Dashboard({ data, selectedMonth: initialSelectedMonth, companyId
     };
   }, [data]);
 
-  // Manejar errores en useEffect para evitar ciclos infinitos
-  useEffect(() => {
-    if (hasGenerationError) {
-    setInternalError(true);
-  }
-  }, [hasGenerationError]);
 
   const filteredData = (chartData || []).filter(point => {
     if (!point || !point.month) return false;
@@ -212,7 +206,7 @@ export function Dashboard({ data, selectedMonth: initialSelectedMonth, companyId
 
 
   // Si hay error o no hay datos, mostrar estado de error
-  if (hasError || internalError || (!data && !mockChartData)) {
+  if (hasError || hasGenerationError || (!data && !mockChartData)) {
     return (
       <div className="min-h-screen bg-[#06141B] text-[#CCD0CF] flex items-center justify-center">
         <div className="text-center">

@@ -2,6 +2,7 @@
 
 import { addDays, startOfWeek, format, isToday, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface WeekStripProps {
   selectedDate: Date;
@@ -9,56 +10,56 @@ interface WeekStripProps {
 }
 
 export function WeekStrip({ selectedDate, onSelectDate }: WeekStripProps) {
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   return (
     <div className="px-4 pt-1 pb-3">
-      {/* Day name labels */}
-      <div className="flex justify-between mb-1.5">
-        {days.map((day) => (
-          <div key={day.toISOString()} className="w-9 text-center">
-            <span
-              style={{
-                fontSize: '10px',
-                fontWeight: 500,
-                color: '#94a3b8',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}
-            >
-              {format(day, 'EEEEE', { locale: es })}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Day pills */}
-      <div className="flex justify-between">
+      <div className="flex items-center bg-muted/50 rounded-2xl p-1.5 gap-0.5">
         {days.map((day) => {
           const isSelected = isSameDay(day, selectedDate);
           const isCurrentDay = isToday(day);
+          const isSun = day.getDay() === 0;
 
           return (
             <button
               key={day.toISOString()}
               onClick={() => onSelectDate(day)}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-95"
-              style={{
-                backgroundColor: isSelected ? '#FFFFFF' : 'transparent',
-                boxShadow: isSelected
-                  ? '0 2px 8px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.04)'
-                  : 'none',
-                color: isSelected
-                  ? '#0f172a'
-                  : isCurrentDay
-                  ? '#06b6d4'
-                  : '#64748b',
-                fontWeight: isSelected || isCurrentDay ? 700 : 400,
-                fontSize: '14px',
-              }}
+              className={cn(
+                'flex-1 flex flex-col items-center gap-0.5 py-2 rounded-xl',
+                'transition-all duration-200 active:scale-95',
+                isSelected && 'bg-foreground shadow-sm',
+              )}
             >
-              {format(day, 'd')}
+              {/* Date number */}
+              <span
+                className={cn(
+                  'text-[16px] font-semibold leading-none',
+                  isSelected
+                    ? 'text-background'
+                    : isCurrentDay
+                      ? 'text-red-500 font-bold'
+                      : 'text-foreground',
+                )}
+              >
+                {format(day, 'd')}
+              </span>
+
+              {/* Day abbreviation */}
+              <span
+                className={cn(
+                  'text-[9px] uppercase tracking-wider leading-none mt-0.5',
+                  isSelected
+                    ? 'text-background/60 font-semibold'
+                    : isCurrentDay
+                      ? 'text-red-500/70 font-semibold'
+                      : isSun
+                        ? 'text-muted-foreground/50'
+                        : 'text-muted-foreground/70',
+                )}
+              >
+                {format(day, 'EEE', { locale: es }).toUpperCase()}
+              </span>
             </button>
           );
         })}

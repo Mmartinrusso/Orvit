@@ -17,6 +17,7 @@ const nextConfig = {
       '@discordjs/voice',
       '@discordjs/collection',
       'undici',
+      'expo-server-sdk',
       'zlib-sync',
       'bufferutil',
       'utf-8-validate',

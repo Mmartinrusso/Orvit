@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 // GET /api/work-stations/[id]/machines
 export async function GET(
@@ -118,6 +119,7 @@ export async function POST(
       }
     });
 
+    triggerCompanyEvent(workStation.companyId, "machines", "machine:updated", { id: workStationId });
     return NextResponse.json(workStationMachine, { status: 201 });
   } catch (error) {
     console.error('Error agregando máquina al puesto de trabajo:', error);

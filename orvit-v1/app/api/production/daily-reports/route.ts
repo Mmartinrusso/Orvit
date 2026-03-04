@@ -4,6 +4,7 @@ import { requirePermission, checkPermission } from '@/lib/auth/shared-helpers';
 import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { logProductionEvent } from '@/lib/production/event-logger';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -316,6 +317,9 @@ export async function POST(request: NextRequest) {
         companyId: user!.companyId,
       });
     }
+
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: report.id });
 
     return NextResponse.json({
       success: true,

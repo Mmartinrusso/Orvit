@@ -60,9 +60,9 @@ export function ComponentTreeSelector({
   // Obtener sector actual
   const { currentSector } = useCompany();
 
-  // Cargar TODAS las máquinas del sector una sola vez (al montar)
+  // Cargar TODAS las máquinas (filtradas por sector si hay uno seleccionado)
   const { data: allMachines, isLoading: loadingMachines } = useQuery<Machine[]>({
-    queryKey: ['machines-sector', currentSector?.id],
+    queryKey: ['machines-sector', currentSector?.id ?? 'all'],
     queryFn: async () => {
       const params = new URLSearchParams({ limit: '200' });
       if (currentSector?.id) {
@@ -74,7 +74,6 @@ export function ComponentTreeSelector({
       const json = await res.json();
       return json.machines || json.data || json;
     },
-    enabled: !!currentSector?.id,
     staleTime: 5 * 60 * 1000, // Cache por 5 minutos
   });
 

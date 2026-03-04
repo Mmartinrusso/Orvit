@@ -8,6 +8,8 @@ interface AgendaMobileLayoutProps {
   activeTab: MobileTab;
   onTabChange: (tab: MobileTab) => void;
   onCreateTask: () => void;
+  onMenuPress: () => void;
+  hideNav?: boolean;
 }
 
 export function AgendaMobileLayout({
@@ -15,19 +17,20 @@ export function AgendaMobileLayout({
   activeTab,
   onTabChange,
   onCreateTask,
+  onMenuPress,
+  hideNav,
 }: AgendaMobileLayoutProps) {
   return (
-    <div
-      className="flex flex-col min-h-screen"
-      style={{ backgroundColor: '#F5F3EF' }}
-    >
-      <main className="flex-1 overflow-y-auto" style={{ paddingBottom: '80px' }}>
+    <div className="flex flex-col min-h-screen bg-background">
+      <main className="flex-1 overflow-y-auto pb-20">
         {children}
       </main>
       <BottomNav
         activeTab={activeTab}
         onTabChange={onTabChange}
         onCreateTask={onCreateTask}
+        onMenuPress={onMenuPress}
+        hidden={hideNav}
       />
     </div>
   );

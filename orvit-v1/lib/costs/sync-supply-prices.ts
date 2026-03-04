@@ -61,16 +61,30 @@ export async function syncSupplyPrice(
   const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 1);
   const fechaStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-  // 3. Calcular promedio ponderado de TODAS las compras del mes para este supply
+  // 3. Obtener tipo de cambio de reposición USD (si existe)
+  const costingSettings = await tx.$queryRaw<Array<{ tipoCambioUSD: number | null }>>`
+    SELECT "tipoCambioUSD" FROM "CompanySettingsCosting" WHERE "companyId" = ${companyId} LIMIT 1
+  `;
+  const tipoCambioReposicion = costingSettings[0]?.tipoCambioUSD ? Number(costingSettings[0].tipoCambioUSD) : null;
+
+  // 4. Calcular promedio ponderado de TODAS las compras del mes para este supply
   //    JOIN PurchaseReceiptItem → SupplierItem (para filtrar por supplyId)
   //    JOIN PurchaseReceipt (para filtrar por mes de emisión)
+  //    Si la factura es en USD, convierte usando:
+  //      - tipoCambioUSD de reposición (CompanySettingsCosting) si existe
+  //      - tipoCambio de la factura como fallback
   const result = await tx.$queryRaw<Array<{
     weighted_total: number | null;
     total_qty: number | null;
     supplier_count: number | null;
   }>>`
     SELECT
-      SUM(pri."precioUnitario" * pri.cantidad) as weighted_total,
+      SUM(
+        CASE WHEN pr."moneda" = 'USD'
+          THEN pri."precioUnitario" * pri.cantidad * COALESCE(${tipoCambioReposicion}::numeric, pr."tipoCambio", 1)
+          ELSE pri."precioUnitario" * pri.cantidad
+        END
+      ) as weighted_total,
       SUM(pri.cantidad) as total_qty,
       COUNT(DISTINCT pri."proveedorId") as supplier_count
     FROM "PurchaseReceiptItem" pri
@@ -173,14 +187,25 @@ export async function syncSupplyPriceWithT2({
   const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 1);
   const fechaStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-  // Query T1 (misma raw SQL que syncSupplyPrice)
+  // Obtener tipo de cambio de reposición USD
+  const costingSettings = await prisma.$queryRaw<Array<{ tipoCambioUSD: number | null }>>`
+    SELECT "tipoCambioUSD" FROM "CompanySettingsCosting" WHERE "companyId" = ${companyId} LIMIT 1
+  `;
+  const tipoCambioReposicion = costingSettings[0]?.tipoCambioUSD ? Number(costingSettings[0].tipoCambioUSD) : null;
+
+  // Query T1 (con conversión USD)
   const t1Result = await prisma.$queryRaw<Array<{
     weighted_total: number | null;
     total_qty: number | null;
     supplier_count: number | null;
   }>>`
     SELECT
-      SUM(pri."precioUnitario" * pri.cantidad) as weighted_total,
+      SUM(
+        CASE WHEN pr."moneda" = 'USD'
+          THEN pri."precioUnitario" * pri.cantidad * COALESCE(${tipoCambioReposicion}::numeric, pr."tipoCambio", 1)
+          ELSE pri."precioUnitario" * pri.cantidad
+        END
+      ) as weighted_total,
       SUM(pri.cantidad) as total_qty,
       COUNT(DISTINCT pri."proveedorId") as supplier_count
     FROM "PurchaseReceiptItem" pri

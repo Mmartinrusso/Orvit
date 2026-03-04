@@ -5,6 +5,7 @@ import { notifyOTAssigned } from '@/lib/discord/notifications';
 import { withGuards } from '@/lib/middleware/withGuards';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateWorkOrderSchema } from '@/lib/validations/work-orders';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -384,6 +385,8 @@ export const POST = withGuards(async (request: NextRequest, { user }) => {
       // No fallar la creación de la orden si fallan las automatizaciones
     }
 
+    triggerCompanyEvent(newWorkOrder.companyId, "work-orders", "work-order:created", { id: newWorkOrder.id });
+
     return NextResponse.json(newWorkOrder, { status: 201 });
   } catch (error) {
     console.error('Error en POST /api/work-orders:', error);
@@ -542,8 +545,8 @@ export const DELETE = withGuards(async (request: NextRequest, { user }) => {
       where: { id: Number(workOrderId) }
     });
 
-    // console.log(`✅ Orden de trabajo ${workOrderId} eliminada por usuario ${userId} (${user.name})`) // Log reducido;
-    
+    triggerCompanyEvent(workOrder.companyId, "work-orders", "work-order:updated", { id: workOrder.id });
+
     return NextResponse.json(
       { 
         message: 'Orden de trabajo eliminada exitosamente',

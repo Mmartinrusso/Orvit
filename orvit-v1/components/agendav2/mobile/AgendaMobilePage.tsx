@@ -1,104 +1,456 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { ArrowLeft } from 'lucide-react';
+import { addDays, subDays } from 'date-fns';
 import { AgendaMobileLayout } from './AgendaMobileLayout';
 import { AgendaHomeScreen } from './AgendaHomeScreen';
 import { TaskDetailMobile } from './TaskDetailMobile';
 import { AgendaDrawer } from './AgendaDrawer';
-import { useAgendaSidebar } from '@/contexts/AgendaSidebarContext';
+import { BoardMobile } from './BoardMobile';
+import { DashboardMobile } from './DashboardMobile';
+import { InboxMobile } from './InboxMobile';
+import { ReportingMobile } from './ReportingMobile';
+import { FixedTasksMobile } from './FixedTasksMobile';
+import { PortfolioMobile } from './PortfolioMobile';
+import { MobileMoreSheet, type MobileView } from './MobileMoreSheet';
 import type { MobileTab } from './BottomNav';
-import type { AgendaTask } from '@/lib/agenda/types';
+import type { AgendaTask, AgendaTaskStatus, AgendaStats } from '@/lib/agenda/types';
+import type { TaskGroupItem as SidebarGroupItem } from '../AgendaV2Sidebar';
+
+interface TaskGroupItem {
+  id: number;
+  name: string;
+  color?: string | null;
+  isProject: boolean;
+  _count?: { tasks: number };
+}
 
 interface AgendaMobilePageProps {
   tasks: AgendaTask[];
+  stats?: AgendaStats | null;
+  groups: TaskGroupItem[];
+  loadingGroups?: boolean;
+  isLoading?: boolean;
   onToggleComplete: (taskId: number) => void;
   onCreateTask: () => void;
+  onStatusChange?: (taskId: number, status: AgendaTaskStatus) => void;
+  onEditTask?: (task: AgendaTask) => void;
+  onDeleteTask?: (task: AgendaTask) => void;
+  onDuplicateTask?: (task: AgendaTask) => void;
+  onSelectGroup?: (groupId: number) => void;
+  onCreateGroup?: (isProject: boolean) => void;
+  companyUsers?: Array<{ id: number; name: string; avatar?: string | null }>;
 }
 
-export function AgendaMobilePage({ tasks, onToggleComplete, onCreateTask }: AgendaMobilePageProps) {
+const EMPTY_USERS: Array<{ id: number; name: string; avatar?: string | null }> = [];
+
+// ── Mock data for preview ────────────────────────────────────────────────────
+
+const now = new Date();
+const today = now.toISOString();
+
+function mockTask(overrides: Partial<AgendaTask> & { id: number; title: string }): AgendaTask {
+  return {
+    description: null,
+    dueDate: null,
+    priority: 'MEDIUM',
+    status: 'PENDING',
+    category: null,
+    createdById: 1,
+    createdBy: { id: 1, name: 'Martin Russo', avatar: null },
+    assignedToUserId: null,
+    assignedToUser: null,
+    assignedToContactId: null,
+    assignedToContact: null,
+    assignedToName: null,
+    source: 'WEB',
+    discordMessageId: null,
+    companyId: 1,
+    reminders: [],
+    notes: null,
+    completedAt: null,
+    completedNote: null,
+    groupId: null,
+    group: null,
+    isArchived: false,
+    archivedAt: null,
+    isCompanyVisible: false,
+    externalNotified: false,
+    externalNotifiedAt: null,
+    comments: [],
+    subtasks: [],
+    _count: { comments: 0, subtasks: 0, subtasksDone: 0 },
+    createdAt: subDays(now, 3).toISOString(),
+    updatedAt: today,
+    ...overrides,
+  };
+}
+
+const MOCK_TASKS: AgendaTask[] = [
+  mockTask({
+    id: -1, title: 'Revisar cotización proveedor ABC', status: 'IN_PROGRESS', priority: 'HIGH',
+    dueDate: today, category: 'Compras',
+    assignedToUser: { id: 1, name: 'Martin Russo', avatar: null }, assignedToUserId: 1, assignedToName: 'Martin Russo',
+    groupId: -1, group: { id: -1, name: 'Esbribana' },
+    subtasks: [
+      { id: -1, title: 'Comparar precios con competencia', done: true, taskId: -1, createdAt: today, updatedAt: today },
+      { id: -2, title: 'Validar condiciones de pago', done: false, taskId: -1, createdAt: today, updatedAt: today },
+      { id: -3, title: 'Enviar a aprobación', done: false, taskId: -1, createdAt: today, updatedAt: today },
+    ],
+    _count: { comments: 2, subtasks: 3, subtasksDone: 1 },
+    description: 'Revisar la cotización enviada por el proveedor ABC para insumos de mantenimiento. Comparar con proveedores alternativos.',
+  }),
+  mockTask({
+    id: -2, title: 'Actualizar manual de procedimientos', status: 'PENDING', priority: 'MEDIUM',
+    dueDate: today, category: 'Documentación',
+    assignedToUser: { id: 2, name: 'Ana García', avatar: null }, assignedToUserId: 2, assignedToName: 'Ana García',
+    groupId: -2, group: { id: -2, name: 'Estudio Contable' },
+    _count: { comments: 0, subtasks: 2, subtasksDone: 0 },
+    subtasks: [
+      { id: -4, title: 'Sección de seguridad', done: false, taskId: -2, createdAt: today, updatedAt: today },
+      { id: -5, title: 'Sección de calidad', done: false, taskId: -2, createdAt: today, updatedAt: today },
+    ],
+  }),
+  mockTask({
+    id: -3, title: 'Programar mantenimiento preventivo línea 3', status: 'IN_PROGRESS', priority: 'URGENT',
+    dueDate: subDays(now, 1).toISOString(), category: 'Mantenimiento',
+    assignedToUser: { id: 3, name: 'Carlos López', avatar: null }, assignedToUserId: 3, assignedToName: 'Carlos López',
+    groupId: -1, group: { id: -1, name: 'Esbribana' },
+    _count: { comments: 5, subtasks: 4, subtasksDone: 2 },
+    subtasks: [
+      { id: -6, title: 'Coordinar con producción', done: true, taskId: -3, createdAt: today, updatedAt: today },
+      { id: -7, title: 'Preparar repuestos', done: true, taskId: -3, createdAt: today, updatedAt: today },
+      { id: -8, title: 'Ejecutar mantenimiento', done: false, taskId: -3, createdAt: today, updatedAt: today },
+      { id: -9, title: 'Validar funcionamiento', done: false, taskId: -3, createdAt: today, updatedAt: today },
+    ],
+    description: 'Mantenimiento preventivo programado para la línea de producción 3. Incluye cambio de rodamientos y lubricación.',
+  }),
+  mockTask({
+    id: -4, title: 'Cerrar balance mensual febrero', status: 'COMPLETED', priority: 'HIGH',
+    dueDate: subDays(now, 2).toISOString(), category: 'Contabilidad',
+    completedAt: subDays(now, 1).toISOString(),
+    assignedToUser: { id: 2, name: 'Ana García', avatar: null }, assignedToUserId: 2, assignedToName: 'Ana García',
+    groupId: -2, group: { id: -2, name: 'Estudio Contable' },
+    _count: { comments: 3, subtasks: 0, subtasksDone: 0 },
+  }),
+  mockTask({
+    id: -5, title: 'Preparar presentación trimestral', status: 'PENDING', priority: 'MEDIUM',
+    dueDate: addDays(now, 2).toISOString(), category: 'Administración',
+    assignedToUser: { id: 1, name: 'Martin Russo', avatar: null }, assignedToUserId: 1, assignedToName: 'Martin Russo',
+    groupId: -3, group: { id: -3, name: 'Proyecto Alpha' },
+  }),
+  mockTask({
+    id: -6, title: 'Capacitación equipo nuevo software', status: 'WAITING', priority: 'MEDIUM',
+    dueDate: addDays(now, 1).toISOString(), category: 'RRHH',
+    assignedToUser: { id: 4, name: 'Laura Martínez', avatar: null }, assignedToUserId: 4, assignedToName: 'Laura Martínez',
+    groupId: -3, group: { id: -3, name: 'Proyecto Alpha' },
+  }),
+  mockTask({
+    id: -7, title: 'Auditoría interna de calidad', status: 'PENDING', priority: 'HIGH',
+    dueDate: addDays(now, 3).toISOString(), category: 'Calidad',
+    assignedToUser: { id: 3, name: 'Carlos López', avatar: null }, assignedToUserId: 3, assignedToName: 'Carlos López',
+    groupId: -1, group: { id: -1, name: 'Esbribana' },
+    _count: { comments: 1, subtasks: 5, subtasksDone: 0 },
+    subtasks: [
+      { id: -10, title: 'Preparar documentación', done: false, taskId: -7, createdAt: today, updatedAt: today },
+      { id: -11, title: 'Revisar registros', done: false, taskId: -7, createdAt: today, updatedAt: today },
+      { id: -12, title: 'Entrevistar operarios', done: false, taskId: -7, createdAt: today, updatedAt: today },
+      { id: -13, title: 'Redactar informe', done: false, taskId: -7, createdAt: today, updatedAt: today },
+      { id: -14, title: 'Presentar hallazgos', done: false, taskId: -7, createdAt: today, updatedAt: today },
+    ],
+  }),
+  mockTask({
+    id: -8, title: 'Solicitar repuestos bomba hidráulica', status: 'COMPLETED', priority: 'URGENT',
+    dueDate: subDays(now, 3).toISOString(), category: 'Compras',
+    completedAt: subDays(now, 2).toISOString(),
+    assignedToUser: { id: 1, name: 'Martin Russo', avatar: null }, assignedToUserId: 1, assignedToName: 'Martin Russo',
+    groupId: -1, group: { id: -1, name: 'Esbribana' },
+  }),
+  mockTask({
+    id: -9, title: 'Configurar alertas de vencimiento', status: 'IN_PROGRESS', priority: 'LOW',
+    dueDate: today, category: 'Sistema',
+    assignedToUser: { id: 1, name: 'Martin Russo', avatar: null }, assignedToUserId: 1, assignedToName: 'Martin Russo',
+  }),
+  mockTask({
+    id: -10, title: 'Reunión con proveedor de lubricantes', status: 'PENDING', priority: 'LOW',
+    dueDate: addDays(now, 5).toISOString(), category: 'Compras',
+    assignedToUser: { id: 4, name: 'Laura Martínez', avatar: null }, assignedToUserId: 4, assignedToName: 'Laura Martínez',
+    groupId: -2, group: { id: -2, name: 'Estudio Contable' },
+  }),
+  mockTask({
+    id: -11, title: 'Verificar stock mínimo de insumos', status: 'PENDING', priority: 'MEDIUM',
+    dueDate: today, category: 'Inventario',
+    assignedToUser: { id: 3, name: 'Carlos López', avatar: null }, assignedToUserId: 3, assignedToName: 'Carlos López',
+    groupId: -1, group: { id: -1, name: 'Esbribana' },
+  }),
+  mockTask({
+    id: -12, title: 'Generar reporte de costos operativos', status: 'COMPLETED', priority: 'MEDIUM',
+    dueDate: subDays(now, 1).toISOString(), category: 'Costos',
+    completedAt: today,
+    assignedToUser: { id: 2, name: 'Ana García', avatar: null }, assignedToUserId: 2, assignedToName: 'Ana García',
+    groupId: -2, group: { id: -2, name: 'Estudio Contable' },
+  }),
+];
+
+const MOCK_GROUPS: TaskGroupItem[] = [
+  { id: -1, name: 'Esbribana', color: '#3B82F6', isProject: false, _count: { tasks: 5 } },
+  { id: -2, name: 'Estudio Contable', color: '#8B5CF6', isProject: false, _count: { tasks: 4 } },
+  { id: -3, name: 'Proyecto Alpha', color: '#F59E0B', isProject: true, _count: { tasks: 2 } },
+];
+
+const MOCK_STATS: AgendaStats = {
+  total: 12,
+  pending: 4,
+  inProgress: 3,
+  waiting: 1,
+  completed: 3,
+  cancelled: 0,
+  overdue: 1,
+  dueToday: 4,
+  completedToday: 1,
+  urgentPending: 1,
+  topAssignees: [
+    { name: 'Martin Russo', count: 4, type: 'user' },
+    { name: 'Carlos López', count: 3, type: 'user' },
+    { name: 'Ana García', count: 3, type: 'user' },
+    { name: 'Laura Martínez', count: 2, type: 'user' },
+  ],
+};
+
+const MOCK_USERS = [
+  { id: 1, name: 'Martin Russo', avatar: null },
+  { id: 2, name: 'Ana García', avatar: null },
+  { id: 3, name: 'Carlos López', avatar: null },
+  { id: 4, name: 'Laura Martínez', avatar: null },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function AgendaMobilePage({
+  tasks,
+  stats,
+  groups,
+  loadingGroups,
+  onToggleComplete,
+  onCreateTask,
+  onStatusChange,
+  onEditTask,
+  onDeleteTask,
+  onDuplicateTask,
+  onSelectGroup,
+  onCreateGroup,
+  companyUsers = EMPTY_USERS,
+}: AgendaMobilePageProps) {
   const [activeTab, setActiveTab] = useState<MobileTab>('home');
+  const [activeView, setActiveView] = useState<MobileView>('home');
   const [selectedTask, setSelectedTask] = useState<AgendaTask | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [moreSheetOpen, setMoreSheetOpen] = useState(false);
 
-  // Pull sidebar state from context (populated by AgendaV2Page via setAgendaSidebar)
-  const { agendaSidebar } = useAgendaSidebar();
+  // Always merge mock data with real data so the preview looks populated
+  // TODO: Remove mock data merge once user approves design
+  const effectiveTasks = useMemo(() => [...tasks, ...MOCK_TASKS], [tasks]);
+  const effectiveGroups = useMemo(() => [...groups, ...MOCK_GROUPS], [groups]);
+  const effectiveStats = stats ?? MOCK_STATS;
+  const effectiveUsers = useMemo(() => companyUsers.length > 0 ? [...companyUsers, ...MOCK_USERS] : MOCK_USERS, [companyUsers]);
 
+  // Map bottom nav tabs to views
+  const handleTabChange = (tab: MobileTab) => {
+    setActiveTab(tab);
+    if (tab === 'home') setActiveView('home');
+    else if (tab === 'board') setActiveView('board');
+    else if (tab === 'dashboard') setActiveView('dashboard');
+  };
+
+  // Navigate from "More" sheet
+  const handleMoreNavigate = (view: MobileView) => {
+    setActiveView(view);
+    // Update tab highlight for main views
+    if (view === 'home') setActiveTab('home');
+    else if (view === 'board') setActiveTab('board');
+    else if (view === 'dashboard') setActiveTab('dashboard');
+    else setActiveTab('more');
+  };
+
+  const handleTaskTap = (task: AgendaTask) => {
+    setSelectedTask(task);
+  };
+
+  // Drawer view state — independent from sidebar context
+  const [drawerView, setDrawerView] = useState<'board' | 'inbox' | 'dashboard' | 'reporting' | 'portfolio' | 'fixed-tasks'>('board');
+
+  // Convert groups to sidebar format for the drawer
+  const drawerGroups: SidebarGroupItem[] = useMemo(
+    () => effectiveGroups.map((g) => ({
+      id: g.id,
+      name: g.name,
+      color: g.color ?? '#64748b',
+      isProject: g.isProject,
+      taskCount: g._count?.tasks ?? effectiveTasks.filter(t => t.groupId === g.id).length,
+      members: [],
+    })),
+    [effectiveGroups, effectiveTasks]
+  );
+
+  // Back to home from secondary views (must be before any conditional return)
+  const goBack = useCallback(() => {
+    setActiveView('home');
+    setActiveTab('home');
+  }, []);
+
+  // Task detail view (full screen)
   if (selectedTask) {
     return (
       <TaskDetailMobile
         task={selectedTask}
-        members={[]} // TODO: pass real members from props
+        members={effectiveUsers}
         onBack={() => setSelectedTask(null)}
         onRefresh={() => setSelectedTask(null)}
+        onStatusChange={onStatusChange}
+        onEdit={(task) => {
+          onEditTask?.(task);
+          setSelectedTask(null);
+        }}
+        onDuplicate={(task) => {
+          onDuplicateTask?.(task);
+          setSelectedTask(null);
+        }}
+        onDelete={(task) => {
+          onDeleteTask?.(task);
+          setSelectedTask(null);
+        }}
       />
     );
   }
 
-  return (
-    <>
-      {/* Left navigation drawer — renders AgendaV2Sidebar inside */}
-      {agendaSidebar && (
-        <AgendaDrawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          view={agendaSidebar.view}
-          onViewChange={(v) => {
-            agendaSidebar.onViewChange(v);
-            setDrawerOpen(false);
-          }}
-          onCreateTask={() => {
-            agendaSidebar.onCreateTask();
-            setDrawerOpen(false);
-          }}
-          tasks={agendaSidebar.tasks}
-          groups={agendaSidebar.groups}
-          selectedGroupId={agendaSidebar.selectedGroupId}
-          onSelectGroup={(id) => {
-            agendaSidebar.onSelectGroup(id);
-            setDrawerOpen(false);
-          }}
-          onCreateGroup={(isProject) => {
-            agendaSidebar.onCreateGroup(isProject);
-            setDrawerOpen(false);
-          }}
-          loadingGroups={agendaSidebar.loadingGroups}
-        />
-      )}
+  // Whether we're on a secondary view (accessed from "Más" sheet)
+  const isSecondaryView = activeView === 'inbox' || activeView === 'reporting' || activeView === 'fixed-tasks' || activeView === 'portfolio';
 
-      <AgendaMobileLayout
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onCreateTask={onCreateTask}
-      >
-        {activeTab === 'home' && (
+  // Determine which view to render
+  const renderView = () => {
+    switch (activeView) {
+      case 'home':
+        return (
           <AgendaHomeScreen
-            tasks={tasks}
-            onTaskTap={(task) => setSelectedTask(task)}
+            tasks={effectiveTasks}
+            groups={groups}
+            onTaskTap={handleTaskTap}
             onToggleComplete={onToggleComplete}
             onMenuOpen={() => setDrawerOpen(true)}
           />
-        )}
-        {activeTab === 'tasks' && (
-          <div className="p-4">
-            <p className="text-sm text-muted-foreground text-center pt-8">
-              Vista de tareas — próximamente
-            </p>
+        );
+      case 'board':
+        return (
+          <BoardMobile
+            tasks={effectiveTasks}
+            onTaskTap={handleTaskTap}
+            onToggleComplete={onToggleComplete}
+            onCreateTask={onCreateTask}
+          />
+        );
+      case 'dashboard':
+        return (
+          <DashboardMobile
+            tasks={effectiveTasks}
+            stats={effectiveStats}
+            onTaskTap={handleTaskTap}
+          />
+        );
+      case 'inbox':
+        return (
+          <InboxMobile
+            tasks={effectiveTasks}
+            onTaskTap={handleTaskTap}
+            onToggleComplete={onToggleComplete}
+          />
+        );
+      case 'reporting':
+        return (
+          <ReportingMobile
+            tasks={effectiveTasks}
+            stats={effectiveStats}
+          />
+        );
+      case 'fixed-tasks':
+        return <FixedTasksMobile />;
+      case 'portfolio':
+        return (
+          <PortfolioMobile
+            groups={effectiveGroups}
+            tasks={effectiveTasks}
+            onSelectGroup={(id) => {
+              onSelectGroup?.(id);
+              setActiveView('board');
+              setActiveTab('board');
+            }}
+            onCreateGroup={() => onCreateGroup?.(false)}
+            loadingGroups={loadingGroups}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <>
+      {/* Left navigation drawer — works independently from sidebar context */}
+      <AgendaDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        view={drawerView}
+        onViewChange={(v) => {
+          setDrawerView(v);
+          setActiveView(v as MobileView);
+          if (v === 'board') setActiveTab('board');
+          else if (v === 'dashboard') setActiveTab('dashboard');
+          else setActiveTab('more');
+          setDrawerOpen(false);
+        }}
+        onCreateTask={() => {
+          onCreateTask();
+          setDrawerOpen(false);
+        }}
+        tasks={effectiveTasks}
+        groups={drawerGroups}
+        selectedGroupId={null}
+        onSelectGroup={(id) => {
+          onSelectGroup?.(id);
+          setDrawerOpen(false);
+        }}
+        onCreateGroup={(isProject) => {
+          onCreateGroup?.(isProject);
+          setDrawerOpen(false);
+        }}
+        loadingGroups={loadingGroups}
+      />
+
+      {/* More sheet */}
+      <MobileMoreSheet
+        open={moreSheetOpen}
+        onOpenChange={setMoreSheetOpen}
+        onNavigate={handleMoreNavigate}
+      />
+
+      <AgendaMobileLayout
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        onCreateTask={onCreateTask}
+        onMenuPress={() => setDrawerOpen(true)}
+        hideNav={drawerOpen}
+      >
+        {isSecondaryView && (
+          <div className="flex items-center gap-3 px-4 pt-3 pb-1">
+            <button
+              onClick={goBack}
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-muted active:scale-95 transition-transform"
+            >
+              <ArrowLeft className="h-4 w-4 text-foreground" />
+            </button>
           </div>
         )}
-        {activeTab === 'dashboard' && (
-          <div className="p-4">
-            <p className="text-sm text-muted-foreground text-center pt-8">
-              Dashboard — próximamente
-            </p>
-          </div>
-        )}
-        {activeTab === 'profile' && (
-          <div className="p-4">
-            <p className="text-sm text-muted-foreground text-center pt-8">
-              Perfil — próximamente
-            </p>
-          </div>
-        )}
+        {renderView()}
       </AgendaMobileLayout>
     </>
   );

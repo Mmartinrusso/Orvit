@@ -12,6 +12,7 @@ import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
 import { requiresQA, getCorrectiveSettings } from '@/lib/corrective/qa-rules';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -266,6 +267,9 @@ export async function POST(
       }
     });
 
+    // Pusher realtime trigger (fire-and-forget)
+    triggerCompanyEvent(companyId, "work-orders", "work-order:updated", { id: workOrderId });
+
     return NextResponse.json({
       success: true,
       data: qa,
@@ -390,6 +394,9 @@ export async function PATCH(
         }
       }
     });
+
+    // Pusher realtime trigger (fire-and-forget)
+    triggerCompanyEvent(companyId, "work-orders", "work-order:updated", { id: workOrderId });
 
     // Notificación in-app al técnico asignado cuando QA cambia a APPROVED o REJECTED
     if ((data.status === 'APPROVED' || data.status === 'REJECTED') && existingQA.workOrder.assignedToId) {

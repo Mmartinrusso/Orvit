@@ -218,22 +218,6 @@ function getRoleDisplayName(role: string): string {
 // POST /api/users - Crear nuevo usuario
 export const POST = withGuards(async (request: NextRequest, { user: guardedUser }) => {
   try {
-    const currentUser = await getUserFromToken(request);
-    if (!currentUser) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    // Verificar permisos para crear usuarios
-    const context = createPermissionContext(
-      { id: currentUser.id, role: currentUser.role as UserRole }
-    );
-
-    if (!hasPermission('users.create', context)) {
-      return NextResponse.json({ 
-        error: "Sin permisos para crear usuarios" 
-      }, { status: 403 });
-    }
-
     const body = await request.json();
     const validation = validateRequest(CreateUserSchema, body);
     if (!validation.success) return validation.response;
@@ -246,192 +230,118 @@ export const POST = withGuards(async (request: NextRequest, { user: guardedUser 
     });
 
     if (existingUser) {
-      return NextResponse.json({ 
-        error: "El email ya está registrado" 
+      return NextResponse.json({
+        error: "El email ya está registrado"
       }, { status: 400 });
     }
 
-    // Determinar empresa a asociar primero (necesario para validar roles)
-    let targetCompanyId = companyId ? parseInt(companyId.toString()) : null;
-    
-    if (!targetCompanyId) {
-      // Si no se especifica empresa, usar la empresa del usuario actual
-      if (currentUser.role === 'SUPERADMIN') {
-        // SUPERADMIN puede crear usuarios sin empresa específica
-        targetCompanyId = null;
-      } else {
-        // Otros roles: asociar a su empresa
-        if (currentUser.ownedCompanies && currentUser.ownedCompanies.length > 0) {
-          targetCompanyId = currentUser.ownedCompanies[0].id;
-        } else if (currentUser.companies && currentUser.companies.length > 0) {
-          targetCompanyId = currentUser.companies[0].company.id;
-        } else {
-          targetCompanyId = null;
-        }
-      }
+    // Determinar empresa: body > guardedUser (siempre disponible via withGuards)
+    const targetCompanyId = companyId
+      ? parseInt(companyId.toString())
+      : guardedUser.companyId;
+
+    // Validar rol contra los roles de la empresa
+    const requestedRole = (role || 'USER').trim();
+
+    // Obtener roles de la empresa
+    const companyRoles = await prisma.role.findMany({
+      where: { companyId: targetCompanyId },
+      select: { name: true, displayName: true }
+    });
+
+    const companyRoleNames = companyRoles.map(r => r.name.trim().toUpperCase());
+    const requestedRoleUpper = requestedRole.trim().toUpperCase();
+
+    // Validar que el rol solicitado exista en la empresa
+    if (!companyRoleNames.includes(requestedRoleUpper)) {
+      return NextResponse.json({
+        error: `El rol "${requestedRole}" no existe en esta empresa. Roles disponibles: ${companyRoles.map(r => r.displayName || r.name).join(', ')}`
+      }, { status: 400 });
     }
 
-    // Validar rol contra los roles de la empresa actual
-    const requestedRole = (role || 'USER').trim(); // Mantener el nombre original del rol (puede ser personalizado)
-    
-    if (targetCompanyId) {
-      // Obtener roles de la empresa actual
-      const companyRoles = await prisma.role.findMany({
-        where: {
-          companyId: targetCompanyId
-        },
-        select: {
-          name: true,
-          displayName: true
-        }
-      });
-
-      // Hacer trim() a los nombres de roles de la BD para evitar problemas con espacios
-      const companyRoleNames = companyRoles.map(r => r.name.trim().toUpperCase());
-      const requestedRoleUpper = requestedRole.trim().toUpperCase();
-      
-      // Validar que el rol solicitado exista en la empresa
-      if (!companyRoleNames.includes(requestedRoleUpper)) {
-        return NextResponse.json({ 
-          error: `El rol "${requestedRole}" no existe en esta empresa. Roles disponibles: ${companyRoles.map(r => r.displayName || r.name).join(', ')}` 
-        }, { status: 400 });
-      }
-
-      // Para roles del sistema, también validar permisos de asignación
-      const systemRoles = ['USER', 'SUPERVISOR', 'ADMIN', 'ADMIN_ENTERPRISE', 'SUPERADMIN'];
-      if (systemRoles.includes(requestedRoleUpper)) {
-        const assignableRoles = getAssignableRoles(currentUser.role as UserRole);
-        if (!assignableRoles.includes(requestedRoleUpper as UserRole)) {
-          return NextResponse.json({ 
-            error: `No tienes permisos para asignar el rol ${requestedRole}` 
-          }, { status: 403 });
-        }
-      }
-    } else {
-      // Si no hay empresa, validar solo contra roles del sistema
-      const requestedRoleUpper = requestedRole.toUpperCase() as UserRole;
-    const assignableRoles = getAssignableRoles(currentUser.role as UserRole);
-    
-      if (!assignableRoles.includes(requestedRoleUpper)) {
-      return NextResponse.json({ 
-        error: `No tienes permisos para asignar el rol ${requestedRole}` 
-      }, { status: 403 });
+    // Para roles del sistema, validar permisos de asignación
+    const systemRoles = ['USER', 'SUPERVISOR', 'ADMIN', 'ADMIN_ENTERPRISE', 'SUPERADMIN'];
+    if (systemRoles.includes(requestedRoleUpper)) {
+      const assignableRoles = getAssignableRoles(guardedUser.role as UserRole);
+      if (!assignableRoles.includes(requestedRoleUpper as UserRole)) {
+        return NextResponse.json({
+          error: `No tienes permisos para asignar el rol ${requestedRole}`
+        }, { status: 403 });
       }
     }
 
     // Encriptar contraseña
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Determinar el rol del sistema para el usuario (si es un rol personalizado, usar USER como base)
-    const systemRole = ['USER', 'SUPERVISOR', 'ADMIN', 'ADMIN_ENTERPRISE', 'SUPERADMIN'].includes(requestedRole.toUpperCase())
+    // Determinar el rol del sistema (si es personalizado, usar USER como base)
+    const systemRole = systemRoles.includes(requestedRole.toUpperCase())
       ? requestedRole.toUpperCase() as UserRole
       : 'USER' as UserRole;
 
-    // Crear el usuario
-    const newUser = await prisma.user.create({
-      data: {
-        name: name.trim(),
-        email: email.toLowerCase().trim(),
-        password: hashedPassword,
-        role: systemRole,
-        isActive
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        isActive: true,
-        createdAt: true
-      }
+    // Buscar el roleId para la asociación
+    const allCompanyRoles = await prisma.role.findMany({
+      where: { companyId: targetCompanyId }
+    });
+    const roleRecord = allCompanyRoles.find(
+      r => r.name.trim().toUpperCase() === requestedRoleUpper
+    );
+    const roleDisplayName = roleRecord?.displayName || roleRecord?.name || requestedRole;
+
+    // Crear usuario + asociación a empresa en una transacción
+    const newUser = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name: name.trim(),
+          email: email.toLowerCase().trim(),
+          password: hashedPassword,
+          role: systemRole,
+          isActive
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          isActive: true,
+          createdAt: true
+        }
+      });
+
+      // Crear asociación a empresa (siempre — nunca crear usuario huérfano)
+      await tx.userOnCompany.create({
+        data: {
+          userId: user.id,
+          companyId: targetCompanyId,
+          roleId: roleRecord?.id || null,
+          isActive: true
+        }
+      });
+
+      return user;
     });
 
-    // Variable para almacenar el registro del rol (para notificación)
-    let roleDisplayName = requestedRole;
-
-    // Asociar usuario a empresa si corresponde
-    if (targetCompanyId) {
-      try {
-        // Buscar el rol correspondiente en la tabla Role usando el nombre exacto del rol solicitado
-        const allCompanyRoles = await prisma.role.findMany({
-          where: {
-            companyId: targetCompanyId
-          }
-        });
-
-        const roleRecord = allCompanyRoles.find(
-          r => r.name.trim().toUpperCase() === requestedRole.trim().toUpperCase()
-        );
-
-        // Guardar el nombre del rol para la notificación
-        if (roleRecord) {
-          roleDisplayName = roleRecord.displayName || roleRecord.name;
-        }
-
-        // Verificar si ya existe una asociación (por si acaso)
-        const existingAssociation = await prisma.userOnCompany.findUnique({
-          where: {
-            userId_companyId: {
-              userId: newUser.id,
-              companyId: targetCompanyId
-            }
-          }
-        });
-
-        if (existingAssociation) {
-          await prisma.userOnCompany.update({
-            where: {
-              userId_companyId: {
-                userId: newUser.id,
-                companyId: targetCompanyId
-              }
-            },
-            data: {
-              roleId: roleRecord?.id || null,
-              isActive: true
-            }
-          });
-        } else {
-          await prisma.userOnCompany.create({
-            data: {
-              userId: newUser.id,
-              companyId: targetCompanyId,
-              roleId: roleRecord?.id || null,
-              isActive: true
-            }
-          });
-        }
-      } catch (associationError) {
-        console.error('Error asociando usuario a empresa:', associationError);
-      }
-    }
-
     // Invalidar cache de permisos del nuevo usuario
-    if (targetCompanyId) {
-      await invalidateUserPermissions(newUser.id, targetCompanyId);
-    }
+    await invalidateUserPermissions(newUser.id, targetCompanyId);
 
-    // Crear notificación de bienvenida
-    if (targetCompanyId) {
-      try {
-        await createAndSendInstantNotification(
-          'USER_CREATED',
-          newUser.id,
-          targetCompanyId,
-          null, // taskId
-          null, // reminderId
-          '¡Bienvenido al sistema!',
-          `Tu cuenta ha sido creada exitosamente por ${currentUser.name}. Tu rol es: ${roleDisplayName}`,
-          'medium',
-          {
-            createdBy: currentUser.name,
-            role: roleDisplayName,
-            welcome: true
-          }
-        );
-      } catch (error) {
-        console.error('❌ Error enviando notificación de bienvenida:', error);
-      }
+    // Crear notificación de bienvenida (no-crítico, catch silencioso OK)
+    try {
+      await createAndSendInstantNotification(
+        'USER_CREATED',
+        newUser.id,
+        targetCompanyId,
+        null,
+        null,
+        '¡Bienvenido al sistema!',
+        `Tu cuenta ha sido creada exitosamente por ${guardedUser.name}. Tu rol es: ${roleDisplayName}`,
+        'medium',
+        {
+          createdBy: guardedUser.name,
+          role: roleDisplayName,
+          welcome: true
+        }
+      );
+    } catch (error) {
+      console.error('❌ Error enviando notificación de bienvenida:', error);
     }
 
     return NextResponse.json({

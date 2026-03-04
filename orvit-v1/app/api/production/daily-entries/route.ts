@@ -4,6 +4,7 @@ import { requirePermission } from '@/lib/auth/shared-helpers';
 import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateDailyEntrySchema } from '@/lib/validations/production';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -173,6 +174,9 @@ export async function POST(request: Request) {
         },
       },
     });
+
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(companyId, "production", "production:updated", { id: entry.id });
 
     return NextResponse.json({ success: true, entry }, { status: 201 });
   } catch (error) {

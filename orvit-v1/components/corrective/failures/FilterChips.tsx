@@ -19,6 +19,7 @@ interface FilterChipsProps {
 
 const STATUS_LABELS: Record<string, string> = {
   REPORTED: 'Reportada',
+  OPEN: 'Abierta',
   IN_PROGRESS: 'En Proceso',
   RESOLVED: 'Resuelta',
   CANCELLED: 'Cancelada',

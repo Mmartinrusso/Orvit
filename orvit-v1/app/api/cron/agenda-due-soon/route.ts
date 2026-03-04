@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
       },
       include: {
         createdBy: true,
+        assignedToUser: true,
       },
       take: 50,
     });
@@ -58,26 +59,7 @@ export async function GET(request: NextRequest) {
 
     for (const task of tasksDueSoon) {
       try {
-        const discordUserId = task.createdBy?.discordUserId;
-
-        if (!discordUserId) {
-          console.warn(`⚠️ [CRON Due Soon] Usuario ${task.createdById} sin Discord ID`);
-          // Marcar como enviado para no reintentar
-          await prisma.agendaTask.update({
-            where: { id: task.id },
-            data: { reminder15MinSentAt: now },
-          });
-          results.failed++;
-          continue;
-        }
-
-        // Calcular minutos hasta vencimiento
-        const minutesUntilDue = Math.round(
-          (task.dueDate!.getTime() - now.getTime()) / (60 * 1000)
-        );
-
-        // Enviar notificación
-        const sendResult = await notifyTaskDueSoon(discordUserId, {
+        const taskData = {
           taskId: task.id,
           title: task.title,
           description: task.description,
@@ -85,19 +67,52 @@ export async function GET(request: NextRequest) {
           priority: task.priority,
           assignedToName: task.assignedToName,
           category: task.category,
-        }, minutesUntilDue);
+        };
 
-        if (sendResult.success) {
-          // Marcar como enviado
-          await prisma.agendaTask.update({
-            where: { id: task.id },
-            data: { reminder15MinSentAt: now },
-          });
+        // Calcular minutos hasta vencimiento
+        const minutesUntilDue = Math.round(
+          (task.dueDate!.getTime() - now.getTime()) / (60 * 1000)
+        );
+
+        // Determinar destinatarios: asignado (primario) y creador (si diferente)
+        const assignedDiscordId = task.assignedToUser?.discordUserId;
+        const creatorDiscordId = task.createdBy?.discordUserId;
+        const hasAssigned = task.assignedToUserId && task.assignedToUserId !== task.createdById;
+
+        let anySent = false;
+
+        // 1. Notificar al asignado (si tiene Discord)
+        if (assignedDiscordId) {
+          const res = await notifyTaskDueSoon(assignedDiscordId, taskData, minutesUntilDue);
+          if (res.success) anySent = true;
+        }
+
+        // 2. Notificar al creador (siempre, o si no hay asignado diferente)
+        if (creatorDiscordId && (!hasAssigned || !assignedDiscordId)) {
+          const res = await notifyTaskDueSoon(creatorDiscordId, taskData, minutesUntilDue);
+          if (res.success) anySent = true;
+        } else if (creatorDiscordId && hasAssigned) {
+          // Si hay asignado diferente, también notificar al creador
+          const res = await notifyTaskDueSoon(creatorDiscordId, taskData, minutesUntilDue);
+          if (res.success) anySent = true;
+        }
+
+        if (!assignedDiscordId && !creatorDiscordId) {
+          console.warn(`⚠️ [CRON Due Soon] Tarea ${task.id}: ni asignado ni creador tienen Discord ID`);
+        }
+
+        // Marcar como enviado para no reintentar
+        await prisma.agendaTask.update({
+          where: { id: task.id },
+          data: { reminder15MinSentAt: now },
+        });
+
+        if (anySent) {
           results.sent++;
           console.log(`✅ [CRON Due Soon] Notificación enviada para tarea #${task.id}`);
         } else {
           results.failed++;
-          results.errors.push(`Task ${task.id}: ${sendResult.error}`);
+          results.errors.push(`Task ${task.id}: sin Discord ID disponible`);
         }
       } catch (error: any) {
         results.failed++;

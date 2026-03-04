@@ -16,6 +16,7 @@ import { expandSymptoms } from '@/lib/corrective/symptoms';
 import { findSimilarSolutions } from '@/lib/corrective/solution-history';
 import { notifyNewFailure, notifyP1ToSectorTechnicians } from '@/lib/discord/notifications';
 import { hasUserPermission } from '@/lib/permissions-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -561,6 +562,9 @@ export async function POST(request: NextRequest) {
 
     // Fire-and-forget: no esperamos a que termine
     sendDiscordNotifications().catch(() => {});
+
+    // Pusher realtime trigger
+    triggerCompanyEvent(companyId, "failures", "failure:created", { id: occurrence.id });
 
     return NextResponse.json({
       occurrence,

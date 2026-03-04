@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,6 +87,9 @@ export async function POST(
       // Ignorar si QA no existe
       console.warn('QA update failed (ignoring):', qaError);
     }
+
+    // Pusher realtime trigger (fire-and-forget)
+    triggerCompanyEvent(companyId, "work-orders", "work-order:updated", { id: workOrderId });
 
     // Notificaciones in-app (fire-and-forget)
     const notifTargets = new Set<number>();

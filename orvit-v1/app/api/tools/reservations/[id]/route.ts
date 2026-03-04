@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -232,6 +233,8 @@ async function handlePick(reservation: any, userId: number, notes?: string) {
     triggerStockLowNotification(reservation.tool.companyId, reservation.toolId).catch(console.error);
   }
 
+  triggerCompanyEvent(reservation.tool.companyId, "tools", "tool:updated", { id: reservation.toolId });
+
   return NextResponse.json({
     success: true,
     data: updated,
@@ -260,6 +263,8 @@ async function handleCancel(reservation: any, notes?: string) {
       notes: notes ? `${reservation.notes || ''}\n[CANCELADO] ${notes}`.trim() : reservation.notes
     }
   });
+
+  triggerCompanyEvent(reservation.tool.companyId, "tools", "tool:updated", { id: reservation.toolId });
 
   return NextResponse.json({
     success: true,
@@ -330,6 +335,8 @@ async function handleReturn(reservation: any, userId: number, quantity?: number,
     })
   ]);
 
+  triggerCompanyEvent(reservation.tool.companyId, "tools", "tool:updated", { id: reservation.toolId });
+
   return NextResponse.json({
     success: true,
     data: updated,
@@ -377,6 +384,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     await prisma.sparePartReservation.delete({
       where: { id: reservation.id }
     });
+
+    triggerCompanyEvent(companyId, "tools", "tool:updated", { id: reservation.toolId });
 
     return NextResponse.json({
       success: true,

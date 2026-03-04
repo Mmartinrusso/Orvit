@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
 import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -145,6 +146,9 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: reasonCode.id });
+
     return NextResponse.json({
       success: true,
       reasonCode,
@@ -214,6 +218,11 @@ export async function PUT(request: NextRequest) {
       } catch (err) {
         errors.push({ code: item.code, error: err instanceof Error ? err.message : 'Error desconocido' });
       }
+    }
+
+    // Fire-and-forget Pusher realtime trigger
+    if (created.length > 0) {
+      triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: created[0].id });
     }
 
     return NextResponse.json({

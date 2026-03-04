@@ -91,7 +91,7 @@ npm run dev
 ## 6. Navegar y probar
 
 ```
-http://localhost:3000/mantenimiento/fallas
+http://localhost:3000/mantenimiento/incidentes
 ```
 
 ---

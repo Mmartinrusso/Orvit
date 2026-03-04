@@ -39,14 +39,14 @@ export const FAILURE_PRESETS: FailurePreset[] = [
     key: 'open',
     label: 'Abiertas',
     icon: AlertCircle,
-    filters: { status: ['OPEN', 'IN_PROGRESS'] },
+    filters: { status: ['REPORTED', 'OPEN', 'IN_PROGRESS'] },
     color: 'text-info-muted-foreground'
   },
   {
     key: 'no_ot',
     label: 'Sin OT',
     icon: Wrench,
-    filters: { hasWorkOrder: false, status: ['OPEN', 'IN_PROGRESS'] },
+    filters: { hasWorkOrder: false, status: ['REPORTED', 'OPEN', 'IN_PROGRESS'] },
     color: 'text-warning-muted-foreground'
   },
   {
@@ -60,7 +60,7 @@ export const FAILURE_PRESETS: FailurePreset[] = [
     key: 'unassigned',
     label: 'Sin asignar',
     icon: UserX,
-    filters: { hasWorkOrder: false, status: 'OPEN' },
+    filters: { hasWorkOrder: false, status: ['REPORTED', 'OPEN'] },
     color: 'text-warning-muted-foreground'
   },
   {
@@ -117,6 +117,8 @@ interface FailureOccurrence {
   causedDowntime?: boolean;
   isLinkedDuplicate?: boolean;
   failureId?: number | null;
+  workOrder?: { id: number; status: string } | null;
+  workOrders?: Array<{ id: number; status: string }>;
 }
 
 interface FailuresSavedViewsBarProps {
@@ -124,7 +126,9 @@ interface FailuresSavedViewsBarProps {
   className?: string;
 }
 
-export function FailuresSavedViewsBar({ failures = [], className }: FailuresSavedViewsBarProps) {
+const EMPTY_FAILURES: FailureOccurrence[] = [];
+
+export function FailuresSavedViewsBar({ failures = EMPTY_FAILURES, className }: FailuresSavedViewsBarProps) {
   const currentPreset = useFailurePreset();
   const setPreset = useSetFailurePreset();
 
@@ -141,13 +145,13 @@ export function FailuresSavedViewsBar({ failures = [], className }: FailuresSave
     };
 
     failures.forEach((f) => {
-      const isOpen = f.status === 'OPEN' || f.status === 'IN_PROGRESS';
-      const hasOT = !!f.failureId;
+      const isOpen = f.status === 'OPEN' || f.status === 'IN_PROGRESS' || f.status === 'REPORTED';
+      const hasOT = (f.workOrders?.length ?? 0) > 0 || !!f.workOrder;
 
       if (isOpen) counts.open++;
       if (!hasOT && isOpen) counts.no_ot++;
       if (f.causedDowntime) counts.downtime++;
-      if (!hasOT && f.status === 'OPEN') counts.unassigned++;
+      if (!hasOT && (f.status === 'OPEN' || f.status === 'REPORTED')) counts.unassigned++;
       if (f.priority === 'URGENT' || f.priority === 'HIGH') counts.p1_p2++;
       if (f.isLinkedDuplicate) counts.duplicates++;
     });

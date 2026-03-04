@@ -70,7 +70,7 @@ export const INDEXABLE_ENTITIES: Record<IndexableEntityType, EntityIndexConfig> 
     includes: {
       machine: { select: { name: true, sector: { select: { name: true } } } },
     },
-    urlPattern: '/mantenimiento/fallas/{id}',
+    urlPattern: '/mantenimiento/incidentes/{id}',
   },
 
   failure_solution: {
@@ -155,7 +155,7 @@ export const PAGE_CONTEXT_MAP: Record<string, { description: string, relatedQuer
     description: 'la lista de Órdenes de Trabajo (OTs)',
     relatedQueries: ['OTs pendientes', 'asignar OT', 'crear OT', 'prioridad de OTs']
   },
-  '/mantenimiento/fallas': {
+  '/mantenimiento/incidentes': {
     description: 'el registro de Fallas/Averías',
     relatedQueries: ['fallas recientes', 'reportar falla', 'historial de fallas', 'resolver falla']
   },

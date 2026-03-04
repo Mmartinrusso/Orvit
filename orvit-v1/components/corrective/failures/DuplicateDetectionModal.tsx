@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Link as LinkIcon, FileText, Loader2 } from 'lucide-react';
+import { AlertTriangle, Link as LinkIcon, FileText, Loader2, Wrench, Cog, Calendar } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -105,12 +105,21 @@ export function DuplicateDetectionModal({
 
                   {/* Metadata */}
                   <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                    {duplicate.machine && <span>🏭 {duplicate.machine.name}</span>}
-                    {duplicate.component && (
-                      <span>🔧 {duplicate.component.name}</span>
+                    {duplicate.machine && (
+                      <span className="flex items-center gap-1">
+                        <Wrench className="h-3.5 w-3.5" />
+                        {duplicate.machine.name}
+                      </span>
                     )}
-                    <span>
-                      📅 Reportada{' '}
+                    {duplicate.component && (
+                      <span className="flex items-center gap-1">
+                        <Cog className="h-3.5 w-3.5" />
+                        {duplicate.component.name}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3.5 w-3.5" />
+                      Reportada{' '}
                       {formatDistanceToNow(new Date(duplicate.reportedAt), {
                         addSuffix: true,
                         locale: es,

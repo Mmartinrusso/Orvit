@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -496,9 +497,14 @@ export async function POST(request: NextRequest) {
       newStatus: item.completedDate ? 'COMPLETED' : (item.rescheduleDate ? 'SCHEDULED' : 'PENDING')
     }));
 
+    // Pusher realtime trigger
+    if (numericCompanyId) {
+      triggerCompanyEvent(numericCompanyId, 'maintenance', 'maintenance:updated', { id: numericChecklistId });
+    }
+
     return NextResponse.json({
       success: true,
-      message: isFinalized 
+      message: isFinalized
         ? `Checklist finalizado correctamente. ${maintenanceItems.length} mantenimientos procesados.`
         : `Checklist guardado correctamente. Puedes continuar completándolo más tarde.`,
       executionId: checklistExecution.id,

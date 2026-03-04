@@ -375,9 +375,8 @@ export function CreateIncidentDialog({
     onSuccess: () => {
       const label = incidentType === 'ROTURA' ? 'Rotura' : 'Falla';
       toast.success(`${label} registrada y resuelta exitosamente`);
-      queryClient.invalidateQueries({ queryKey: ['failure-occurrences'] });
-      queryClient.invalidateQueries({ queryKey: ['failure-stats'] });
       queryClient.invalidateQueries({ queryKey: ['failures-grid'] });
+      queryClient.invalidateQueries({ queryKey: ['failure-stats'] });
       handleClose(false);
     },
     onError: (error: Error) => {

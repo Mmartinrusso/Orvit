@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/tasks/auth-helper';
 import { UpdateAgendaSubtaskSchema } from '@/lib/validations/agenda-tasks';
 import { validateRequest } from '@/lib/validations/helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,6 +87,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       },
     });
 
+    // Pusher realtime trigger (subtask change = task updated)
+    triggerCompanyEvent(updated.companyId, "tasks", "task:updated", { id: taskId });
+
     return NextResponse.json({
       id: updated.id,
       title: updated.title,
@@ -125,7 +129,18 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Subtarea no encontrada' }, { status: 404 });
     }
 
+    // Get companyId before deleting
+    const subtaskForEvent = await prisma.agendaTask.findUnique({
+      where: { id: taskId },
+      select: { companyId: true },
+    });
+
     await prisma.agendaSubtask.delete({ where: { id: subtaskId } });
+
+    // Pusher realtime trigger (subtask change = task updated)
+    if (subtaskForEvent) {
+      triggerCompanyEvent(subtaskForEvent.companyId, "tasks", "task:updated", { id: taskId });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

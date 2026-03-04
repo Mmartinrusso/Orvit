@@ -6,7 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, BarChart3, TrendingUp, Loader2, CalendarDays } from 'lucide-react';
-import { MonthlyComparison } from './MonthlyComparison';
+import dynamic from 'next/dynamic';
+const MonthlyComparison = dynamic(() => import('./MonthlyComparison').then(m => m.MonthlyComparison), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>,
+});
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 

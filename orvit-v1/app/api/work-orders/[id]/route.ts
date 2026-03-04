@@ -7,6 +7,7 @@ import {
 import { withGuards } from '@/lib/middleware/withGuards';
 import { validateRequest } from '@/lib/validations/helpers';
 import { UpdateWorkOrderSchema } from '@/lib/validations/work-orders';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 // ✅ OPTIMIZADO: Usar instancia global de prisma desde @/lib/prisma
 
@@ -388,6 +389,8 @@ export const PUT = withGuards(async (request: NextRequest, { user, params: _p },
       }
     }
 
+    triggerCompanyEvent(updatedWorkOrder.companyId, "work-orders", "work-order:updated", { id: updatedWorkOrder.id });
+
     return NextResponse.json(updatedWorkOrder);
   } catch (error) {
     console.error('PUT /api/work-orders/[id] - error:', error);
@@ -421,6 +424,8 @@ export const DELETE = withGuards(async (request: NextRequest, { user, params: _p
     await prisma.workOrder.delete({
       where: { id: Number(id) },
     });
+
+    triggerCompanyEvent(workOrder.companyId, "work-orders", "work-order:updated", { id: workOrder.id });
 
     return new NextResponse(null, { status: 204 });
   } catch (error) {

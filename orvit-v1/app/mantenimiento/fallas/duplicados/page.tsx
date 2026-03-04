@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 
-// V2: Redirect a la vista unificada de fallas con vista duplicados
+// Redirect a la nueva URL de incidentes con vista duplicados
 export default function DuplicadosRedirect() {
-  redirect('/mantenimiento/fallas?view=duplicados');
+  redirect('/mantenimiento/incidentes?view=duplicados');
 }

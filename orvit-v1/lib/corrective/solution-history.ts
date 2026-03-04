@@ -167,8 +167,8 @@ export async function getTopSolutions(params: TopSolutionsParams): Promise<Solut
     const usageBonus = Math.min(solutions.length / 5, 1); // Max 20% bonus por uso frecuente
     const adjustedScore = avgEffectiveness * decayFactor * (1 + usageBonus * 0.2);
 
-    // Tomar la solución más reciente como representante
-    const representative = solutions.sort((a, b) => b.performedAt.getTime() - a.performedAt.getTime())[0];
+    // Tomar la solución más reciente como representante (reduce O(n) instead of sort O(n log n))
+    const representative = solutions.reduce((latest, s) => s.performedAt.getTime() > latest.performedAt.getTime() ? s : latest);
 
     return {
       id: representative.id,

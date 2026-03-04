@@ -49,7 +49,9 @@ interface WorkOrdersSavedViewsBarProps {
   className?: string;
 }
 
-export function WorkOrdersSavedViewsBar({ workOrders = [], className }: WorkOrdersSavedViewsBarProps) {
+const EMPTY_WORK_ORDERS: WorkOrder[] = [];
+
+export function WorkOrdersSavedViewsBar({ workOrders = EMPTY_WORK_ORDERS, className }: WorkOrdersSavedViewsBarProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();

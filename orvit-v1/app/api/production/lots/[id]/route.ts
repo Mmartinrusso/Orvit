@@ -4,6 +4,7 @@ import { requirePermission } from '@/lib/auth/shared-helpers';
 import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { logProductionEvent } from '@/lib/production/event-logger';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -168,6 +169,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         companyId: user!.companyId,
       });
 
+      // Fire-and-forget Pusher realtime trigger
+      triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: lotId });
+
       return NextResponse.json({
         success: true,
         lot,
@@ -206,6 +210,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         productionOrderId: existingLot.productionOrderId,
         companyId: user!.companyId,
       });
+
+      // Fire-and-forget Pusher realtime trigger
+      triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: lotId });
 
       return NextResponse.json({
         success: true,
@@ -251,6 +258,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         productionOrderId: existingLot.productionOrderId,
         companyId: user!.companyId,
       });
+
+      // Fire-and-forget Pusher realtime trigger
+      triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: lotId });
 
       return NextResponse.json({
         success: true,
@@ -327,6 +337,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     await prisma.productionBatchLot.delete({
       where: { id: lotId },
     });
+
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: lotId });
 
     return NextResponse.json({
       success: true,

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
 import { withGuards } from '@/lib/middleware/withGuards';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -382,6 +383,9 @@ export const POST = withGuards(async (request, ctx) => {
       frequencyType: data.frequencyType || 'days',
       frequencyInterval: parseInt(data.frequencyInterval?.toString()) || 30
     };
+
+    // Pusher realtime trigger
+    triggerCompanyEvent(data.companyId, 'maintenance', 'maintenance:created', { id: workOrder.id });
 
     return NextResponse.json({
       success: true,

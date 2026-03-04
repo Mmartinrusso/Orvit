@@ -12,6 +12,7 @@ import {
   History,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { es } from 'date-fns/locale';
 
 interface RecurrenceData {
@@ -50,19 +51,20 @@ interface RecurrenceData {
 
 interface RecurrencePanelProps {
   failureId: number;
+  onSelectFailure?: (id: number) => void;
 }
 
 const priorityColors: Record<string, string> = {
   P1: 'bg-destructive/10 text-destructive',
   P2: 'bg-warning-muted text-warning-muted-foreground',
-  P3: 'bg-warning-muted text-warning-muted-foreground',
+  P3: 'bg-blue-500/10 text-blue-600',
   P4: 'bg-info-muted text-info-muted-foreground',
 };
 
 /**
  * Panel de reincidencia para mostrar historial de fallas similares
  */
-export function RecurrencePanel({ failureId }: RecurrencePanelProps) {
+export function RecurrencePanel({ failureId, onSelectFailure }: RecurrencePanelProps) {
   const { data, isLoading, error } = useQuery<RecurrenceData>({
     queryKey: ['failure-recurrence', failureId],
     queryFn: async () => {
@@ -167,7 +169,14 @@ export function RecurrencePanel({ failureId }: RecurrencePanelProps) {
         ) : (
           <div className="space-y-2">
             {previousOccurrences.map((occ) => (
-              <div key={occ.id} className="rounded-lg border p-3">
+              <div
+                key={occ.id}
+                className={cn(
+                  "rounded-lg border p-3",
+                  onSelectFailure && "cursor-pointer hover:bg-muted/50 transition-colors"
+                )}
+                onClick={() => onSelectFailure?.(occ.id)}
+              >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <p className="text-sm font-medium line-clamp-1">
@@ -197,7 +206,7 @@ export function RecurrencePanel({ failureId }: RecurrencePanelProps) {
                       ) : (
                         <Clock className="h-3 w-3 mr-1" />
                       )}
-                      {occ.status}
+                      {occ.status === 'REPORTED' ? 'Reportada' : occ.status === 'IN_PROGRESS' ? 'En Proceso' : occ.status === 'RESOLVED' ? 'Resuelta' : occ.status === 'CANCELLED' ? 'Cancelada' : occ.status}
                     </Badge>
                   </div>
                 </div>

@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogBody,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -139,16 +140,17 @@ export function AdvancedFiltersSheet({
   );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent size="default" className="overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Filtros Avanzados</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent size="md" className="flex flex-col max-h-[90dvh]">
+        <DialogHeader>
+          <DialogTitle>Filtros Avanzados</DialogTitle>
+          <DialogDescription>
             Configure filtros adicionales para la búsqueda de fallas
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="space-y-6 py-6">
+        <DialogBody>
+        <div className="space-y-6">
           {/* Rango de fechas */}
           <div className="space-y-3">
             <Label className="text-sm font-medium">Rango de Fechas</Label>
@@ -445,14 +447,15 @@ export function AdvancedFiltersSheet({
             </Select>
           </div>
         </div>
+        </DialogBody>
 
-        <SheetFooter className="flex gap-2">
+        <DialogFooter className="flex gap-2">
           <Button variant="outline" onClick={handleClear}>
             Limpiar
           </Button>
           <Button onClick={handleApply}>Aplicar Filtros</Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

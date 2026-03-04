@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 // Flag de módulo: DDL se ejecuta solo una vez por proceso del servidor
 let instructiveTableInitialized = false;
@@ -275,6 +276,9 @@ export async function PUT(
       instructives = body.instructives || updatedChecklistData.instructives || [];
     }
 
+    // Pusher realtime trigger
+    triggerCompanyEvent(updatedChecklist.companyId, 'maintenance', 'maintenance:updated', { id: updatedChecklist.id });
+
     return NextResponse.json({
       success: true,
       message: 'Checklist actualizado correctamente',
@@ -355,6 +359,9 @@ export async function DELETE(
         id: checklistId
       }
     });
+
+    // Pusher realtime trigger
+    triggerCompanyEvent(deletedChecklist.companyId, 'maintenance', 'maintenance:updated', { id: deletedChecklist.id });
 
     return NextResponse.json({
       success: true,

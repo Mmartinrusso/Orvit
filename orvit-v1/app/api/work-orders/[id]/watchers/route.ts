@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -147,6 +148,9 @@ export async function POST(
       }
     });
 
+    // Pusher realtime trigger (fire-and-forget)
+    triggerCompanyEvent(companyId, "work-orders", "work-order:updated", { id: workOrderId });
+
     return NextResponse.json({
       success: true,
       message: 'Ahora sigues esta OT',
@@ -211,6 +215,9 @@ export async function DELETE(
     } catch (e) {
       // Si no existe, no es error
     }
+
+    // Pusher realtime trigger (fire-and-forget)
+    triggerCompanyEvent(companyId, "work-orders", "work-order:updated", { id: workOrderId });
 
     return NextResponse.json({
       success: true,

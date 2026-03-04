@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getUserFromToken } from '@/lib/tasks/auth-helper';
 import { CreateAgendaTaskCommentSchema } from '@/lib/validations/agenda-tasks';
 import { validateRequest } from '@/lib/validations/helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,6 +54,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       },
     });
 
+    // Pusher realtime trigger (comment change = task updated)
+    triggerCompanyEvent(updated.companyId, "tasks", "task:updated", { id: taskId });
+
     return NextResponse.json({
       id: updated.id,
       content: updated.content,
@@ -98,7 +102,18 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
 
+    // Get task companyId for the event
+    const taskForEvent = await prisma.agendaTask.findUnique({
+      where: { id: taskId },
+      select: { companyId: true },
+    });
+
     await prisma.agendaTaskComment.delete({ where: { id: commentId } });
+
+    // Pusher realtime trigger (comment change = task updated)
+    if (taskForEvent) {
+      triggerCompanyEvent(taskForEvent.companyId, "tasks", "task:updated", { id: taskId });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

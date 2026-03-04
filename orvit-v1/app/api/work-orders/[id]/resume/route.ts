@@ -11,6 +11,7 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -142,7 +143,10 @@ export async function POST(
       };
     });
 
-    // 8. Retornar resultado
+    // 8. Pusher realtime trigger (fire-and-forget)
+    triggerCompanyEvent(companyId, "work-orders", "work-order:updated", { id: workOrderId });
+
+    // 9. Retornar resultado
     return NextResponse.json({
       success: true,
       message: `Orden #${workOrderId} reanudada exitosamente (estuvo ${result.waitingMinutes} minutos en espera)`,

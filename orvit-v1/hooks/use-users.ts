@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useCompany } from '@/contexts/CompanyContext';
 
 interface User {
@@ -19,58 +19,27 @@ interface UseUsersReturn {
 }
 
 export function useUsers(): UseUsersReturn {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { currentCompany } = useCompany();
+  const companyId = currentCompany?.id;
 
-  const fetchUsers = async () => {
-    if (!currentCompany?.id) {
-      setError('No hay empresa seleccionada');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(`/api/companies/${currentCompany.id}/users`, {
-        credentials: 'include'
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['company-users', companyId],
+    queryFn: async () => {
+      const res = await fetch(`/api/companies/${companyId}/users`, {
+        credentials: 'include',
       });
-      
-      if (!response.ok) {
-        throw new Error('Error al obtener usuarios');
-      }
-
-      const data = await response.json();
-      
-      if (data.success) {
-        setUsers(data.users);
-      } else {
-        throw new Error(data.error || 'Error al obtener usuarios');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
-      
-      // Fallback con usuarios mock si falla
-      setUsers([
-        { id: 1, name: 'Usuario Demo', email: 'demo@empresa.com', role: 'ADMIN', companyRole: 'ADMIN', type: 'USER' },
-        { id: 2, name: 'Operario Demo', email: 'operario@empresa.com', role: 'WORKER', companyRole: 'WORKER', type: 'WORKER', specialty: 'Mantenimiento' }
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, [currentCompany?.id]);
+      if (!res.ok) throw new Error('Error al obtener usuarios');
+      const json = await res.json();
+      return json.success ? json.users : [];
+    },
+    enabled: !!companyId,
+    staleTime: 5 * 60 * 1000, // 5 min — users don't change frequently
+  });
 
   return {
-    users,
-    loading,
-    error,
-    refetch: fetchUsers
+    users: (data as User[]) ?? [],
+    loading: isLoading,
+    error: error?.message ?? null,
+    refetch,
   };
-} 
+}

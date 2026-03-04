@@ -3,20 +3,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
@@ -38,11 +30,13 @@ import {
   Users,
   MoreVertical,
   Pencil,
+  Trash2,
   Wrench,
   Package,
   Star,
   Paperclip,
   ClipboardCheck,
+  X,
 } from 'lucide-react';
 import {
   Tooltip,
@@ -59,10 +53,14 @@ import {
 import { formatDistanceToNow, format, differenceInMinutes } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
-import { ReturnToProductionDialog } from './ReturnToProductionDialog';
-import { ImmediateCloseDialog } from './ImmediateCloseDialog';
-import { RecurrencePanel } from './RecurrencePanel';
-import { ReopenFailureDialog } from './ReopenFailureDialog';
+import { useAuth } from '@/contexts/AuthContext';
+import { Input } from '@/components/ui/input';
+import dynamic from 'next/dynamic';
+
+const ReturnToProductionDialog = dynamic(() => import('./ReturnToProductionDialog').then(m => ({ default: m.ReturnToProductionDialog })), { ssr: false });
+const ImmediateCloseDialog = dynamic(() => import('./ImmediateCloseDialog').then(m => ({ default: m.ImmediateCloseDialog })), { ssr: false });
+const RecurrencePanel = dynamic(() => import('./RecurrencePanel').then(m => ({ default: m.RecurrencePanel })), { ssr: false });
+const ReopenFailureDialog = dynamic(() => import('./ReopenFailureDialog').then(m => ({ default: m.ReopenFailureDialog })), { ssr: false });
 
 interface Comment {
   id: number;
@@ -82,6 +80,8 @@ interface FailureDetailSheetProps {
   onOpenChange: (open: boolean) => void;
   /** Tab to open by default (info, recurrence, duplicates, downtime, solutions, comments) */
   initialTab?: string;
+  /** Navigate to another failure (e.g. from recurrence panel) */
+  onSelectFailure?: (id: number) => void;
 }
 
 interface FailureDetail {
@@ -198,11 +198,11 @@ function parseJsonArr<T>(field: T[] | string | null | undefined): T[] {
 const priorityColors: Record<string, string> = {
   P1: 'bg-destructive',
   P2: 'bg-warning',
-  P3: 'bg-warning',
+  P3: 'bg-blue-500',
   P4: 'bg-info',
   URGENT: 'bg-destructive',
   HIGH: 'bg-warning',
-  MEDIUM: 'bg-warning',
+  MEDIUM: 'bg-blue-500',
   LOW: 'bg-info',
 };
 
@@ -245,6 +245,27 @@ const commentTypeConfig: Record<string, { label: string; icon: typeof MessageSqu
   },
 };
 
+const STATUS_CHIP_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
+  REPORTED: { bg: '#F3F4F6', text: '#6B7280', dot: '#9CA3AF' },
+  OPEN: { bg: '#EFF6FF', text: '#1D4ED8', dot: '#3B82F6' },
+  IN_PROGRESS: { bg: '#111827', text: '#FFFFFF', dot: '#FFFFFF' },
+  RESOLVED: { bg: '#ECFDF5', text: '#059669', dot: '#059669' },
+  RESOLVED_IMMEDIATE: { bg: '#ECFDF5', text: '#059669', dot: '#059669' },
+  CANCELLED: { bg: '#FEE2E2', text: '#DC2626', dot: '#DC2626' },
+  CLOSED: { bg: '#F3F4F6', text: '#6B7280', dot: '#6B7280' },
+};
+
+const PRIORITY_CHIP_COLORS: Record<string, { bg: string; text: string }> = {
+  P1: { bg: '#FEE2E2', text: '#DC2626' },
+  P2: { bg: '#FEF3C7', text: '#D97706' },
+  P3: { bg: '#EFF6FF', text: '#1D4ED8' },
+  P4: { bg: '#F3F4F6', text: '#6B7280' },
+  URGENT: { bg: '#FEE2E2', text: '#DC2626' },
+  HIGH: { bg: '#FEF3C7', text: '#D97706' },
+  MEDIUM: { bg: '#EFF6FF', text: '#1D4ED8' },
+  LOW: { bg: '#F3F4F6', text: '#6B7280' },
+};
+
 /**
  * Sheet de detalle de falla con tabs
  */
@@ -253,6 +274,7 @@ export function FailureDetailSheet({
   open,
   onOpenChange,
   initialTab,
+  onSelectFailure,
 }: FailureDetailSheetProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -263,6 +285,8 @@ export function FailureDetailSheet({
   const [immediateCloseOpen, setImmediateCloseOpen] = useState(false);
   const [reopenDialogOpen, setReopenDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(initialTab || 'info');
+  const [openAnim, setOpenAnim] = useState(false);
+  const prevOpenRef = useRef(false);
 
   // Update active tab when initialTab changes (e.g., from URL)
   useEffect(() => {
@@ -270,6 +294,27 @@ export function FailureDetailSheet({
       setActiveTab(initialTab);
     }
   }, [initialTab]);
+
+  // Trigger unfold animation when panel opens
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      setOpenAnim(true);
+      const t = setTimeout(() => setOpenAnim(false), 1100);
+      prevOpenRef.current = true;
+      return () => clearTimeout(t);
+    }
+    if (!open) prevOpenRef.current = false;
+  }, [open]);
+
+  // Close on ESC
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onOpenChange(false); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open, onOpenChange]);
+
+  const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
 
   const [selectedDowntimeLog, setSelectedDowntimeLog] = useState<{
     id: number;
@@ -375,6 +420,55 @@ export function FailureDetailSheet({
     },
   });
 
+  // Edit/delete comment state
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingContent, setEditingContent] = useState('');
+  const { user: currentUser } = useAuth();
+
+  // Mutation para editar comentario
+  const editCommentMutation = useMutation({
+    mutationFn: async ({ commentId, content }: { commentId: number; content: string }) => {
+      const res = await fetch(`/api/failure-occurrences/${failureId}/comments`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentId, content }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Error al editar');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      setEditingCommentId(null);
+      setEditingContent('');
+      queryClient.invalidateQueries({ queryKey: ['failure-comments', failureId] });
+      toast.success('Comentario editado');
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  // Mutation para eliminar comentario
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: number) => {
+      const res = await fetch(`/api/failure-occurrences/${failureId}/comments`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentId }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Error al eliminar');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['failure-comments', failureId] });
+      toast.success('Comentario eliminado');
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   // Scroll al fondo cuando hay nuevos comentarios
   useEffect(() => {
     if (chatScrollRef.current && comments.length > 0) {
@@ -424,106 +518,260 @@ export function FailureDetailSheet({
 
   const hasWorkOrder = (failure?.workOrders?.length ?? 0) > 0;
 
+  const sChip = STATUS_CHIP_COLORS[failure?.status || ''] || STATUS_CHIP_COLORS.REPORTED;
+  const pChip = PRIORITY_CHIP_COLORS[failure?.priority || ''] || PRIORITY_CHIP_COLORS.P3;
+
   return (
     <>
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent size="lg" className="overflow-y-auto px-6">
-          {isLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-              <Skeleton className="h-64" />
+    <style>{`
+      @keyframes failure-modal-unfold {
+        0%   { transform: scaleY(0);     opacity: 0; filter: blur(6px); }
+        10%  { transform: scaleY(0.006); opacity: 1; filter: blur(4px); }
+        100% { transform: scaleY(1);     opacity: 1; filter: blur(0px); }
+      }
+      @keyframes failure-content-reveal {
+        0%   { opacity: 0; transform: translateX(-18px); filter: blur(8px); }
+        100% { opacity: 1; transform: translateX(0);     filter: blur(0); }
+      }
+      @keyframes failure-backdrop-in {
+        from { opacity: 0; backdrop-filter: blur(0px); }
+        to   { opacity: 1; backdrop-filter: blur(6px); }
+      }
+      .failure-detail-scroll { scrollbar-width: none; -ms-overflow-style: none; overflow-y: auto; height: 100%; flex: 1; min-height: 0; }
+      .failure-detail-scroll::-webkit-scrollbar { display: none; }
+    `}</style>
+
+    {/* Backdrop */}
+    {open && (
+      <div
+        onClick={() => onOpenChange(false)}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 50,
+          background: 'rgba(0,0,0,0.40)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
+          animation: 'failure-backdrop-in 300ms ease both',
+        }}
+      />
+    )}
+
+    {/* Modal overlay */}
+    <div
+      onClick={() => onOpenChange(false)}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 51,
+        display: open ? 'flex' : 'none',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '16px',
+      }}
+    >
+      {/* Modal box */}
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: '1020px',
+          maxWidth: '95vw',
+          height: '920px',
+          maxHeight: '96vh',
+          background: '#FFFFFF',
+          border: '1.5px solid #D8D8DE',
+          borderRadius: '10px',
+          boxShadow: '0 4px 32px rgba(0,0,0,.12), 0 1px 4px rgba(0,0,0,.06)',
+          display: 'flex', flexDirection: 'column',
+          overflow: 'hidden',
+          transformOrigin: 'center center',
+          animation: openAnim ? 'failure-modal-unfold 950ms cubic-bezier(.22,1,.36,1) both' : undefined,
+        }}
+      >
+        {isLoading ? (
+            <div style={{ padding: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <Skeleton className="h-6 w-20 rounded-md" />
+                <Skeleton className="h-6 w-16 rounded-md" />
+              </div>
+              <Skeleton className="h-7 w-3/4 rounded-md mb-3" />
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+                <Skeleton className="h-5 w-24 rounded" />
+                <Skeleton className="h-5 w-20 rounded" />
+                <Skeleton className="h-5 w-16 rounded" />
+              </div>
+              <Skeleton className="h-10 w-full rounded-lg mb-4" />
+              <Skeleton className="h-48 w-full rounded-lg mb-3" />
+              <Skeleton className="h-32 w-full rounded-lg" />
             </div>
           ) : failure ? (
             <>
-              {/* Header */}
-              <SheetHeader>
-                <div className="flex items-center justify-between">
-                  <SheetTitle className="flex items-center gap-2">
-                    <div
-                      className={cn('h-3 w-3 rounded-full', priorityColors[failure.priority] || 'bg-muted-foreground')}
-                    />
-                    {failure.title || 'Sin título'}
-                  </SheetTitle>
-                  <div className="flex items-center gap-2">
-                    <Badge className={statusColors[failure.status] || 'bg-muted text-foreground'}>
-                      {statusLabels[failure.status] || failure.status}
-                    </Badge>
-                    <Button
-                      variant={isWatching ? 'secondary' : 'outline'}
-                      size="sm"
-                      onClick={() => watchMutation.mutate(isWatching ? 'unwatch' : 'watch')}
-                      disabled={watchMutation.isPending}
-                      className="h-8"
-                    >
-                      {watchMutation.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : isWatching ? (
-                        <>
-                          <BellOff className="h-4 w-4 mr-1" />
-                          Dejar de seguir
-                        </>
-                      ) : (
-                        <>
-                          <Bell className="h-4 w-4 mr-1" />
-                          Seguir
-                        </>
-                      )}
-                    </Button>
-                    {/* Menú de acciones */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => router.push(`/mantenimiento/fallas/${failure.id}/editar`)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Editar Falla
-                        </DropdownMenuItem>
-                        {(failure.status === 'RESOLVED' || failure.status === 'RESOLVED_IMMEDIATE') && (
-                          <DropdownMenuItem onClick={() => setReopenDialogOpen(true)}>
-                            <RotateCcw className="mr-2 h-4 w-4" />
-                            Reabrir Falla
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <SheetDescription className="flex flex-wrap gap-2">
+              {/* ── Header ── */}
+              <div style={{
+                padding: '18px 24px',
+                borderBottom: '1px solid #E4E4E8',
+                flexShrink: 0,
+                animation: openAnim ? 'failure-content-reveal 420ms cubic-bezier(.22,1,.36,1) 320ms both' : undefined,
+              }}>
+                {/* Top row: status chip + badges + actions */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+                  {/* Status chip */}
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '4px',
+                    fontSize: '11px', fontWeight: 600,
+                    padding: '2px 10px', borderRadius: '6px',
+                    background: sChip.bg, color: sChip.text,
+                  }}>
+                    <span style={{ height: '5px', width: '5px', borderRadius: '50%', background: sChip.dot }} />
+                    {statusLabels[failure.status] || failure.status}
+                  </span>
+                  {/* Priority chip */}
+                  <span style={{
+                    fontSize: '11px', fontWeight: 600,
+                    padding: '2px 10px', borderRadius: '6px',
+                    background: pChip.bg, color: pChip.text,
+                  }}>
+                    {failure.priority}
+                  </span>
+                  {/* Type badge */}
+                  <span style={{
+                    fontSize: '11px', fontWeight: 600,
+                    padding: '2px 10px', borderRadius: '6px',
+                    background: failure.incidentType === 'ROTURA' ? '#FEE2E2' : '#F4F4F6',
+                    color: failure.incidentType === 'ROTURA' ? '#DC2626' : '#6B7280',
+                  }}>
                     {failure.incidentType === 'ROTURA' ? 'Rotura' : 'Falla'} #{failure.id}
-                    {failure.incidentType === 'ROTURA' && (
-                      <Badge variant="destructive" className="ml-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                        Rotura
-                      </Badge>
+                  </span>
+                  {failure.causedDowntime && (
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '3px',
+                      fontSize: '11px', fontWeight: 600,
+                      padding: '2px 8px', borderRadius: '6px',
+                      background: '#FEE2E2', color: '#DC2626',
+                    }}>
+                      <Clock className="h-3 w-3" /> Parada
+                    </span>
+                  )}
+                  {failure.isIntermittent && (
+                    <span style={{
+                      fontSize: '11px', fontWeight: 600,
+                      padding: '2px 8px', borderRadius: '6px',
+                      background: '#FEF3C7', color: '#D97706',
+                    }}>
+                      Intermitente
+                    </span>
+                  )}
+                  {failure.isSafetyRelated && (
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '3px',
+                      fontSize: '11px', fontWeight: 600,
+                      padding: '2px 8px', borderRadius: '6px',
+                      background: '#FEE2E2', color: '#DC2626',
+                    }}>
+                      <AlertTriangle className="h-3 w-3" /> Seguridad
+                    </span>
+                  )}
+
+                  <div style={{ flex: 1 }} />
+
+                  {/* Watch button */}
+                  <button
+                    onClick={() => watchMutation.mutate(isWatching ? 'unwatch' : 'watch')}
+                    disabled={watchMutation.isPending}
+                    style={{
+                      height: '28px', padding: '0 10px',
+                      borderRadius: '6px', border: '1px solid #E4E4E8',
+                      background: isWatching ? '#F5F3FF' : '#FFFFFF',
+                      color: isWatching ? '#7C3AED' : '#6B7280',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                      fontSize: '12px', fontWeight: 500,
+                      transition: 'all 120ms ease',
+                    }}
+                  >
+                    {watchMutation.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : isWatching ? (
+                      <><BellOff className="h-3 w-3" /> Siguiendo</>
+                    ) : (
+                      <><Bell className="h-3 w-3" /> Seguir</>
                     )}
-                    {failure.causedDowntime && (
-                      <Badge variant="destructive" className="ml-2">
-                        <Clock className="mr-1 h-3 w-3" />
-                        Parada
-                      </Badge>
-                    )}
-                    {failure.isIntermittent && (
-                      <Badge variant="outline" className="ml-1">Intermitente</Badge>
-                    )}
-                    {failure.isObservation && (
-                      <Badge variant="secondary" className="ml-1">Observación</Badge>
-                    )}
-                    {failure.isSafetyRelated && (
-                      <Badge variant="destructive" className="ml-1">
-                        <AlertTriangle className="mr-1 h-3 w-3" />
-                        Seguridad
-                      </Badge>
-                    )}
-                  </SheetDescription>
+                  </button>
+
+                  {/* Menu */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button style={{
+                        height: '28px', width: '28px', borderRadius: '6px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer',
+                        transition: 'all 150ms',
+                      }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F4F4F6'; e.currentTarget.style.color = '#6B7280'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
+                      >
+                        <MoreVertical className="h-3.5 w-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem className="text-xs gap-2" onClick={() => router.push(`/mantenimiento/incidentes/${failure.id}/editar`)}>
+                        <Pencil className="h-3 w-3" /> Editar Falla
+                      </DropdownMenuItem>
+                      {(failure.status === 'RESOLVED' || failure.status === 'RESOLVED_IMMEDIATE') && (
+                        <DropdownMenuItem className="text-xs gap-2" onClick={() => setReopenDialogOpen(true)}>
+                          <RotateCcw className="h-3 w-3" /> Reabrir Falla
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {/* Close button */}
+                  <button
+                    onClick={() => onOpenChange(false)}
+                    style={{
+                      height: '28px', width: '28px', borderRadius: '6px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'transparent', border: 'none', color: '#9CA3AF', cursor: 'pointer',
+                      transition: 'all 150ms',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#DC2626'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9CA3AF'; }}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                {/* Title */}
+                <h2 style={{
+                  fontSize: '22px', fontWeight: 700, color: '#111827',
+                  letterSpacing: '-0.02em', lineHeight: 1.3,
+                  marginBottom: '8px', margin: 0,
+                }}>
+                  {failure.title || 'Sin título'}
+                </h2>
+
+                {/* Meta row: machine + reporter + watchers + dates */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '10px', flexWrap: 'wrap' }}>
+                  {failure.machine?.name && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#6B7280' }}>
+                      <span style={{ height: '20px', width: '20px', borderRadius: '6px', background: '#F3F4F6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <FileText className="h-3 w-3" style={{ color: '#9CA3AF' }} />
+                      </span>
+                      {failure.machine.name}
+                    </span>
+                  )}
+                  {failure.reportedBy?.name && (
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#6B7280' }}>
+                      <span style={{
+                        height: '20px', width: '20px', borderRadius: '50%',
+                        background: '#EDE9FE', color: '#7C3AED',
+                        fontSize: '8px', fontWeight: 700,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {getInitials(failure.reportedBy.name)}
+                      </span>
+                      {failure.reportedBy.name}
+                    </span>
+                  )}
                   {(watchersData?.count ?? 0) > 0 && (
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="text-xs text-muted-foreground flex items-center gap-1 cursor-help">
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#9CA3AF', cursor: 'help' }}>
                             <Users className="h-3 w-3" />
                             {watchersData?.count} {watchersData?.count === 1 ? 'seguidor' : 'seguidores'}
                           </span>
@@ -539,32 +787,53 @@ export function FailureDetailSheet({
                       </Tooltip>
                     </TooltipProvider>
                   )}
+                  <span style={{ fontSize: '12px', color: '#D1D5DB' }}>
+                    {format(new Date(failure.reportedAt), "d MMM yyyy · HH:mm", { locale: es })}
+                  </span>
                 </div>
-              </SheetHeader>
+              </div>
 
-              {/* Tabs */}
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2 -mx-6 px-6">
-                <TabsList className="w-full justify-start overflow-x-auto h-9">
-                  <TabsTrigger value="info">Info</TabsTrigger>
-                  <TabsTrigger value="recurrence">Reincidencia</TabsTrigger>
-                  <TabsTrigger value="duplicates">
-                    Duplicados
-                    {(failure.linkedDuplicates?.length ?? 0) > 0 && (
-                      <Badge variant="secondary" className="ml-1 h-5 px-1">
-                        {failure.linkedDuplicates?.length}
-                      </Badge>
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="downtime">
-                    Paradas
-                    {(failure.downtimeLogs?.filter(d => !d.endedAt).length ?? 0) > 0 && (
-                      <span className="ml-1 h-2 w-2 rounded-full bg-destructive animate-pulse" />
-                    )}
-                  </TabsTrigger>
-                  <TabsTrigger value="solutions">Soluciones</TabsTrigger>
-                  <TabsTrigger value="comments">Chat</TabsTrigger>
-                </TabsList>
+              {/* ── Tabs ── */}
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 min-h-0">
+                <div style={{ padding: '0 24px', borderBottom: '1px solid #E4E4E8', flexShrink: 0 }}>
+                  <TabsList className="w-full justify-start overflow-x-auto h-10 bg-transparent border-none p-0 gap-0">
+                    {[
+                      { value: 'info', label: 'Info' },
+                      { value: 'recurrence', label: 'Reincidencia' },
+                      { value: 'duplicates', label: 'Duplicados', count: failure.linkedDuplicates?.length },
+                      { value: 'downtime', label: 'Paradas', hasActive: failure.downtimeLogs?.some(d => !d.endedAt) },
+                      { value: 'solutions', label: 'Soluciones' },
+                      { value: 'comments', label: 'Chat' },
+                    ].map(tab => (
+                      <TabsTrigger
+                        key={tab.value}
+                        value={tab.value}
+                        className="relative px-4 py-2 text-xs font-medium data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground rounded-none border-b-2 border-transparent data-[state=active]:border-[#111827]"
+                      >
+                        {tab.label}
+                        {tab.count != null && tab.count > 0 && (
+                          <span style={{
+                            marginLeft: '4px', fontSize: '10px', fontWeight: 600,
+                            padding: '1px 5px', borderRadius: '8px',
+                            background: '#F3F4F6', color: '#6B7280',
+                          }}>
+                            {tab.count}
+                          </span>
+                        )}
+                        {tab.hasActive && (
+                          <span style={{
+                            marginLeft: '4px', height: '6px', width: '6px',
+                            borderRadius: '50%', background: '#DC2626',
+                            display: 'inline-block',
+                            animation: 'pulse 2s infinite',
+                          }} />
+                        )}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </div>
 
+                <div className="failure-detail-scroll" style={{ padding: '0 24px' }}>
                 {/* Tab: Información */}
                 <TabsContent value="info" className="space-y-3 mt-4">
                   {/* Corrección: mostrar reporte original si fue corregido */}
@@ -628,31 +897,72 @@ export function FailureDetailSheet({
                       </div>
                     )}
 
-                    {/* Fotos adjuntas */}
-                    {failure.photos && failure.photos.length > 0 && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          Fotos ({failure.photos.length})
+                    {/* Fotos adjuntas + Upload */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs text-muted-foreground">
+                          Fotos {failure.photos?.length ? `(${failure.photos.length})` : ''}
                         </p>
+                        <label className="cursor-pointer">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              toast.loading('Subiendo foto...', { id: 'photo-upload' });
+                              try {
+                                const formData = new FormData();
+                                formData.append('file', file);
+                                formData.append('entityType', 'failure-occurrence');
+                                formData.append('entityId', failureId?.toString() || '');
+                                formData.append('fileType', 'image');
+                                const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+                                if (!uploadRes.ok) throw new Error('Error al subir');
+                                const uploadData = await uploadRes.json();
+                                const newPhoto = { url: uploadData.url, fileName: uploadData.fileName, originalName: file.name };
+                                const currentPhotos = failure.photos || [];
+                                await fetch(`/api/failure-occurrences/${failureId}`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ photos: [...currentPhotos, newPhoto] }),
+                                });
+                                queryClient.invalidateQueries({ queryKey: ['failure-detail', failureId] });
+                                toast.success('Foto subida', { id: 'photo-upload' });
+                              } catch {
+                                toast.error('Error al subir foto', { id: 'photo-upload' });
+                              }
+                              e.target.value = '';
+                            }}
+                          />
+                          <span className="text-xs text-primary hover:underline flex items-center gap-1">
+                            <ImageIcon className="h-3 w-3" />
+                            Agregar foto
+                          </span>
+                        </label>
+                      </div>
+                      {failure.photos && failure.photos.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {failure.photos.map((photo, idx) => (
-                            <a
+                            <button
                               key={idx}
-                              href={photo.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="block rounded-lg border overflow-hidden hover:ring-2 hover:ring-primary transition-all"
+                              type="button"
+                              onClick={() => setLightboxPhoto(photo.url)}
+                              className="block rounded-lg border overflow-hidden hover:ring-2 hover:ring-primary transition-all cursor-zoom-in"
                             >
                               <img
                                 src={photo.url}
                                 alt={`Foto ${idx + 1}`}
                                 className="h-20 w-20 object-cover"
                               />
-                            </a>
+                            </button>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">Sin fotos</p>
+                      )}
+                    </div>
                   </div>
 
                   {/* Ubicación del equipo */}
@@ -742,7 +1052,7 @@ export function FailureDetailSheet({
 
                 {/* Tab: Reincidencia */}
                 <TabsContent value="recurrence" className="mt-4">
-                  {failureId && <RecurrencePanel failureId={failureId} />}
+                  {failureId && <RecurrencePanel failureId={failureId} onSelectFailure={onSelectFailure} />}
                 </TabsContent>
 
                 {/* Tab: Duplicados */}
@@ -1182,8 +1492,11 @@ export function FailureDetailSheet({
                               const config = commentTypeConfig[typeKey] || commentTypeConfig.comment;
                               const Icon = config.icon;
 
+                              const isOwnComment = currentUser?.id === comment.author?.id;
+                              const isEditing = editingCommentId === comment.id;
+
                               return (
-                                <div key={comment.id} className="flex gap-3">
+                                <div key={comment.id} className="flex gap-3 group">
                                   <Avatar className="h-8 w-8 flex-shrink-0">
                                     <AvatarFallback className="text-xs">
                                       {comment.author?.name ? getInitials(comment.author.name) : '??'}
@@ -1202,11 +1515,58 @@ export function FailureDetailSheet({
                                       <span className="text-xs text-muted-foreground ml-auto">
                                         {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true, locale: es })}
                                       </span>
+                                      {isOwnComment && !isEditing && (
+                                        <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                                              <MoreVertical className="h-3 w-3" />
+                                            </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => { setEditingCommentId(comment.id); setEditingContent(comment.content); }}>
+                                              <Pencil className="h-3.5 w-3.5 mr-2" />
+                                              Editar
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem
+                                              className="text-destructive focus:text-destructive"
+                                              onClick={() => { if (confirm('¿Eliminar este comentario?')) deleteCommentMutation.mutate(comment.id); }}
+                                            >
+                                              <Trash2 className="h-3.5 w-3.5 mr-2" />
+                                              Eliminar
+                                            </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                        </DropdownMenu>
+                                      )}
                                     </div>
 
-                                    <p className="text-sm text-foreground whitespace-pre-wrap">
-                                      {comment.content}
-                                    </p>
+                                    {isEditing ? (
+                                      <div className="space-y-2">
+                                        <Textarea
+                                          value={editingContent}
+                                          onChange={(e) => setEditingContent(e.target.value)}
+                                          rows={2}
+                                          className="text-sm"
+                                        />
+                                        <div className="flex gap-2">
+                                          <Button
+                                            size="sm"
+                                            className="h-7 text-xs"
+                                            disabled={editCommentMutation.isPending || !editingContent.trim()}
+                                            onClick={() => editCommentMutation.mutate({ commentId: comment.id, content: editingContent.trim() })}
+                                          >
+                                            {editCommentMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                                            Guardar
+                                          </Button>
+                                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingCommentId(null)}>
+                                            Cancelar
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <p className="text-sm text-foreground whitespace-pre-wrap">
+                                        {comment.content}
+                                      </p>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -1217,50 +1577,79 @@ export function FailureDetailSheet({
                     </div>
                   </div>
                 </TabsContent>
+                </div>
               </Tabs>
 
               {/* Actions - Solo mostrar para fallas abiertas */}
               {failure.status !== 'RESOLVED' && failure.status !== 'RESOLVED_IMMEDIATE' && (
-                <div className="mt-6 border-t pt-4 pb-2">
-                  <div className="flex gap-2">
-                    {/* Resolver Ahora - siempre visible para fallas abiertas */}
-                    <Button
-                      variant="outline"
-                      className="flex-1 border-success text-success hover:bg-success-muted"
-                      onClick={() => setImmediateCloseOpen(true)}
-                    >
-                      <CheckCircle2 className="mr-2 h-4 w-4" />
-                      Resolver Ahora
-                    </Button>
+                <div style={{
+                  borderTop: '1px solid #E4E4E8',
+                  padding: '16px 24px',
+                  flexShrink: 0,
+                  display: 'flex', gap: '8px',
+                }}>
+                  <button
+                    onClick={() => setImmediateCloseOpen(true)}
+                    style={{
+                      flex: 1, height: '38px', borderRadius: '8px',
+                      border: '1.5px solid #059669',
+                      background: '#ECFDF5', color: '#059669',
+                      fontSize: '13px', fontWeight: 600,
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      transition: 'all 120ms ease',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = '#D1FAE5'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = '#ECFDF5'; }}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    Resolver Ahora
+                  </button>
 
-                    {hasWorkOrder ? (
-                      <Button
-                        className="flex-1"
-                        onClick={() => handleGoToWorkOrder(failure.workOrders![0].id)}
-                      >
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        Ver OT
-                      </Button>
-                    ) : (
-                      <Button
-                        className="flex-1"
-                        onClick={handleCreateWorkOrder}
-                      >
-                        <FileText className="mr-2 h-4 w-4" />
-                        Crear OT
-                      </Button>
-                    )}
-                  </div>
+                  {hasWorkOrder ? (
+                    <button
+                      onClick={() => handleGoToWorkOrder(failure.workOrders![0].id)}
+                      style={{
+                        flex: 1, height: '38px', borderRadius: '8px',
+                        border: 'none',
+                        background: '#111827', color: '#FFFFFF',
+                        fontSize: '13px', fontWeight: 600,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                        transition: 'all 120ms ease',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#1F2937'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#111827'; }}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Ver OT
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleCreateWorkOrder}
+                      style={{
+                        flex: 1, height: '38px', borderRadius: '8px',
+                        border: 'none',
+                        background: '#111827', color: '#FFFFFF',
+                        fontSize: '13px', fontWeight: 600,
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                        transition: 'all 120ms ease',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = '#1F2937'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = '#111827'; }}
+                    >
+                      <FileText className="h-4 w-4" />
+                      Crear OT
+                    </button>
+                  )}
                 </div>
               )}
             </>
           ) : (
-            <p className="text-center text-muted-foreground py-8">
-              Falla no encontrada
-            </p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
+              <p style={{ fontSize: '14px', color: '#9CA3AF' }}>Falla no encontrada</p>
+            </div>
           )}
-      </SheetContent>
-    </Sheet>
+      </div>
+    </div>
 
     {/* Dialog de Retorno a Producción */}
     {selectedDowntimeLog && failureId && (
@@ -1296,6 +1685,27 @@ export function FailureDetailSheet({
         failureTitle={failure.title}
         onSuccess={() => onOpenChange(false)}
       />
+    )}
+
+    {/* Lightbox de fotos */}
+    {lightboxPhoto && (
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 cursor-zoom-out"
+        onClick={() => setLightboxPhoto(null)}
+      >
+        <button
+          className="absolute top-4 right-4 text-white/80 hover:text-white"
+          onClick={() => setLightboxPhoto(null)}
+        >
+          <X className="h-6 w-6" />
+        </button>
+        <img
+          src={lightboxPhoto}
+          alt="Foto ampliada"
+          className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
     )}
   </>
   );

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withGuards } from '@/lib/middleware/withGuards';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,6 +49,9 @@ export const DELETE = withGuards(async (request, ctx) => {
         where: { id: templateId }
       });
 
+      // Pusher realtime trigger
+      triggerCompanyEvent(ctx.user.companyId, 'maintenance', 'maintenance:updated', { id: templateId });
+
       return NextResponse.json({
         success: true,
         message: 'Mantenimiento preventivo eliminado correctamente',
@@ -75,6 +79,9 @@ export const DELETE = withGuards(async (request, ctx) => {
       const deletedWorkOrder = await prisma.workOrder.delete({
         where: { id: workOrderId }
       });
+
+      // Pusher realtime trigger
+      triggerCompanyEvent(ctx.user.companyId, 'maintenance', 'maintenance:updated', { id: workOrderId });
 
       return NextResponse.json({
         success: true,

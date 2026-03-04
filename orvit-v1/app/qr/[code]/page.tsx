@@ -115,7 +115,7 @@ export default function QRLandingPage({ params }: Params) {
     {
       label: 'Reportar Falla',
       icon: AlertTriangle,
-      href: `/mantenimiento/fallas/nueva?machineId=${machine.id}`,
+      href: `/mantenimiento/incidentes/nueva?machineId=${machine.id}`,
       variant: 'destructive' as const,
     },
     {

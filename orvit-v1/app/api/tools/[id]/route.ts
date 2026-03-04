@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -106,6 +107,8 @@ export async function PUT(request: NextRequest, { params }: Params) {
       RETURNING *
     ` as any[];
 
+    triggerCompanyEvent(companyId, "tools", "tool:updated", { id: toolId });
+
     return NextResponse.json({
       success: true,
       tool: updatedTool[0],
@@ -147,6 +150,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         WHERE id = ${toolId} AND "companyId" = ${companyId}
         RETURNING *
       ` as any[];
+
+      triggerCompanyEvent(companyId, "tools", "tool:updated", { id: toolId });
 
       return NextResponse.json({
         success: true,
@@ -192,6 +197,8 @@ export async function DELETE(request: NextRequest, { params }: Params) {
     await prisma.$queryRaw`
       DELETE FROM "Tool" WHERE id = ${toolId} AND "companyId" = ${companyId}
     `;
+
+    triggerCompanyEvent(companyId, "tools", "tool:updated", { id: toolId });
 
     return NextResponse.json({ success: true, message: 'Herramienta eliminada exitosamente' });
   } catch (error) {

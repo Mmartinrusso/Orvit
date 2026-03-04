@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
 import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,6 +98,9 @@ export async function PUT(
         },
       });
 
+      // Fire-and-forget Pusher realtime trigger
+      triggerCompanyEvent(companyId, "production", "production:updated", { id });
+
       return NextResponse.json({
         success: true,
         routine,
@@ -134,6 +138,9 @@ export async function PUT(
       },
     });
 
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(companyId, "production", "production:updated", { id });
+
     return NextResponse.json({ success: true, routine });
   } catch (error) {
     console.error('Error updating routine:', error);
@@ -169,6 +176,9 @@ export async function DELETE(
     await prisma.productionRoutine.delete({
       where: { id },
     });
+
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(companyId, "production", "production:updated", { id });
 
     return NextResponse.json({ success: true, message: 'Ejecución eliminada' });
   } catch (error) {

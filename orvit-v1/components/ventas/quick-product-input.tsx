@@ -14,7 +14,9 @@ interface QuickProductInputProps {
   products?: Product[];
 }
 
-export function QuickProductInput({ onAddItem, products = [] }: QuickProductInputProps) {
+const EMPTY_PRODUCTS: Product[] = [];
+
+export function QuickProductInput({ onAddItem, products = EMPTY_PRODUCTS }: QuickProductInputProps) {
   const [code, setCode] = useState('');
   const [quantity, setQuantity] = useState<number>(1);
   const [marginPercentage, setMarginPercentage] = useState<number>(25);

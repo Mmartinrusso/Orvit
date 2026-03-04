@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { withGuards } from '@/lib/middleware/withGuards';
 import { validateRequest } from '@/lib/validations/helpers';
 import { CreateMachineSchema } from '@/lib/validations/machines';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -130,6 +131,7 @@ export const POST = withGuards(async (request: NextRequest) => {
         sector: true,
       }
     });
+    triggerCompanyEvent(companyId, "machines", "machine:created", { id: machine.id });
     return NextResponse.json(machine, { status: 201 });
   } catch (error) {
     console.error('Error al crear máquina:', error);

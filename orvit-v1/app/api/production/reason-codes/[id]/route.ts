@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
 import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -168,6 +169,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       },
     });
 
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: reasonCodeId });
+
     return NextResponse.json({
       success: true,
       reasonCode,
@@ -239,6 +243,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         data: { isActive: false },
       });
 
+      // Fire-and-forget Pusher realtime trigger
+      triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: reasonCodeId });
+
       return NextResponse.json({
         success: true,
         message: 'Código de motivo desactivado (tiene datos asociados)',
@@ -250,6 +257,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     await prisma.productionReasonCode.delete({
       where: { id: reasonCodeId },
     });
+
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: reasonCodeId });
 
     return NextResponse.json({
       success: true,

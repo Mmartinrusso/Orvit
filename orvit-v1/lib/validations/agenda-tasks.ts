@@ -8,6 +8,11 @@ export const TaskPrioritySchema = z.enum(
   { errorMap: () => ({ message: 'Prioridad inválida. Valores permitidos: LOW, MEDIUM, HIGH, URGENT' }) }
 );
 
+export const AgendaTaskStatusSchema = z.enum(
+  ['PENDING', 'IN_PROGRESS', 'WAITING', 'COMPLETED', 'CANCELLED'],
+  { errorMap: () => ({ message: 'Estado inválido. Valores permitidos: PENDING, IN_PROGRESS, WAITING, COMPLETED, CANCELLED' }) }
+);
+
 export const NotifyViaSchema = z.enum(
   ['DISCORD', 'EMAIL', 'WEB_PUSH', 'SSE'],
   { errorMap: () => ({ message: 'Canal de notificación inválido. Valores permitidos: DISCORD, EMAIL, WEB_PUSH, SSE' }) }
@@ -40,6 +45,7 @@ export const CreateAgendaTaskSchema = z.object({
     z.string().datetime('Fecha de vencimiento debe ser formato ISO válido').optional().nullable()
   ),
   priority: TaskPrioritySchema.default('MEDIUM'),
+  status: AgendaTaskStatusSchema.default('PENDING'),
   category: z.string().trim().max(100, 'Categoría muy larga').optional(),
   groupId: z.number().int().positive('ID de grupo inválido').optional().nullable(),
   assignedToUserId: z.number().int().positive('ID de usuario asignado inválido').optional().nullable(),

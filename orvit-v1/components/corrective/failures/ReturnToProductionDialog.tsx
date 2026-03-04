@@ -87,9 +87,8 @@ export function ReturnToProductionDialog({
     },
     onSuccess: () => {
       toast.success('Retorno a producción confirmado');
-      // Refrescar queries relacionadas
       queryClient.invalidateQueries({ queryKey: ['failure-detail', failureId] });
-      queryClient.invalidateQueries({ queryKey: ['failure-occurrences'] });
+      queryClient.invalidateQueries({ queryKey: ['failures-grid'] });
       queryClient.invalidateQueries({ queryKey: ['failure-stats'] });
       onOpenChange(false);
       setNotes('');

@@ -6,25 +6,17 @@ import {
   ClipboardList,
   Inbox,
   BarChart2,
-  FolderKanban,
-  BookOpen,
-  Target,
   ChevronDown,
   Plus,
   UserPlus,
   HelpCircle,
   MoreHorizontal,
-  Users,
-  Folder,
   Rocket,
   Hash,
-  Pin,
-  Calendar,
   Briefcase,
   Repeat2,
   Pencil,
   Trash2,
-  MessageCircle,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -34,7 +26,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext';
 import type { AgendaTask } from '@/lib/agenda/types';
 import { SidebarGroupsSkeleton, SidebarProjectSkeleton } from './TaskCardSkeleton';
 
@@ -103,10 +94,10 @@ function GroupRow({
 
   return (
     <div
-      className="w-full flex items-center gap-0 rounded-xl transition-all duration-150 group relative"
-      style={{
-        background: isSelected ? '#E8E8E8' : hovered ? '#EEEEEE' : 'transparent',
-      }}
+      className={cn(
+        'w-full flex items-center gap-0 rounded-xl transition-all duration-150 group relative',
+        isSelected ? 'bg-accent' : hovered ? 'bg-accent/50' : 'bg-transparent',
+      )}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -125,11 +116,10 @@ function GroupRow({
 
         {/* Name */}
         <span
-          className="text-[13px] flex-1 truncate transition-colors"
-          style={{
-            color: isSelected ? '#111827' : '#6B7280',
-            fontWeight: isSelected ? 600 : 400,
-          }}
+          className={cn(
+            'text-[13px] flex-1 truncate transition-colors',
+            isSelected ? 'text-foreground font-semibold' : 'text-muted-foreground',
+          )}
         >
           {group.name}
         </span>
@@ -137,11 +127,10 @@ function GroupRow({
         {/* Task count */}
         {group.taskCount > 0 && (
           <span
-            className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
-            style={{
-              background: isSelected ? '#111827' : '#F3F4F6',
-              color: isSelected ? '#fff' : '#9CA3AF',
-            }}
+            className={cn(
+              'text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0',
+              isSelected ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground',
+            )}
           >
             {group.taskCount}
           </span>
@@ -151,18 +140,15 @@ function GroupRow({
         {group.isProject && group.members.length > 0 && (
           <div className="flex -space-x-1 shrink-0">
             {group.members.slice(0, 3).map((m) => (
-              <Avatar key={m.userId} className="h-4 w-4 border border-white">
+              <Avatar key={m.userId} className="h-4 w-4 border border-background">
                 {m.user.avatar && <AvatarImage src={m.user.avatar} />}
-                <AvatarFallback style={{ fontSize: '7px', background: '#EDE9FE', color: '#7C3AED' }}>
+                <AvatarFallback className="text-[7px] bg-primary/10 text-primary">
                   {getInitials(m.user.name)}
                 </AvatarFallback>
               </Avatar>
             ))}
             {group.members.length > 3 && (
-              <div
-                className="h-4 w-4 rounded-full border border-white flex items-center justify-center"
-                style={{ fontSize: '7px', background: '#E4E4E8', color: '#6B7280' }}
-              >
+              <div className="h-4 w-4 rounded-full border border-background flex items-center justify-center text-[7px] bg-muted text-muted-foreground">
                 +{group.members.length - 3}
               </div>
             )}
@@ -176,8 +162,7 @@ function GroupRow({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="h-5 w-5 rounded-md flex items-center justify-center transition-colors hover:bg-[#D8D8DE]"
-                style={{ color: '#9CA3AF' }}
+                className="h-5 w-5 rounded-md flex items-center justify-center transition-colors text-muted-foreground hover:bg-accent"
                 onClick={e => e.stopPropagation()}
               >
                 <MoreHorizontal className="h-3 w-3" />
@@ -191,7 +176,7 @@ function GroupRow({
               )}
               {onDelete && (
                 <>
-                  <div style={{ height: '1px', background: '#E4E4E8', margin: '4px 0' }} />
+                  <div className="h-px bg-border my-1" />
                   <DropdownMenuItem className="text-xs gap-2 text-red-600 focus:text-red-600" onClick={() => onDelete(group)}>
                     <Trash2 className="h-3 w-3" /> Eliminar
                   </DropdownMenuItem>
@@ -219,7 +204,6 @@ export function AgendaV2Sidebar({
   loadingGroups,
   asideStyle,
 }: AgendaV2SidebarProps) {
-  const { user } = useAuth();
   const [groupsExpanded, setGroupsExpanded] = useState(true);
   const [projectsExpanded, setProjectsExpanded] = useState(true);
 
@@ -230,55 +214,16 @@ export function AgendaV2Sidebar({
   const simpleGroups = groups.filter(g => !g.isProject);
   const projects = groups.filter(g => g.isProject);
 
-  const initials = user?.name
-    ? user.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()
-    : 'U';
-
   return (
     <aside
-      className="flex flex-col shrink-0 h-full overflow-hidden"
-      style={{ width: '244px', background: '#F5F5F5', borderRight: '1px solid #E4E4E8', ...asideStyle }}
+      className="flex flex-col shrink-0 h-full overflow-hidden bg-muted/40 border-r border-border"
+      style={{ width: '244px', ...asideStyle }}
     >
-      {/* ── User profile ───────────────────────────────────────── */}
-      <div className="px-4 pt-5 pb-4">
-        <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10 shrink-0" style={{ border: '2px solid #ffffff' }}>
-            <AvatarFallback
-              className="text-sm font-bold"
-              style={{ background: '#EDE9FE', color: '#7C3AED' }}
-            >
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold truncate" style={{ color: '#111827' }}>
-              {user?.name || 'Usuario'}
-            </p>
-            <p className="text-[11px] truncate" style={{ color: '#9CA3AF' }}>
-              {user?.email || ''}
-            </p>
-          </div>
-          <button
-            className="h-6 w-6 rounded flex items-center justify-center transition-colors hover:bg-[#E4E4E8]"
-            style={{ color: '#9CA3AF' }}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
       {/* ── Create Task button ─────────────────────────────────── */}
-      <div className="px-4 pb-5">
+      <div className="px-4 pt-5 pb-4">
         <button
           onClick={onCreateTask}
-          className="w-full h-10 flex items-center justify-center gap-2 text-white text-[13px] font-semibold transition-all duration-150 active:scale-[0.97]"
-          style={{
-            background: '#111827',
-            borderRadius: '12px',
-            boxShadow: '0 1px 2px rgba(0,0,0,.12)',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#1a1a1a')}
-          onMouseLeave={e => (e.currentTarget.style.background = '#111827')}
+          className="w-full h-10 flex items-center justify-center gap-2 text-primary-foreground text-[13px] font-semibold rounded-xl bg-foreground hover:bg-foreground/90 transition-all duration-150 active:scale-[0.97] shadow-sm"
         >
           <Plus className="h-4 w-4" strokeWidth={2.5} />
           Crear Tarea
@@ -303,34 +248,25 @@ export function AgendaV2Sidebar({
                   onSelectGroup(null);
                 }
               }}
-              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors duration-100"
-              style={{
-                color: item.disabled ? '#D1D5DB' : isActive ? '#111827' : '#6B7280',
-                background: isActive ? '#EDEDED' : 'transparent',
-                cursor: item.disabled ? 'not-allowed' : 'pointer',
-              }}
-              onMouseEnter={e => {
-                if (!item.disabled && !isActive) e.currentTarget.style.background = '#EEEEEE';
-              }}
-              onMouseLeave={e => {
-                if (!item.disabled && !isActive) e.currentTarget.style.background = 'transparent';
-              }}
+              className={cn(
+                'w-full flex items-center gap-3 px-3 py-2 rounded-xl text-left transition-colors duration-100',
+                item.disabled ? 'text-muted-foreground/40 cursor-not-allowed' :
+                isActive ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent/50 cursor-pointer',
+              )}
             >
               <Icon
                 className="h-[17px] w-[17px] shrink-0"
                 strokeWidth={isActive ? 2.5 : 2}
-                style={{ color: item.disabled ? '#D1D5DB' : isActive ? '#111827' : '#6B7280' }}
               />
               <span className="text-[13px] flex-1 truncate" style={{ fontWeight: isActive ? 600 : 400 }}>
                 {item.label}
               </span>
               {badgeCount > 0 && !item.disabled && (
                 <span
-                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"
-                  style={isActive
-                    ? { background: '#111827', color: '#ffffff' }
-                    : { background: '#F3F4F6', color: '#6B7280' }
-                  }
+                  className={cn(
+                    'text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center',
+                    isActive ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground',
+                  )}
                 >
                   {badgeCount}
                 </span>
@@ -344,8 +280,7 @@ export function AgendaV2Sidebar({
           <div className="flex items-center gap-1 px-3 mb-1">
             <button
               onClick={() => setGroupsExpanded(!groupsExpanded)}
-              className="flex items-center gap-1.5 flex-1 py-1 rounded transition-colors"
-              style={{ color: '#9CA3AF' }}
+              className="flex items-center gap-1.5 flex-1 py-1 rounded transition-colors text-muted-foreground"
             >
               <ChevronDown
                 className="h-3 w-3 shrink-0 transition-transform duration-200"
@@ -357,8 +292,7 @@ export function AgendaV2Sidebar({
             </button>
             <button
               onClick={() => onCreateGroup(false)}
-              className="h-5 w-5 rounded-md flex items-center justify-center transition-all duration-150 hover:bg-[#E4E4E8] active:scale-90"
-              style={{ color: '#9CA3AF' }}
+              className="h-5 w-5 rounded-md flex items-center justify-center transition-all duration-150 text-muted-foreground hover:bg-accent active:scale-90"
               title="Nuevo grupo"
             >
               <Plus className="h-3 w-3" />
@@ -375,10 +309,7 @@ export function AgendaV2Sidebar({
               ) : simpleGroups.length === 0 ? (
                 <button
                   onClick={() => onCreateGroup(false)}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] transition-colors"
-                  style={{ color: '#9CA3AF' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#EEEEEE')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] text-muted-foreground hover:bg-accent/50 transition-colors"
                 >
                   <Hash className="h-3.5 w-3.5" />
                   <span>Crear primer grupo</span>
@@ -407,8 +338,7 @@ export function AgendaV2Sidebar({
           <div className="flex items-center gap-1 px-3 mb-1">
             <button
               onClick={() => setProjectsExpanded(!projectsExpanded)}
-              className="flex items-center gap-1.5 flex-1 py-1 rounded transition-colors"
-              style={{ color: '#9CA3AF' }}
+              className="flex items-center gap-1.5 flex-1 py-1 rounded transition-colors text-muted-foreground"
             >
               <ChevronDown
                 className="h-3 w-3 shrink-0 transition-transform duration-200"
@@ -420,8 +350,7 @@ export function AgendaV2Sidebar({
             </button>
             <button
               onClick={() => onCreateGroup(true)}
-              className="h-5 w-5 rounded-md flex items-center justify-center transition-all duration-150 hover:bg-[#E4E4E8] active:scale-90"
-              style={{ color: '#9CA3AF' }}
+              className="h-5 w-5 rounded-md flex items-center justify-center transition-all duration-150 text-muted-foreground hover:bg-accent active:scale-90"
               title="Nuevo proyecto"
             >
               <Plus className="h-3 w-3" />
@@ -438,10 +367,7 @@ export function AgendaV2Sidebar({
               ) : projects.length === 0 ? (
                 <button
                   onClick={() => onCreateGroup(true)}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] transition-colors"
-                  style={{ color: '#9CA3AF' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#EEEEEE')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] text-muted-foreground hover:bg-accent/50 transition-colors"
                 >
                   <Rocket className="h-3.5 w-3.5" />
                   <span>Crear primer proyecto</span>
@@ -467,25 +393,12 @@ export function AgendaV2Sidebar({
       </nav>
 
       {/* ── Bottom actions ─────────────────────────────────────── */}
-      <div
-        className="px-3 pb-5 pt-3 space-y-0.5"
-        style={{ borderTop: '1px solid #E4E4E8' }}
-      >
-        <button
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-colors"
-          style={{ color: '#6B7280' }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#F3F4F6')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-        >
+      <div className="px-3 pb-5 pt-3 space-y-0.5 border-t border-border">
+        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] text-muted-foreground hover:bg-accent/50 transition-colors">
           <UserPlus className="h-[17px] w-[17px] shrink-0" strokeWidth={2} />
           <span>Invitar Personas</span>
         </button>
-        <button
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] transition-colors"
-          style={{ color: '#6B7280' }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#F3F4F6')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-        >
+        <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] text-muted-foreground hover:bg-accent/50 transition-colors">
           <HelpCircle className="h-[17px] w-[17px] shrink-0" strokeWidth={2} />
           <span>Centro de Ayuda</span>
         </button>

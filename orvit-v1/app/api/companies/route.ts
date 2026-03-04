@@ -38,32 +38,19 @@ async function getUserFromToken() {
 // GET /api/companies - Obtener empresas reales de la base de datos
 export async function GET(request: Request) {
   try {
-    // Verificar permiso companies.view
-    const { user: authUser, error: authError } = await requirePermission('companies.view');
+    // Solo requiere autenticación — ver tus propias empresas es un derecho básico
+    const { user: currentUser, error: authError } = await requireAuth();
     if (authError) return authError;
 
-    console.log('📋 GET /api/companies - Solicitando empresas del usuario...');
-
-    // Obtener usuario autenticado
-    const currentUser = await getUserFromToken();
-    if (!currentUser) {
-      console.log('❌ Usuario no autenticado');
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
-    }
-
-    console.log('✅ Usuario autenticado:', currentUser.name, '| ID:', currentUser.id, '| Rol:', currentUser.role);
-    
     let companies = [];
-    
+
     // SUPERADMIN puede ver todas las empresas
     if (currentUser.role === 'SUPERADMIN') {
-      console.log('👑 SUPERADMIN - mostrando todas las empresas');
       companies = await prisma.company.findMany({
         orderBy: { id: 'asc' }
       });
     } else {
       // Otros usuarios solo ven las empresas a las que están asociados
-      console.log('🔍 Buscando empresas del usuario...');
       const userCompanies = await prisma.userOnCompany.findMany({
         where: {
           userId: currentUser.id,
@@ -73,9 +60,8 @@ export async function GET(request: Request) {
           company: true
         }
       });
-      
+
       companies = userCompanies.map(uc => uc.company);
-      console.log(`✅ Usuario tiene ${companies.length} empresas asociadas`);
     }
 
     return NextResponse.json(companies, { status: 200 });

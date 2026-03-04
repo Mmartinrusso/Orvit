@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { v4 as uuidv4 } from 'uuid';
 import { requireAuth } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 // Configuración S3
 const s3 = new S3Client({
@@ -241,6 +242,9 @@ export async function PUT(
         }
       }
 
+      // Pusher realtime trigger
+      triggerCompanyEvent(updatedWorkOrder.companyId, 'maintenance', 'maintenance:updated', { id: maintenanceId });
+
       return NextResponse.json({
         success: true,
         message: 'Mantenimiento actualizado correctamente',
@@ -274,6 +278,11 @@ export async function PUT(
           updatedAt: new Date()
         }
       });
+
+      // Pusher realtime trigger
+      if (updatedDocument.companyId) {
+        triggerCompanyEvent(updatedDocument.companyId, 'maintenance', 'maintenance:updated', { id: maintenanceId });
+      }
 
       return NextResponse.json({
         success: true,
@@ -333,6 +342,9 @@ export async function DELETE(
         where: { id: maintenanceId }
       });
 
+      // Pusher realtime trigger
+      triggerCompanyEvent(workOrder.companyId, 'maintenance', 'maintenance:updated', { id: maintenanceId });
+
       return NextResponse.json({
         success: true,
         message: 'Mantenimiento eliminado correctamente',
@@ -387,6 +399,11 @@ export async function DELETE(
         where: { id: maintenanceId }
       });
 
+      // Pusher realtime trigger
+      if (document.companyId) {
+        triggerCompanyEvent(document.companyId, 'maintenance', 'maintenance:updated', { id: maintenanceId });
+      }
+
       return NextResponse.json({
         success: true,
         message: 'Mantenimiento eliminado correctamente',
@@ -408,6 +425,11 @@ export async function DELETE(
       await prisma.preventiveTemplate.delete({
         where: { id: maintenanceId }
       });
+
+      // Pusher realtime trigger (use user's companyId as fallback)
+      if (user?.companyId) {
+        triggerCompanyEvent(user.companyId, 'maintenance', 'maintenance:updated', { id: maintenanceId });
+      }
 
       return NextResponse.json({
         success: true,

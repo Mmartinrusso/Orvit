@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
 import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,6 +104,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       data: validatedData,
     });
 
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: shiftId });
+
     return NextResponse.json({
       success: true,
       shift,
@@ -158,6 +162,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         data: { isActive: false },
       });
 
+      // Fire-and-forget Pusher realtime trigger
+      triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: shiftId });
+
       return NextResponse.json({
         success: true,
         message: 'Turno desactivado (tiene datos asociados)',
@@ -169,6 +176,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     await prisma.workShift.delete({
       where: { id: shiftId },
     });
+
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: shiftId });
 
     return NextResponse.json({
       success: true,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resetCompletedTask, shouldTaskReset } from '@/lib/task-scheduler';
 import { requireAuth } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,6 +55,9 @@ export async function POST(request: NextRequest) {
             updatedAt: new Date(),
           },
         });
+
+        // Pusher realtime trigger
+        triggerCompanyEvent(task.companyId, 'tasks', 'task:updated', { id: task.id });
 
         resetTasks.push({
           id: task.id,

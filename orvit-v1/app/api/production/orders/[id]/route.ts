@@ -4,6 +4,7 @@ import { requirePermission } from '@/lib/auth/shared-helpers';
 import { PRODUCCION_PERMISSIONS } from '@/lib/permissions';
 import { z } from 'zod';
 import { logProductionEvent, logOrderStatusChange } from '@/lib/production/event-logger';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -274,6 +275,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       companyId: user!.companyId,
     });
 
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: orderId });
+
     return NextResponse.json({
       success: true,
       order,
@@ -365,6 +369,9 @@ async function handleStatusChange(
     data.notes
   );
 
+  // Fire-and-forget Pusher realtime trigger
+  triggerCompanyEvent(auth.companyId, "production", "production:updated", { id: order.id });
+
   return NextResponse.json({
     success: true,
     order: updatedOrder,
@@ -427,6 +434,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     await prisma.productionOrder.delete({
       where: { id: orderId },
     });
+
+    // Fire-and-forget Pusher realtime trigger
+    triggerCompanyEvent(user!.companyId, "production", "production:updated", { id: orderId });
 
     return NextResponse.json({
       success: true,

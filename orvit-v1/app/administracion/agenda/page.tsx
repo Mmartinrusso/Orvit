@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 
 const AgendaV2Page = dynamic(
@@ -16,5 +17,9 @@ const AgendaV2Page = dynamic(
 );
 
 export default function AgendaPage() {
-  return <AgendaV2Page />;
+  return (
+    <Suspense>
+      <AgendaV2Page />
+    </Suspense>
+  );
 }

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
 import { updateWorkStationSchema, validateSafe } from '@/lib/work-stations/validations';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 // ============================================================
 // GET /api/work-stations/[id] - Obtener puesto de trabajo específico
@@ -222,6 +223,7 @@ export async function PUT(
       }
     });
 
+    triggerCompanyEvent(existingWorkStation.companyId, "machines", "machine:updated", { id });
     return NextResponse.json({
       workStation,
       message: 'Puesto de trabajo actualizado correctamente'
@@ -308,6 +310,7 @@ export async function DELETE(
       })
     ]);
 
+    triggerCompanyEvent(workStation.companyId, "machines", "machine:updated", { id });
     return NextResponse.json({
       message: 'Puesto de trabajo eliminado correctamente',
       deletedItems: {

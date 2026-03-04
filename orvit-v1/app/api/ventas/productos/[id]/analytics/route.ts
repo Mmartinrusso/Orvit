@@ -114,16 +114,31 @@ export async function GET(
       },
     });
 
-    const totalQuantitySold = saleItems.reduce((sum, item) => sum + Number(item.cantidad), 0);
-    const totalRevenue = saleItems.reduce((sum, item) => sum + Number(item.subtotal), 0);
-    const orderCount = new Set(saleItems.map(item => item.sale.id)).size;
-    const uniqueCustomers = new Set(saleItems.map(item => item.sale.clientId)).size;
+    // Single pass over saleItems instead of 4 separate iterations
+    const salesStats = saleItems.reduce((acc, item) => {
+      acc.totalQuantitySold += Number(item.cantidad);
+      acc.totalRevenue += Number(item.subtotal);
+      acc.orderIds.add(item.sale.id);
+      acc.clientIds.add(item.sale.clientId);
+      if (!acc.latest || item.sale.fechaEmision.getTime() > acc.latest.sale.fechaEmision.getTime()) {
+        acc.latest = item;
+      }
+      return acc;
+    }, {
+      totalQuantitySold: 0,
+      totalRevenue: 0,
+      orderIds: new Set<number>(),
+      clientIds: new Set<string>(),
+      latest: null as (typeof saleItems)[number] | null,
+    });
+    const totalQuantitySold = salesStats.totalQuantitySold;
+    const totalRevenue = salesStats.totalRevenue;
+    const orderCount = salesStats.orderIds.size;
+    const uniqueCustomers = salesStats.clientIds.size;
     const averageOrderQty = orderCount > 0 ? totalQuantitySold / orderCount : 0;
 
-    // Última venta
-    const lastSale = saleItems.length > 0
-      ? saleItems.sort((a, b) => b.sale.fechaEmision.getTime() - a.sale.fechaEmision.getTime())[0]
-      : null;
+    // Última venta (already found in single pass above)
+    const lastSale = salesStats.latest;
     const lastSaleDate = lastSale?.sale.fechaEmision || null;
 
     // Tendencia (comparar con período anterior si se solicita)
@@ -181,9 +196,13 @@ export async function GET(
 
     let realMargin = 0;
     if (invoiceItems.length > 0) {
-      const invoicedRevenue = invoiceItems.reduce((sum, item) => sum + Number(item.subtotal), 0);
-      const invoicedCost = invoiceItems.reduce((sum, item) => sum + (Number(item.cantidad) * costPrice), 0);
-      realMargin = invoicedRevenue > 0 ? ((invoicedRevenue - invoicedCost) / invoicedRevenue) * 100 : 0;
+      // Single pass instead of two separate reduces
+      const invoiced = invoiceItems.reduce((acc, item) => {
+        acc.revenue += Number(item.subtotal);
+        acc.cost += Number(item.cantidad) * costPrice;
+        return acc;
+      }, { revenue: 0, cost: 0 });
+      realMargin = invoiced.revenue > 0 ? ((invoiced.revenue - invoiced.cost) / invoiced.revenue) * 100 : 0;
     }
 
     const difference = realMargin - projectedMargin;
@@ -225,8 +244,11 @@ export async function GET(
         return acc;
       }, {} as Record<string, any>);
 
-      // Encontrar el cliente con más compras
-      const topClientData = Object.values(clientSales).sort((a: any, b: any) => b.totalAmount - a.totalAmount)[0] as any;
+      // Encontrar el cliente con más compras (reduce O(n) instead of sort O(n log n))
+      const clientSalesArr = Object.values(clientSales);
+      const topClientData = clientSalesArr.length > 0
+        ? clientSalesArr.reduce((max: any, client: any) => client.totalAmount > max.totalAmount ? client : max) as any
+        : null;
 
       if (topClientData) {
         const clientInfo = await prisma.client.findUnique({

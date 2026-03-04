@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requirePermission } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 import { z } from 'zod';
 
 const CreateToolSchema = z.object({
@@ -154,6 +155,8 @@ export async function POST(request: NextRequest) {
       RETURNING *
     ` as any[];
 
+    triggerCompanyEvent(d.companyId, "tools", "tool:created", { id: newTool[0].id });
+
     return NextResponse.json({
       success: true,
       tool: newTool[0],
@@ -228,6 +231,8 @@ export async function PUT(request: NextRequest) {
     //     console.error('Error enviando notificación de stock:', notificationError);
     //   }
     // }
+
+    triggerCompanyEvent(updatedTool.companyId, "tools", "tool:updated", { id: updatedTool.id });
 
     return NextResponse.json({
       success: true,

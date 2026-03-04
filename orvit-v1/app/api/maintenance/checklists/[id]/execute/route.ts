@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth/shared-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export async function POST(
   request: NextRequest,
@@ -97,6 +98,11 @@ export async function POST(
             : undefined
         }
       });
+    }
+
+    // Pusher realtime trigger
+    if (checklist.companyId) {
+      triggerCompanyEvent(checklist.companyId, 'maintenance', 'maintenance:updated', { id: checklistId });
     }
 
     return NextResponse.json({

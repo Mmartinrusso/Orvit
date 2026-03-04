@@ -162,7 +162,7 @@ export const SIDEBAR_MODULE_MAP: Record<string, string[]> = {
   // ========== MANTENIMIENTO ==========
   '/mantenimiento/dashboard': ['maintenance_core'],
   '/mantenimiento/ordenes': ['maintenance_core'],
-  '/mantenimiento/fallas': ['maintenance_core'],
+  '/mantenimiento/incidentes': ['maintenance_core'],
   '/mantenimiento/soluciones': ['maintenance_core'],
   '/mantenimiento/preventivo': ['maintenance_core', 'preventive_maintenance'],
   '/mantenimiento/maquinas': ['maintenance_core'],

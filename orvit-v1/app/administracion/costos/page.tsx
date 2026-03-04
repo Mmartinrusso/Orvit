@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Building2, TrendingUp, Calculator, Plus, Edit, Trash2, History, BarChart3, FileSpreadsheet, User, BookOpen } from "lucide-react";
+import { Users, Building2, TrendingUp, Calculator, Plus, Edit, Trash2, History, BarChart3, FileSpreadsheet, User, BookOpen, DollarSign, RefreshCw } from "lucide-react";
 import { NotesDialog } from "@/components/ui/NotesDialog";
 import { useEmployeeCosts } from "@/hooks/use-employee-costs";
 import type { EmployeeCategory, Employee } from "@/hooks/use-employee-costs";
@@ -35,6 +35,7 @@ import { useRouter } from 'next/navigation';
 import { useCostConfig } from '@/hooks/use-cost-consolidation';
 import { useConfirm } from '@/components/ui/confirm-dialog-provider';
 import { useViewMode } from '@/contexts/ViewModeContext';
+import { toast } from 'sonner';
 
 // V2 Components
 import { ExecutiveDashboardV2 } from '@/components/costos/v2';
@@ -103,6 +104,56 @@ export default function CostosPage() {
     categoryId: '',
     startDate: new Date().toISOString().slice(0, 10) // YYYY-MM-DD por defecto
   });
+
+  // Tipo de cambio USD de reposición
+  const [tipoCambioUSD, setTipoCambioUSD] = useState('');
+  const [tipoCambioUpdatedAt, setTipoCambioUpdatedAt] = useState<string | null>(null);
+  const [tipoCambioLoading, setTipoCambioLoading] = useState(false);
+  const [tipoCambioSaving, setTipoCambioSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchExchangeRate = async () => {
+      try {
+        setTipoCambioLoading(true);
+        const res = await fetch('/api/costs/config/exchange-rate');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.tipoCambioUSD) setTipoCambioUSD(String(data.tipoCambioUSD));
+          if (data.updatedAt) setTipoCambioUpdatedAt(data.updatedAt);
+        }
+      } catch {
+        // silently fail
+      } finally {
+        setTipoCambioLoading(false);
+      }
+    };
+    fetchExchangeRate();
+  }, []);
+
+  const handleSaveExchangeRate = async () => {
+    const value = parseFloat(tipoCambioUSD);
+    if (!value || value <= 0) {
+      toast.error('Ingresá un tipo de cambio válido');
+      return;
+    }
+    try {
+      setTipoCambioSaving(true);
+      toast.loading('Actualizando tipo de cambio...', { id: 'tc' });
+      const res = await fetch('/api/costs/config/exchange-rate', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tipoCambioUSD: value }),
+      });
+      if (!res.ok) throw new Error('Error al guardar');
+      const data = await res.json();
+      setTipoCambioUpdatedAt(new Date().toISOString());
+      toast.success(data.message || 'Tipo de cambio actualizado', { id: 'tc' });
+    } catch {
+      toast.error('Error al actualizar el tipo de cambio', { id: 'tc' });
+    } finally {
+      setTipoCambioSaving(false);
+    }
+  };
 
   const handleCreateCategory = async () => {
     try {
@@ -829,6 +880,50 @@ export default function CostosPage() {
 
         {/* Pestaña de Compras */}
         <TabsContent value="compras" className="space-y-4 px-4 md:px-6 pb-6 mt-0">
+          {/* Tipo de Cambio USD */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-green-600" />
+                Tipo de Cambio USD (Reposición)
+              </CardTitle>
+              <CardDescription className="text-xs">
+                Valor del dólar para calcular el costo de reposición de insumos comprados en USD
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-end gap-3">
+                <div className="space-y-1.5 flex-1 max-w-[200px]">
+                  <Label htmlFor="tipoCambioUSD" className="text-xs">ARS por 1 USD</Label>
+                  <Input
+                    id="tipoCambioUSD"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={tipoCambioLoading ? 'Cargando...' : 'Ej: 1300'}
+                    value={tipoCambioUSD}
+                    onChange={(e) => setTipoCambioUSD(e.target.value)}
+                    disabled={tipoCambioLoading}
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleSaveExchangeRate}
+                  disabled={tipoCambioSaving || tipoCambioLoading || !tipoCambioUSD}
+                  className="gap-1.5"
+                >
+                  {tipoCambioSaving ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <DollarSign className="h-3.5 w-3.5" />}
+                  Guardar
+                </Button>
+              </div>
+              {tipoCambioUpdatedAt && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Última actualización: {new Date(tipoCambioUpdatedAt).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
           <ComprasMensuales
             companyId={currentCompany?.id?.toString() || "1"}
             selectedMonth={selectedMonth}

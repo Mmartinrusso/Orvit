@@ -237,12 +237,7 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
   const [isSidebarEditMode, setIsSidebarEditMode] = React.useState(false);
   const [favoritesOpen, setFavoritesOpen] = React.useState(true);
 
-  // Auto-open sidebar when in agenda mode (contextual sidebar needs to be visible)
-  React.useEffect(() => {
-    if (agendaSidebar && !isOpen && typeof window !== 'undefined' && window.innerWidth >= 768) {
-      setIsOpen(true);
-    }
-  }, [agendaSidebar, isOpen, setIsOpen]);
+  // Note: agenda sidebar no longer auto-opens — users can toggle it manually
 
   // Admins de empresa (rol contiene 'ADMIN') pueden editar el sidebar
   // Cubre: ADMINISTRADOR, ADMIN, ADMIN_ENTERPRISE, SUPERADMIN, ADMINISTRATOR, ADMIN EMPRESA
@@ -1194,14 +1189,21 @@ export default function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
             {/* Agenda contextual sidebar — replaces nav when on agenda route */}
             {agendaSidebar && isOpen ? (
               <div className="flex flex-col flex-1 overflow-hidden min-w-0">
-                {/* Back button */}
-                <div className="px-3 py-2 border-b border-sidebar-ring/20 shrink-0">
+                {/* Back + Close buttons */}
+                <div className="px-3 py-2 border-b border-sidebar-ring/20 shrink-0 flex items-center justify-between">
                   <button
                     className="flex items-center gap-2 text-sm text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors"
                     onClick={() => router.push('/administracion/dashboard')}
                   >
                     <ChevronLeft className="h-4 w-4" />
                     <span>Agenda</span>
+                  </button>
+                  <button
+                    className="flex items-center justify-center h-6 w-6 rounded-md text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-ring/20 transition-colors"
+                    onClick={() => setIsOpen(false)}
+                    title="Cerrar sidebar"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
                   </button>
                 </div>
                 {/* AgendaV2Sidebar — fills the sidebar via asideStyle override */}

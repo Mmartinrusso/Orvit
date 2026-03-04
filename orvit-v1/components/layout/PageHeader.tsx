@@ -14,6 +14,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 
 const routeMap: Record<string, string> = {
   'dashboard': 'Dashboard',
@@ -77,10 +78,16 @@ const getBreadcrumbs = (pathname: string) => {
 
 export default function PageHeader() {
   const pathname = usePathname();
+  const isMobile = useIsMobile();
   const sidebarContext = useSidebarContext();
   const { mode, canToggle } = useViewMode();
   const { currentArea } = useCompany();
   const agendaHeader = useAgendaV2Header();
+
+  // Hide navbar on mobile for agenda — BottomNav handles navigation
+  if (isMobile && pathname.startsWith('/administracion/agenda')) {
+    return null;
+  }
 
   if (!sidebarContext) return null;
 

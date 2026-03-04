@@ -3,7 +3,10 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CobranzasList } from '@/components/ventas/cobranzas-list';
-import { CollectionsDashboard } from '@/components/ventas/collections-dashboard';
+import dynamic from 'next/dynamic';
+const CollectionsDashboard = dynamic(() => import('@/components/ventas/collections-dashboard').then(m => m.CollectionsDashboard), {
+  ssr: false,
+});
 import { PermissionGuard } from '@/components/auth/PermissionGuard';
 import { BarChart3, List } from 'lucide-react';
 

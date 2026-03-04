@@ -312,7 +312,7 @@ TEST_PASSWORD=admin123          # Password de usuario admin
 Si **TODOS los tests PASAN** ✅:
 
 1. **Arrancar Frontend** con vertical slice:
-   - Fallas page (`app/mantenimiento/fallas/page.tsx`)
+   - Fallas page (`app/mantenimiento/incidentes/page.tsx`)
    - QuickReportDialog (`components/corrective/failures/QuickReportDialog.tsx`)
    - DuplicateModal + Link (`components/corrective/failures/DuplicateDetectionModal.tsx`)
    - WorkOrder sheet con Waiting/Return/Close tabs

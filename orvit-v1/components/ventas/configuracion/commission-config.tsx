@@ -100,7 +100,9 @@ const DEFAULT_CONFIG: CommissionConfig = {
 // COMPONENT
 // =====================================================
 
-export function CommissionConfig({ config, categories = [], onSave }: CommissionConfigProps) {
+const EMPTY_CATEGORIES: Array<{ id: number; name: string }> = [];
+
+export function CommissionConfig({ config, categories = EMPTY_CATEGORIES, onSave }: CommissionConfigProps) {
   const [commissionConfig, setCommissionConfig] = useState<CommissionConfig>({
     ...DEFAULT_CONFIG,
     ...config,

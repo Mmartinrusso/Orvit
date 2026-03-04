@@ -34,7 +34,9 @@ interface DeliveryEvidenceViewerProps {
   evidences?: Evidence[];
 }
 
-export function DeliveryEvidenceViewer({ delivery, evidences = [] }: DeliveryEvidenceViewerProps) {
+const EMPTY_EVIDENCES: Evidence[] = [];
+
+export function DeliveryEvidenceViewer({ delivery, evidences = EMPTY_EVIDENCES }: DeliveryEvidenceViewerProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const getEvidenceIcon = (tipo: string) => {

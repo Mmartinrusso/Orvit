@@ -221,6 +221,9 @@ export default function ComprobanteFormModal({
  purchaseReturnId: '' as string, // Solo para NCA_DEVOLUCION
  facturaVinculadaId: '' as string, // Factura de referencia (opcional)
  motivo: '' as string, // Motivo de la NC/ND
+ // Moneda de la factura
+ moneda: 'ARS' as 'ARS' | 'USD',
+ tipoCambio: '',
  // Clasificación como Costo Indirecto (Costos V2)
  esIndirecto: false,
  indirectCategory: '' as string,
@@ -389,6 +392,7 @@ export default function ComprobanteFormModal({
  otrosConceptos: prefilledData.otrosConceptos ? String(prefilledData.otrosConceptos) : '',
  total: prefilledData.total ? String(prefilledData.total) : '',
  tipoPago: prefilledData.fechaVencimiento ? 'cta_cte' : 'contado',
+ moneda: (prefilledData.moneda === 'USD' ? 'USD' : 'ARS') as 'ARS' | 'USD',
  }));
 
  // Actualizar valores de fecha formateados
@@ -497,6 +501,8 @@ export default function ComprobanteFormModal({
  total: c.total != null ? Number(c.total).toFixed(2) : '0.00',
  tipoCuenta: c.tipoCuentaId ? String(c.tipoCuentaId) : '',
  observaciones: c.observaciones || '',
+ moneda: (c.moneda === 'USD' ? 'USD' : 'ARS') as 'ARS' | 'USD',
+ tipoCambio: c.tipoCambio ? String(Number(c.tipoCambio)) : '',
  esIndirecto: c.esIndirecto ?? false,
  indirectCategory: c.indirectCategory ?? '',
  prorratear: c.prorratear ?? false,
@@ -1312,6 +1318,9 @@ export default function ComprobanteFormModal({
  purchaseReturnId: '',
  facturaVinculadaId: '',
  motivo: '',
+ // Moneda
+ moneda: 'ARS' as 'ARS' | 'USD',
+ tipoCambio: '',
  // Costo Indirecto
  esIndirecto: false,
  indirectCategory: '',
@@ -1407,6 +1416,11 @@ export default function ComprobanteFormModal({
 
  if (formData.tipoPago === 'contado' && !formData.metodoPago) {
  toast.error('Debes especificar el método de pago para comprobantes de contado');
+ return;
+ }
+
+ if (formData.moneda === 'USD' && (!formData.tipoCambio || parseFloat(formData.tipoCambio) <= 0)) {
+ toast.error('Debes ingresar el tipo de cambio para facturas en USD');
  return;
  }
 
@@ -1508,6 +1522,9 @@ export default function ComprobanteFormModal({
  // DocType: determinado automáticamente por el tipo de comprobante
  // Presupuesto, PPT, etc. = T2, Facturas/Recibos = T1
  docType: getDocTypeFromTipo(formData.tipo),
+ // Moneda
+ moneda: formData.moneda,
+ tipoCambio: formData.moneda === 'USD' ? formData.tipoCambio : null,
  // Costo Indirecto (Costos V2)
  esIndirecto: formData.esIndirecto,
  indirectCategory: formData.esIndirecto ? (formData.indirectCategory || null) : null,
@@ -1630,6 +1647,46 @@ export default function ComprobanteFormModal({
  </SelectContent>
  </Select>
  </div>
+
+ {/* Moneda */}
+ <div className="space-y-2">
+ <Label htmlFor="moneda">Moneda</Label>
+ <Select
+ value={formData.moneda}
+ onValueChange={(value: 'ARS' | 'USD') => {
+ setFormData(prev => ({
+ ...prev,
+ moneda: value,
+ tipoCambio: value === 'ARS' ? '' : prev.tipoCambio,
+ }));
+ }}
+ >
+ <SelectTrigger id="moneda">
+ <SelectValue />
+ </SelectTrigger>
+ <SelectContent>
+ <SelectItem value="ARS">ARS - Peso Argentino</SelectItem>
+ <SelectItem value="USD">USD - Dólar</SelectItem>
+ </SelectContent>
+ </Select>
+ </div>
+
+ {/* Tipo de cambio (solo USD) */}
+ {formData.moneda === 'USD' && (
+ <div className="space-y-2">
+ <Label htmlFor="tipoCambio">Tipo de Cambio *</Label>
+ <Input
+ id="tipoCambio"
+ type="number"
+ step="0.01"
+ min="0"
+ placeholder="Ej: 1200"
+ value={formData.tipoCambio}
+ onChange={(e) => setFormData(prev => ({ ...prev, tipoCambio: e.target.value }))}
+ />
+ <p className="text-xs text-muted-foreground">Valor del dólar al momento de la factura</p>
+ </div>
+ )}
 
  {/* Campos adicionales para Notas de Crédito */}
  {isNotaCredito(formData.tipo) && (

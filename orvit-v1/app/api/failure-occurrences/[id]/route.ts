@@ -13,6 +13,7 @@ import { verifyToken } from '@/lib/auth';
 import { expandSymptoms } from '@/lib/corrective/symptoms';
 import { notifyPriorityEscalated, notifyFailureResolved } from '@/lib/discord/notifications';
 import { hasUserPermission } from '@/lib/permissions-helpers';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -385,6 +386,9 @@ export async function PATCH(
 
     console.log(`✅ FailureOccurrence ${id} actualizada:`, Object.keys(updateData));
 
+    // Pusher realtime trigger
+    triggerCompanyEvent(companyId, "failures", "failure:updated", { id });
+
     // 6. Notificar escalamiento de prioridad si cambió a mayor
     if (body.priority && body.priority !== existing.priority) {
       const priorityOrder = { P1: 1, P2: 2, P3: 3, P4: 4 };
@@ -518,6 +522,9 @@ export async function DELETE(
     });
 
     console.log(`🗑️ FailureOccurrence ${id} eliminada`);
+
+    // Pusher realtime trigger
+    triggerCompanyEvent(companyId, "failures", "failure:updated", { id });
 
     return NextResponse.json({ success: true, deletedId: id });
   } catch (error: any) {

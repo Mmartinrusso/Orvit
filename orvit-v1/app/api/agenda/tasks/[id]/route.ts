@@ -4,6 +4,8 @@ import { getUserFromToken } from '@/lib/tasks/auth-helper';
 import { hasPermission } from '@/lib/permissions';
 import { z } from 'zod';
 import { logTaskUpdateActivity } from '@/lib/agenda/activity-logger';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
+import { sendTaskPushNotification } from '@/lib/agenda/push-notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -384,6 +386,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       updatedAt: task.updatedAt.toISOString(),
     };
 
+    // Pusher realtime trigger
+    triggerCompanyEvent(task.companyId, "tasks", "task:updated", { id: task.id });
+
     // Registrar actividad de cambios
     const changes: Record<string, { old: any; new: any }> = {};
     if (data.status && data.status !== existingTask.status) {
@@ -445,6 +450,27 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
       if (notifications.length > 0) {
         await prisma.notification.createMany({ data: notifications });
+
+        // Push notifications to mobile
+        for (const notif of notifications) {
+          if (notif.type === 'task_assigned' && notif.userId) {
+            sendTaskPushNotification({
+              taskId: task.id,
+              taskTitle: task.title,
+              assignedToUserId: notif.userId,
+              assignerName: user.name || 'Alguien',
+              type: 'task_assigned',
+            });
+          } else if (notif.type === 'task_updated' && notif.userId) {
+            sendTaskPushNotification({
+              taskId: task.id,
+              taskTitle: task.title,
+              assignedToUserId: notif.userId,
+              assignerName: user.name || 'Alguien',
+              type: 'task_updated',
+            });
+          }
+        }
       }
     } catch (notifErr) {
       console.error('[API] Error creating update notifications:', notifErr);
@@ -504,6 +530,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     await prisma.agendaTask.delete({
       where: { id: taskId },
     });
+
+    // Pusher realtime trigger
+    triggerCompanyEvent(existingTask.companyId, "tasks", "task:deleted", { id: taskId });
 
     return NextResponse.json({ success: true });
   } catch (error) {

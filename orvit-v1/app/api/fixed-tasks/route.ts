@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { hasPermission } from '@/lib/permissions';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 // Importar utilidades centralizadas
 import {
@@ -302,6 +303,9 @@ export async function POST(request: NextRequest) {
       createdAt: newTask.createdAt?.toISOString() || null,
       isCompleted: newTask.isCompleted
     };
+
+    // Pusher realtime trigger
+    triggerCompanyEvent(parsedCompanyId, 'tasks', 'task:created', { id: newTask.id });
 
     return NextResponse.json({
       success: true,

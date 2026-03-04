@@ -37,7 +37,9 @@ interface EvidencePanelProps {
   jobId: number;
 }
 
-export function EvidencePanel({ evidences = [], componentName, onViewFile, jobId }: EvidencePanelProps) {
+const EMPTY_EVIDENCES: Evidence[] = [];
+
+export function EvidencePanel({ evidences = EMPTY_EVIDENCES, componentName, onViewFile, jobId }: EvidencePanelProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
   const handleCopySnippet = async (snippet: string, index: number) => {

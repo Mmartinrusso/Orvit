@@ -324,12 +324,12 @@ export function FailuresDuplicadosView({
                           variant="outline"
                           className={cn(
                             'text-xs',
-                            failure.status === 'OPEN' && 'border-info text-info-muted-foreground',
+                            (failure.status === 'OPEN' || failure.status === 'REPORTED') && 'border-info text-info-muted-foreground',
                             failure.status === 'IN_PROGRESS' && 'border-warning-muted text-warning-muted-foreground',
                             failure.status === 'RESOLVED' && 'border-success text-success'
                           )}
                         >
-                          {failure.status}
+                          {failure.status === 'OPEN' ? 'Abierta' : failure.status === 'REPORTED' ? 'Reportada' : failure.status === 'IN_PROGRESS' ? 'En Proceso' : failure.status === 'RESOLVED' ? 'Resuelta' : failure.status}
                         </Badge>
                       </div>
 

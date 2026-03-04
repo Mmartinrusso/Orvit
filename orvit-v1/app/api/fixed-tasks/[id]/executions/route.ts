@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromToken, hasAccessToCompany } from '@/lib/tasks/auth-helper';
+import { triggerCompanyEvent } from '@/lib/chat/pusher';
 
 export const dynamic = 'force-dynamic';
 
@@ -134,6 +135,9 @@ export async function POST(
       notes: newExecution.notes || '',
       attachments: newExecution.attachments ? JSON.parse(newExecution.attachments as string) : [],
     };
+
+    // Pusher realtime trigger
+    triggerCompanyEvent(fixedTask.companyId, 'tasks', 'task:updated', { id: taskId });
 
     return NextResponse.json({ success: true, execution: transformedExecution }, { status: 201 });
   } catch (error) {
