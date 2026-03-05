@@ -221,24 +221,158 @@ export async function POST(
     })
     .catch(() => {});
 
-  // Push notifications (fire-and-forget)
+  // Check if this is a bot conversation → process with AI
   const conversation = await prisma.conversation.findUnique({
     where: { id: conversationId },
-    select: { name: true, type: true },
+    select: { name: true, type: true, isSystemBot: true },
   });
 
-  sendChatPushNotifications({
-    conversationId,
-    conversationName: conversation?.name || sender?.name || "Chat",
-    senderName: sender?.name || "Unknown",
-    content: preview,
-    senderId: auth.userId,
-  }).catch(() => {});
-
-  // Special push for mentions (even if muted)
-  if (mentions.length > 0) {
-    // TODO: Send mention-specific push notifications that bypass mute
+  if (conversation?.isSystemBot) {
+    // Process AI response asynchronously (fire-and-forget so user message returns fast)
+    processBotResponse(conversationId, auth.companyId, auth.userId, content, type, fileUrl).catch(
+      (err) => console.error("[BOT] Error processing AI response:", err)
+    );
+  } else {
+    // Regular conversation: push notifications
+    sendChatPushNotifications({
+      conversationId,
+      conversationName: conversation?.name || sender?.name || "Chat",
+      senderName: sender?.name || "Unknown",
+      content: preview,
+      senderId: auth.userId,
+    }).catch(() => {});
   }
 
   return NextResponse.json(enrichedMessage, { status: 201 });
+}
+
+// ── Bot AI response processing ───────────────────────────────────
+
+async function processBotResponse(
+  conversationId: string,
+  companyId: number,
+  userId: number,
+  userMessage: string,
+  messageType: string,
+  fileUrl?: string
+) {
+  try {
+    let textToProcess = userMessage;
+
+    // If audio message, transcribe first
+    if (messageType === "audio" && fileUrl) {
+      try {
+        const { transcribeAudio } = await import("@/lib/assistant/engine");
+        const audioRes = await fetch(fileUrl);
+        const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
+        const mimeType = audioRes.headers.get("content-type") || "audio/webm";
+        textToProcess = await transcribeAudio(audioBuffer, mimeType);
+      } catch (err) {
+        console.error("[BOT] Transcription error:", err);
+        textToProcess = "[No se pudo transcribir el audio]";
+      }
+    }
+
+    if (!textToProcess || textToProcess.length === 0) return;
+
+    // Get conversation history (last 10 messages for context)
+    const history = await prisma.message.findMany({
+      where: { conversationId },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: { senderId: true, content: true, type: true },
+    });
+
+    const conversationHistory = history
+      .reverse()
+      .filter((m) => m.type === "text" || m.type === "system")
+      .map((m) => ({
+        role: (m.senderId === null ? "assistant" : "user") as "user" | "assistant",
+        content: m.content,
+      }));
+
+    // Get user info for context
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    // Process with AI engine
+    const { processMessage } = await import("@/lib/assistant/engine");
+    const aiResponse = await processMessage(textToProcess, {
+      userId,
+      companyId,
+      userRole: user?.role || "USER",
+    }, conversationHistory);
+
+    const botReply = aiResponse.message || "No pude procesar tu mensaje. Intentá de nuevo.";
+    const botPreview = botReply.slice(0, 100);
+
+    // Save bot response as a message
+    const botMessage = await prisma.message.create({
+      data: {
+        conversationId,
+        senderId: null,
+        companyId,
+        type: "text",
+        content: botReply,
+      },
+      include: messageInclude,
+    });
+
+    // Update conversation last message
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: {
+        lastMessageAt: new Date(),
+        lastMessageText: botPreview,
+        lastMessageBy: "ORVIT",
+      },
+    });
+
+    // Increment unread for the user
+    await prisma.conversationMember.updateMany({
+      where: { conversationId, userId, leftAt: null },
+      data: { unreadCount: { increment: 1 } },
+    });
+
+    // Broadcast bot response via Pusher
+    const enrichedBot = {
+      ...botMessage,
+      reactions: [],
+      sender: { id: 0, name: "ORVIT", avatar: null },
+    };
+    triggerNewMessage(
+      conversationId,
+      enrichedBot as unknown as Record<string, unknown>
+    ).catch(() => {});
+
+    triggerInboxUpdate(userId, {
+      conversationId,
+      lastMessageText: botPreview,
+      unreadCount: 1,
+    }).catch(() => {});
+  } catch (err) {
+    console.error("[BOT] AI processing error:", err);
+
+    // Send error message so user knows something went wrong
+    await prisma.message.create({
+      data: {
+        conversationId,
+        senderId: null,
+        companyId,
+        type: "text",
+        content: "Disculpá, tuve un problema procesando tu mensaje. Intentá de nuevo en unos segundos.",
+      },
+    });
+
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: {
+        lastMessageAt: new Date(),
+        lastMessageText: "Disculpá, tuve un problema...",
+        lastMessageBy: "ORVIT",
+      },
+    });
+  }
 }

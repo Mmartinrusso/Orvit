@@ -15,7 +15,7 @@ import { router, useNavigation } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown, FadeIn, FadeInRight } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
-import { getConversations, updateConversation } from "@/api/chat";
+import { getConversations, getBotConversation, updateConversation } from "@/api/chat";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useHaptics } from "@/hooks/useHaptics";
@@ -138,7 +138,7 @@ function ConversationItem({
             )}
 
             {/* Avatar */}
-            {(item as any)._isOrvitBot ? (
+            {item.isSystemBot ? (
               <View
                 style={{
                   width: 52,
@@ -294,9 +294,26 @@ export default function InboxScreen() {
     enabled: !!user,
   });
 
+  // Auto-create/fetch bot conversation
+  const { data: botConv } = useQuery({
+    queryKey: ["bot-conversation"],
+    queryFn: getBotConversation,
+    enabled: !!user,
+    staleTime: Infinity,
+  });
+
   const rawConversations = useMemo(() => {
-    return data?.conversations || [];
-  }, [data?.conversations]);
+    const convs = data?.conversations || [];
+    // Ensure bot conversation is always first and not duplicated
+    if (botConv) {
+      const withoutBot = convs.filter((c: any) => c.id !== botConv.id);
+      // Merge unread/muted from inbox data if available
+      const inboxBot = convs.find((c: any) => c.id === botConv.id);
+      const mergedBot = inboxBot || botConv;
+      return [mergedBot, ...withoutBot];
+    }
+    return convs;
+  }, [data?.conversations, botConv]);
 
   // Total unread badge on tab
   const totalUnread = useMemo(

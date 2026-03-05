@@ -39,19 +39,6 @@ import AnimatedPressable from "@/components/ui/AnimatedPressable";
 import Avatar from "@/components/ui/Avatar";
 import type { CompanyUser } from "@/types/chat";
 
-// ── Mock users for preview ──────────────────────────────────
-const MOCK_USERS: CompanyUser[] = [
-  { id: 101, name: "Martín Russo", email: "martin@orvit.com", role: "Admin", isActive: true, avatar: null },
-  { id: 102, name: "Lucía Fernández", email: "lucia@orvit.com", role: "User", isActive: true, avatar: null },
-  { id: 103, name: "Juan Pérez", email: "juan.perez@orvit.com", role: "User", isActive: true, avatar: null },
-  { id: 104, name: "Carolina López", email: "carolina@orvit.com", role: "Admin", isActive: true, avatar: null },
-  { id: 105, name: "Diego Martínez", email: "diego.m@orvit.com", role: "User", isActive: true, avatar: null },
-  { id: 106, name: "Ana García", email: "ana.garcia@orvit.com", role: "User", isActive: true, avatar: null },
-  { id: 107, name: "Pablo Romero", email: "pablo.r@orvit.com", role: "User", isActive: true, avatar: null },
-  { id: 108, name: "Roberto Gómez", email: "roberto@orvit.com", role: "User", isActive: true, avatar: null },
-  { id: 109, name: "Sofía Torres", email: "sofia.t@orvit.com", role: "User", isActive: true, avatar: null },
-  { id: 110, name: "Matías Sánchez", email: "matias@orvit.com", role: "User", isActive: true, avatar: null },
-];
 
 const GROUP_ICONS: { name: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { name: "people", icon: "people" },
@@ -502,17 +489,14 @@ export default function NewChatScreen() {
   }));
 
   const hasAuth = !!user;
-  const { data: realUsers, isLoading, isError } = useQuery({
+  const { data: users = [], isLoading, isError } = useQuery({
     queryKey: ["company-users"],
     queryFn: getCompanyUsers,
     enabled: hasAuth,
-    retry: 1,
+    retry: 2,
   });
 
-  // Use real data if available, otherwise mock (for preview / no auth)
-  const useMock = !hasAuth || !realUsers || realUsers.length === 0 || isError;
-  const users = useMock ? MOCK_USERS : realUsers;
-  const showLoading = isLoading && hasAuth && !isError;
+  const showLoading = isLoading && hasAuth;
 
   const { data: ancestorsData } = useQuery({
     queryKey: ["conversation-ancestors", parentId],

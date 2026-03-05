@@ -27,7 +27,7 @@ function TabIcon({
   const badgeText = badge && badge > 99 ? "99+" : String(badge);
 
   return (
-    <View style={{ alignItems: "center", justifyContent: "center", gap: 2, minHeight: 44 }}>
+    <View style={{ alignItems: "center", justifyContent: "center" }}>
       <View>
         <Ionicons name={focused ? name : outlineName} size={size} color={color} />
         {showBadge && (
@@ -58,16 +58,6 @@ function TabIcon({
           </View>
         )}
       </View>
-      <Text
-        style={{
-          fontSize: 11,
-          fontWeight: "600",
-          color,
-          marginTop: 2,
-        }}
-      >
-        {label}
-      </Text>
     </View>
   );
 }
@@ -81,14 +71,21 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false,
+        tabBarShowLabel: true,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+          marginTop: 0,
+        },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: inactiveColor,
         tabBarBadgeStyle: { display: "none" },
         tabBarStyle: {
           backgroundColor: colors.tabBarBg,
           borderTopColor: colors.tabBarBorder,
           borderTopWidth: 0.5,
           height: Platform.OS === "web" ? 68 : 90,
-          paddingTop: 10,
+          paddingTop: 6,
           paddingBottom: Platform.OS === "web" ? 8 : 28,
           elevation: 8,
           shadowColor: "#000",
@@ -99,6 +96,7 @@ export default function TabsLayout() {
         tabBarItemStyle: {
           justifyContent: "center" as const,
           alignItems: "center" as const,
+          overflow: "visible" as const,
         },
       }}
     >

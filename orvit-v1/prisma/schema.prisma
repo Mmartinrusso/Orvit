@@ -16450,6 +16450,7 @@ model Conversation {
   iconName       String?            @db.VarChar(50) @map("icon_name")
   avatarUrl      String?            @map("avatar_url")
   onlyAdminsPost Boolean            @default(false) @map("only_admins_post")
+  isSystemBot    Boolean            @default(false) @map("is_system_bot")
 
   isArchived    Boolean            @default(false) @map("is_archived")
   createdAt     DateTime           @default(now()) @map("created_at")

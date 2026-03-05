@@ -617,7 +617,7 @@ export default function ChatScreen() {
         title={title}
         conversationId={id!}
         isGroup={isGroup}
-        isOrvitBot={id === "mock-orvit"}
+        isOrvitBot={conv?.isSystemBot === true}
         memberCount={memberCount}
         typingNames={typingUsers}
         onSearchPress={() => {

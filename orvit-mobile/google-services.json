@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1038470416911",
+    "project_id": "orvit-64981",
+    "storage_bucket": "orvit-64981.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1038470416911:android:fb1c8b5f7ac9228ceb317a",
+        "android_client_info": {
+          "package_name": "com.orvit.chat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCplVIwU0ZM0fFsE9WTlWX7-nkwP6IUbR4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

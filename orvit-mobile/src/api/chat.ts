@@ -58,6 +58,10 @@ export async function getConversation(id: string): Promise<Conversation> {
   return apiFetch(`/api/chat/conversations/${id}`);
 }
 
+export async function getBotConversation(): Promise<Conversation> {
+  return apiFetch("/api/chat/bot-conversation");
+}
+
 // ── Members ───────────────────────────────────────────────────────
 
 export async function getMembers(conversationId: string) {
@@ -158,7 +162,7 @@ export async function updateConversation(
 export async function getCompanyUsers(): Promise<
   import("@/types/chat").CompanyUser[]
 > {
-  return apiFetch("/api/users");
+  return apiFetch("/api/chat/users");
 }
 
 // ── Message management ───────────────────────────────────────────

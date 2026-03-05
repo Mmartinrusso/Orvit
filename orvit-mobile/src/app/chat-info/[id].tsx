@@ -72,7 +72,7 @@ export default function ChatInfoScreen() {
   });
 
   const isGroup = conv?.type === "CHANNEL" || conv?.type === "CONTEXTUAL";
-  const isOrvitBot = (conv as any)?._isOrvitBot === true;
+  const isOrvitBot = conv?.isSystemBot === true;
   const isAdmin = members?.some(
     (m) => m.userId === user?.id && m.role === "admin"
   );

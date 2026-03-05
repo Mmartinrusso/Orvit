@@ -17,6 +17,7 @@ export interface Conversation {
   iconName?: string | null;
   avatarUrl?: string | null;
   onlyAdminsPost?: boolean;
+  isSystemBot?: boolean;
   parent?: { id: string; name: string | null; iconName: string | null; depth: number } | null;
   children?: ConversationChild[];
 

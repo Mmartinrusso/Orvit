@@ -82,10 +82,8 @@ export const GET = withGuards(async (request: NextRequest, { user: guardedUser }
       }
     }
     
-    const currentUser = await getUserFromToken(request);
-    if (!currentUser) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    // Use guardedUser from withGuards (supports both cookies and Bearer token for mobile)
+    const companyId = guardedUser.companyId;
 
     // Helper to fetch all system users (SUPERADMIN/ADMIN without company)
     const fetchAllSystemUsers = async () => {
@@ -131,22 +129,16 @@ export const GET = withGuards(async (request: NextRequest, { user: guardedUser }
     };
 
     // Verificar si es SUPERADMIN (puede ver todos los usuarios)
-    if (currentUser.role === 'SUPERADMIN') {
+    if (guardedUser.role === 'SUPERADMIN') {
       return NextResponse.json(await fetchAllSystemUsers());
     }
 
-    // Obtener la empresa del usuario (puede ser owner o miembro)
-    let companyId: number;
-    if (currentUser.ownedCompanies && currentUser.ownedCompanies.length > 0) {
-      companyId = currentUser.ownedCompanies[0].id;
-    } else if (currentUser.companies && currentUser.companies.length > 0) {
-      companyId = currentUser.companies[0].company.id;
-    } else {
-      // Para usuarios ADMIN que no tienen empresa, permitir ver usuarios del sistema
-      if (currentUser.role === 'ADMIN') {
-        return NextResponse.json(await fetchAllSystemUsers());
-      }
+    // Para usuarios ADMIN sin empresa, permitir ver usuarios del sistema
+    if (!companyId && guardedUser.role === 'ADMIN') {
+      return NextResponse.json(await fetchAllSystemUsers());
+    }
 
+    if (!companyId) {
       return NextResponse.json({ error: "Usuario sin empresa" }, { status: 403 });
     }
 
