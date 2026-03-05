@@ -121,18 +121,6 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Check onlyAdminsPost restriction
-  const convSettings = await prisma.conversation.findUnique({
-    where: { id: conversationId },
-    select: { onlyAdminsPost: true },
-  });
-  if (convSettings?.onlyAdminsPost && membership.role !== "admin") {
-    return NextResponse.json(
-      { error: "Solo los administradores pueden enviar mensajes en este grupo" },
-      { status: 403 }
-    );
-  }
-
   const body = await request.json();
   const content = (body.content || "").trim();
   const type: string = body.type || "text";
@@ -158,11 +146,25 @@ export async function POST(
     );
   }
 
-  // Get sender name for denormalized fields
-  const sender = await prisma.user.findUnique({
-    where: { id: auth.userId },
-    select: { name: true, avatar: true },
-  });
+  // Fetch sender + conversation settings in parallel (reduces latency)
+  const [sender, convSettings] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { name: true, avatar: true },
+    }),
+    prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: { onlyAdminsPost: true },
+    }),
+  ]);
+
+  // Check onlyAdminsPost restriction
+  if (convSettings?.onlyAdminsPost && membership.role !== "admin") {
+    return NextResponse.json(
+      { error: "Solo los administradores pueden enviar mensajes en este grupo" },
+      { status: 403 }
+    );
+  }
 
   // Build preview text for inbox
   const previewMap: Record<string, string> = {
@@ -238,29 +240,33 @@ export async function POST(
     })
     .catch(() => {});
 
-  // Check if this is a bot conversation → process with AI
-  const conversation = await prisma.conversation.findUnique({
-    where: { id: conversationId },
-    select: { name: true, type: true, isSystemBot: true },
-  });
+  // Return response immediately — handle bot/push async
+  const response = NextResponse.json(enrichedMessage, { status: 201 });
 
-  if (conversation?.isSystemBot) {
-    // Process AI response asynchronously (fire-and-forget so user message returns fast)
-    processBotResponse(conversationId, auth.companyId, auth.userId, content, type, fileUrl).catch(
-      (err) => console.error("[BOT] Error processing AI response:", err)
-    );
-  } else {
-    // Regular conversation: push notifications
-    sendChatPushNotifications({
-      conversationId,
-      conversationName: conversation?.name || sender?.name || "Chat",
-      senderName: sender?.name || "Unknown",
-      content: preview,
-      senderId: auth.userId,
-    }).catch(() => {});
-  }
+  // Bot check + push notifications (fire-and-forget, does NOT block response)
+  prisma.conversation
+    .findUnique({
+      where: { id: conversationId },
+      select: { name: true, type: true, isSystemBot: true },
+    })
+    .then((conversation) => {
+      if (conversation?.isSystemBot) {
+        processBotResponse(conversationId, auth.companyId, auth.userId, content, type, fileUrl).catch(
+          (err) => console.error("[BOT] Error processing AI response:", err)
+        );
+      } else {
+        sendChatPushNotifications({
+          conversationId,
+          conversationName: conversation?.name || sender?.name || "Chat",
+          senderName: sender?.name || "Unknown",
+          content: preview,
+          senderId: auth.userId,
+        }).catch(() => {});
+      }
+    })
+    .catch(() => {});
 
-  return NextResponse.json(enrichedMessage, { status: 201 });
+  return response;
 }
 
 // ── Bot AI response processing ───────────────────────────────────

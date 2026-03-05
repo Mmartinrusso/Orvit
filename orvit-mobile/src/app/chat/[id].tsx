@@ -293,19 +293,71 @@ export default function ChatScreen() {
 
   
 
-  // Send message
+  // Send message with optimistic update (message appears instantly)
   const sendMutation = useMutation({
     mutationFn: (msgData: Parameters<typeof sendMessage>[1]) =>
       sendMessage(id!, msgData),
-    onSuccess: (newMessage) => {
+    onMutate: async (msgData) => {
+      // Optimistic: insert a temporary message immediately
+      const optimisticMsg: Message = {
+        id: `optimistic-${Date.now()}`,
+        conversationId: id!,
+        senderId: user?.id ?? 0,
+        companyId: 0,
+        content: msgData.content,
+        type: msgData.type || "text",
+        fileUrl: msgData.fileUrl || null,
+        fileName: msgData.fileName || null,
+        fileSize: msgData.fileSize || null,
+        fileDuration: msgData.fileDuration || null,
+        isDeleted: false,
+        editedAt: null,
+        replyToId: msgData.replyToId || null,
+        replyTo: null,
+        mentions: [],
+        reactions: [],
+        createdAt: new Date().toISOString(),
+        sender: { id: user?.id ?? 0, name: user?.name ?? "", avatar: user?.avatar ?? null },
+      };
+
       queryClient.setQueryData(["messages", id], (old: typeof data) => {
         if (!old) return old;
         return {
           ...old,
-          pages: [[newMessage, ...old.pages[0]], ...old.pages.slice(1)],
+          pages: [[optimisticMsg, ...old.pages[0]], ...old.pages.slice(1)],
+        };
+      });
+
+      return { optimisticId: optimisticMsg.id };
+    },
+    onSuccess: (newMessage, _vars, context) => {
+      // Replace optimistic message with the real one from server
+      queryClient.setQueryData(["messages", id], (old: typeof data) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) =>
+            page.map((msg) =>
+              msg.id === context?.optimisticId ? newMessage : msg
+            )
+          ),
         };
       });
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    },
+    onError: (_err, _vars, context) => {
+      // Remove the optimistic message on error
+      if (context?.optimisticId) {
+        queryClient.setQueryData(["messages", id], (old: typeof data) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) =>
+              page.filter((msg) => msg.id !== context.optimisticId)
+            ),
+          };
+        });
+      }
     },
   });
 
@@ -324,9 +376,26 @@ export default function ChatScreen() {
       queryClient.setQueryData(["messages", id], (old: typeof data) => {
         if (!old || !("pages" in old)) return old;
         const typedOld = old as { pages: Message[][]; pageParams: unknown[] };
-        // Skip if message already exists (optimistic update already added it)
+        // Skip if real message already exists
         if (typedOld.pages.some((p) => p.some((m) => m.id === evt.message.id))) {
           return typedOld;
+        }
+        // Replace optimistic message from same sender if it matches
+        const hasOptimistic = typedOld.pages[0]?.some(
+          (m) => m.id.startsWith("optimistic-") && m.senderId === evt.message.senderId
+        );
+        if (hasOptimistic) {
+          return {
+            ...typedOld,
+            pages: [
+              typedOld.pages[0].map((m) =>
+                m.id.startsWith("optimistic-") && m.senderId === evt.message.senderId
+                  ? evt.message
+                  : m
+              ),
+              ...typedOld.pages.slice(1),
+            ],
+          };
         }
         return {
           ...typedOld,
@@ -381,10 +450,10 @@ export default function ChatScreen() {
           if (prev.includes(evt.userName)) return prev;
           return [...prev, evt.userName];
         });
-        // Clear after 3 seconds
+        // Clear after 5 seconds
         setTimeout(() => {
           setTypingUsers((prev) => prev.filter((n) => n !== evt.userName));
-        }, 3000);
+        }, 5000);
       }
     );
 
@@ -743,7 +812,8 @@ export default function ChatScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1, backgroundColor: colors.chatBg }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
         <View style={{ flex: 1, position: "relative" }}>
         <ChatBackgroundPattern isDark={isDark} />
@@ -765,11 +835,7 @@ export default function ChatScreen() {
           contentContainerStyle={{ paddingHorizontal: 4, paddingVertical: 6 }}
           onScroll={handleScroll}
           scrollEventThrottle={250}
-          ListHeaderComponent={
-            typingUsers.length > 0 ? (
-              <TypingIndicator names={typingUsers} />
-            ) : null
-          }
+          ListHeaderComponent={null}
         />
 
         {/* Scroll to bottom button */}
@@ -932,6 +998,11 @@ export default function ChatScreen() {
               onSelect={handleMentionSelect}
             />
           </View>
+        )}
+
+        {/* Typing indicator — always visible above input */}
+        {typingUsers.length > 0 && (
+          <TypingIndicator names={typingUsers} />
         )}
 
         {/* Edit message bar */}
