@@ -6,6 +6,27 @@ import { JWT_SECRET } from '@/lib/auth'; // ✅ Importar el mismo secret
 // Codificar el secret para jose
 const JWT_SECRET_KEY = new TextEncoder().encode(JWT_SECRET);
 
+// CORS: origins permitidos para la app móvil
+const ALLOWED_ORIGINS = [
+  'http://localhost:8081',
+  'http://localhost:8082',
+  'http://localhost:19006',
+  'https://orvit.app',
+];
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, Cookie',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Max-Age': '86400',
+  };
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+  }
+  return headers;
+}
+
 // Config constants (obfuscated for security)
 const VM_COOKIE_NAME = '_vm';
 const VM_MODE_STANDARD = 'S';
@@ -85,24 +106,44 @@ async function getViewModeFromCookie(
 }
 
 export async function middleware(request: NextRequest) {
-  // Leer accessToken (sistema nuevo) con fallback a token (legacy)
+  const pathname = request.nextUrl.pathname;
+  const origin = request.headers.get('origin');
+
+  // CORS: responder preflight OPTIONS sin pasar por auth
+  if (request.method === 'OPTIONS' && pathname.startsWith('/api/')) {
+    return new NextResponse(null, {
+      status: 204,
+      headers: getCorsHeaders(origin),
+    });
+  }
+
+  // Leer token: Bearer header (mobile) → cookie accessToken → cookie token (legacy)
+  const authHeader = request.headers.get('authorization');
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
   const accessToken = request.cookies.get('accessToken')?.value;
   const legacyToken = request.cookies.get('token')?.value;
-  const token = accessToken || legacyToken;
-  const pathname = request.nextUrl.pathname;
+  const token = bearerToken || accessToken || legacyToken;
 
   // Helper: intentar refresh inline antes de redirigir a /login
-  // Solo para rutas de página (no API) — evita el flash a /login
+  // Para API routes: devolver 401 JSON (no redirect, para evitar CORS issues)
+  // Para páginas: intentar refresh, si falla redirigir a /login
   const tryRefreshOrLogin = async (): Promise<NextResponse> => {
+    // API routes: nunca redirigir, devolver 401
+    if (pathname.startsWith('/api/')) {
+      return addCors(NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      ));
+    }
+
     const refreshCookie = request.cookies.get('refreshToken')?.value;
-    if (refreshCookie && !pathname.startsWith('/api/')) {
+    if (refreshCookie) {
       try {
         const refreshRes = await fetch(new URL('/api/auth/refresh', request.url), {
           method: 'POST',
           headers: { Cookie: request.headers.get('cookie') || '' },
         });
         if (refreshRes.ok) {
-          // Redirigir a la misma URL con cookies nuevas
           const response = NextResponse.redirect(request.url);
           for (const cookie of refreshRes.headers.getSetCookie()) {
             response.headers.append('Set-Cookie', cookie);
@@ -138,6 +179,17 @@ export async function middleware(request: NextRequest) {
     return response;
   };
 
+  // Helper: add CORS headers to a response
+  const addCors = (response: NextResponse): NextResponse => {
+    if (pathname.startsWith('/api/') && origin) {
+      const corsHeaders = getCorsHeaders(origin);
+      for (const [key, value] of Object.entries(corsHeaders)) {
+        response.headers.set(key, value);
+      }
+    }
+    return response;
+  };
+
   // Helper to create next response with ViewMode header
   const nextWithViewMode = async (
     authPayload: { userId?: number; companyId?: number } | null = null
@@ -148,18 +200,18 @@ export async function middleware(request: NextRequest) {
       if (isProtectedRoute(pathname)) {
         const requestHeaders = new Headers(request.headers);
         requestHeaders.set(VM_HEADER_NAME, VM_ENCODED.S);
-        return NextResponse.next({
+        return addCors(NextResponse.next({
           request: { headers: requestHeaders },
-        });
+        }));
       }
 
       // Get mode from cookie
       const mode = await getViewModeFromCookie(request, authPayload);
       const requestHeaders = new Headers(request.headers);
       requestHeaders.set(VM_HEADER_NAME, VM_ENCODED[mode]);
-      return NextResponse.next({
+      return addCors(NextResponse.next({
         request: { headers: requestHeaders },
-      });
+      }));
     }
 
     return NextResponse.next();
@@ -180,19 +232,19 @@ export async function middleware(request: NextRequest) {
 
     // En producción, requiere SUPERADMIN
     if (!token) {
-      return NextResponse.json(
+      return addCors(NextResponse.json(
         { error: 'Debug routes require authentication in production' },
         { status: 401 }
-      );
+      ));
     }
 
     try {
       const { payload } = await jwtVerify(token, JWT_SECRET_KEY);
       if (payload.role !== 'SUPERADMIN') {
-        return NextResponse.json(
+        return addCors(NextResponse.json(
           { error: 'Debug routes require SUPERADMIN role in production' },
           { status: 403 }
-        );
+        ));
       }
       return nextWithViewMode({
         userId: payload.userId as number,
@@ -237,7 +289,7 @@ export async function middleware(request: NextRequest) {
     if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
       return nextWithViewMode();
     }
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return addCors(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }));
   }
 
   // Verificar si es la ruta de superadmin
