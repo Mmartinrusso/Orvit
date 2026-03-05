@@ -89,8 +89,19 @@ export default function LoginScreen() {
             }}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Logo placeholder — reemplazar con imagen después */}
-            <View style={{ height: 60, marginBottom: 16 }} />
+            {/* Brand */}
+            <View style={{ alignItems: "center", marginBottom: 16 }}>
+              <Text
+                style={{
+                  fontSize: 38,
+                  fontWeight: "800",
+                  color: headingColor,
+                  letterSpacing: 8,
+                }}
+              >
+                ORVIT
+              </Text>
+            </View>
 
             {/* Heading */}
             <Animated.View
@@ -203,8 +214,7 @@ export default function LoginScreen() {
                 />
                 <AnimatedPressable
                   onPress={() => setShowPassword(!showPassword)}
-                  hitSlop={12}
-                  style={{ padding: 4 }}
+                  style={{ padding: 8 }}
                 >
                   <Ionicons
                     name={showPassword ? "eye-off-outline" : "eye-outline"}

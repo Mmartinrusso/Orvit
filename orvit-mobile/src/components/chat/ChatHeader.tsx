@@ -93,7 +93,7 @@ export default function ChatHeader({
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: "#3b82f6",
+              backgroundColor: colors.primary,
               justifyContent: "center",
               alignItems: "center",
             }}
@@ -126,7 +126,7 @@ export default function ChatHeader({
           <Text
             style={{
               fontSize: 11,
-              color: hasTyping ? "#25D366" : headerSubtext,
+              color: hasTyping ? colors.success : headerSubtext,
               fontStyle: hasTyping ? "italic" : "normal",
             }}
             numberOfLines={1}

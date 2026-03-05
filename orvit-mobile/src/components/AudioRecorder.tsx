@@ -34,7 +34,7 @@ interface AudioRecorderProps {
 }
 
 // ── Waveform dots (WhatsApp-style) ──
-const DOT_COUNT = 40;
+const DOT_COUNT = 20;
 
 function WaveformDots({ isRecording, dotColor }: { isRecording: boolean; dotColor: string }) {
   const dots = [];
@@ -351,7 +351,7 @@ export default function AudioRecorder({
               height: 48,
               borderRadius: 24,
               borderWidth: 2.5,
-              borderColor: "#ef4444",
+              borderColor: colors.recording,
               justifyContent: "center",
               alignItems: "center",
             }}
@@ -359,7 +359,7 @@ export default function AudioRecorder({
             <Ionicons
               name={isPaused ? "play-outline" : "pause-outline"}
               size={22}
-              color="#ef4444"
+              color={colors.recording}
             />
           </AnimatedPressable>
 
@@ -371,7 +371,7 @@ export default function AudioRecorder({
               width: 48,
               height: 48,
               borderRadius: 24,
-              backgroundColor: "#3b82f6",
+              backgroundColor: colors.primary,
               justifyContent: "center",
               alignItems: "center",
             }}

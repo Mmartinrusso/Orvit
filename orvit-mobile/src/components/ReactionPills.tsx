@@ -26,7 +26,7 @@ export default function ReactionPills({
   if (!reactions || reactions.length === 0) return null;
 
   const pillBg = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)";
-  const countColorMine = isDark ? "#53bdeb" : "#0b6bcb";
+  const countColorMine = colors.primary;
   const countColorOther = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.5)";
 
   return (

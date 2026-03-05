@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,10 +10,11 @@ import {
   TextInput,
   ScrollView,
 } from "react-native";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useNavigation } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Animated, { FadeInDown, FadeIn, FadeInRight } from "react-native-reanimated";
+
 import { Ionicons } from "@expo/vector-icons";
 import { getConversations, getBotConversation, updateConversation } from "@/api/chat";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,7 +53,7 @@ type FilterChip = "all" | "unread" | "groups" | "direct";
 type InboxItem = any & { _subgroups?: any[]; _isSubgroup?: boolean };
 
 // ── Conversation Item ───────────────────────────────────────
-function ConversationItem({
+const ConversationItem = React.memo(function ConversationItem({
   item,
   userId,
   onLongPress,
@@ -117,8 +118,7 @@ function ConversationItem({
             {/* Chevron for groups with subgroups */}
             {hasSubgroups && (
               <AnimatedPressable
-                onPress={(e: any) => {
-                  e?.stopPropagation?.();
+                onPress={() => {
                   onToggleExpand?.();
                 }}
                 haptic="selection"
@@ -145,7 +145,7 @@ function ConversationItem({
                   width: 52,
                   height: 52,
                   borderRadius: 26,
-                  backgroundColor: "#3b82f6",
+                  backgroundColor: colors.primary,
                   justifyContent: "center",
                   alignItems: "center",
                 }}
@@ -274,7 +274,7 @@ function ConversationItem({
       />
     </View>
   );
-}
+});
 
 // ── Main Screen ─────────────────────────────────────────────
 export default function InboxScreen() {
@@ -645,6 +645,10 @@ export default function InboxScreen() {
         style={{ flex: 1 }}
         data={flatData}
         keyExtractor={(item: any, index: number) => `${item.id}-${item._isSubgroup ? 'sub' : 'top'}-${index}`}
+        removeClippedSubviews={Platform.OS !== "web"}
+        maxToRenderPerBatch={10}
+        windowSize={7}
+        initialNumToRender={15}
         renderItem={({ item }) => {
           const hasSubgroups = !!(item._subgroups && item._subgroups.length > 0);
           const isSubgroup = !!item._isSubgroup;
@@ -673,8 +677,15 @@ export default function InboxScreen() {
             tintColor={colors.primary}
           />
         }
-        contentContainerStyle={{ paddingBottom: 20, flexGrow: 0 }}
+        contentContainerStyle={{ paddingBottom: 20, flexGrow: 1 }}
         ListEmptyComponent={
+          isLoading ? (
+            <View style={{ paddingTop: 4 }}>
+              {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+                <SkeletonConversation key={i} />
+              ))}
+            </View>
+          ) : (
           <View
             style={{
               alignItems: "center",
@@ -721,6 +732,7 @@ export default function InboxScreen() {
                 : "Tocá + para iniciar una conversación"}
             </Text>
           </View>
+          )
         }
       />
 

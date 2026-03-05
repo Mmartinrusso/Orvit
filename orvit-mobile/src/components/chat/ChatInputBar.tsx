@@ -76,7 +76,7 @@ export default function ChatInputBar({
 
   const barBg = colors.chatHeaderBg;
   const inputBg = colors.chatInputBg;
-  const accentBlue = "#3b82f6";
+  const accentBlue = colors.primary;
   const iconColor = colors.textPrimary;
 
   // ── Recording mode: full-width AudioRecorder with autoStart ──
@@ -230,13 +230,14 @@ export default function ChatInputBar({
           style={{
             flex: 1,
             flexDirection: "row",
-            alignItems: "center",
+            alignItems: "flex-end",
             backgroundColor: inputBg,
             borderRadius: 20,
             borderWidth: isDark ? 0 : 1,
             borderColor: colors.border,
             paddingHorizontal: 14,
-            height: 36,
+            minHeight: 36,
+            maxHeight: 100,
           }}
         >
           <TextInput
@@ -244,15 +245,19 @@ export default function ChatInputBar({
               flex: 1,
               fontSize: 14,
               color: colors.textPrimary,
-              height: 36,
+              minHeight: 36,
+              maxHeight: 100,
               textAlignVertical: "center",
               includeFontPadding: false,
+              paddingTop: 8,
+              paddingBottom: 8,
             } as any}
             placeholder="Mensaje"
             placeholderTextColor={colors.textMuted}
             value={inputText}
             onChangeText={onChangeText}
             maxLength={4000}
+            multiline
           />
         </View>
 

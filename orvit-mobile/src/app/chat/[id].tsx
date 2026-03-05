@@ -50,6 +50,7 @@ import TypingIndicator from "@/components/chat/TypingIndicator";
 import MentionList from "@/components/MentionList";
 import ReactionPicker from "@/components/ReactionPicker";
 import AnimatedPressable from "@/components/ui/AnimatedPressable";
+import { SkeletonMessage } from "@/components/ui/Skeleton";
 import type { Message } from "@/types/chat";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -100,54 +101,36 @@ const DateSeparator = React.memo(function DateSeparator({ date, isDark }: { date
   );
 });
 
-// ── Chat background texture (WhatsApp-style dense doodle) ──
+// ── Chat background texture (lightweight pattern) ──
 const ChatBackgroundPattern = React.memo(function ChatBackgroundPattern({ isDark }: { isDark: boolean }) {
   const icons = [
-    "heart-outline", "camera-outline", "musical-notes-outline", "gift-outline",
-    "happy-outline", "star-outline", "call-outline", "chatbubble-outline",
-    "globe-outline", "time-outline", "lock-closed-outline", "alarm-outline",
-    "calculator-outline", "calendar-outline", "bulb-outline", "compass-outline",
-    "football-outline", "basketball-outline", "balloon-outline", "bicycle-outline",
-    "boat-outline", "bus-outline", "cafe-outline", "cart-outline",
-    "cloud-outline", "code-slash-outline", "color-palette-outline", "construct-outline",
-    "cube-outline", "diamond-outline", "earth-outline", "film-outline",
-    "fish-outline", "fitness-outline", "flame-outline", "flash-outline",
-    "flower-outline", "game-controller-outline", "headset-outline", "home-outline",
-    "ice-cream-outline", "key-outline", "leaf-outline", "library-outline",
-    "location-outline", "mail-outline", "megaphone-outline", "mic-outline",
-    "moon-outline", "newspaper-outline", "notifications-outline", "paper-plane-outline",
-    "paw-outline", "pencil-outline", "pizza-outline", "planet-outline",
-    "play-outline", "rainy-outline", "rocket-outline", "rose-outline",
-    "school-outline", "shirt-outline", "skull-outline", "snow-outline",
-    "sparkles-outline", "sunny-outline", "telescope-outline", "tennisball-outline",
-    "thumbs-up-outline", "ticket-outline", "trophy-outline", "umbrella-outline",
-    "videocam-outline", "wallet-outline", "watch-outline", "wine-outline",
+    "heart-outline", "camera-outline", "star-outline", "chatbubble-outline",
+    "globe-outline", "lock-closed-outline", "bulb-outline", "compass-outline",
+    "cafe-outline", "cloud-outline", "diamond-outline", "flame-outline",
+    "flower-outline", "home-outline", "leaf-outline", "paper-plane-outline",
+    "rocket-outline", "sparkles-outline", "trophy-outline", "musical-notes-outline",
   ] as const;
-  const rows = 40;
-  const cols = 9;
+  const rows = 18;
+  const cols = 6;
   const items = [];
-  // Pseudo-random using deterministic seed per position
   const rand = (r: number, c: number) => ((r * 131 + c * 97 + 37) % 256) / 256;
   for (let r = 0; r < rows; r++) {
-    const isOffset = r % 2 === 1;
     for (let c = 0; c < cols; c++) {
       const idx = Math.floor(rand(r, c) * icons.length) % icons.length;
       const rot = Math.floor(rand(r + 5, c + 3) * 360) - 180;
-      const size = 11 + Math.floor(rand(r + 2, c + 7) * 5); // 11-15
       items.push(
         <View
           key={`${r}-${c}`}
           style={{
             width: `${100 / cols}%` as any,
-            height: 28,
+            height: 44,
             alignItems: "center",
             justifyContent: "center",
-            marginLeft: isOffset && c === 0 ? 16 : 0,
           }}
         >
           <Ionicons
             name={icons[idx]}
-            size={size}
+            size={13}
             color={isDark ? "#ffffff" : "#000000"}
             style={{ transform: [{ rotate: `${rot}deg` }] }}
           />
@@ -162,8 +145,7 @@ const ChatBackgroundPattern = React.memo(function ChatBackgroundPattern({ isDark
         top: 0, left: 0, right: 0, bottom: 0,
         flexDirection: "row",
         flexWrap: "wrap",
-        opacity: 0.04,
-        paddingTop: 2,
+        opacity: 0.03,
         zIndex: 0,
       }}
       pointerEvents="none"
@@ -256,7 +238,7 @@ export default function ChatScreen() {
   });
 
   // Messages
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading: messagesLoading } =
     useInfiniteQuery({
       queryKey: ["messages", id],
       queryFn: ({ pageParam }) =>
@@ -305,7 +287,7 @@ export default function ChatScreen() {
         senderId: user?.id ?? 0,
         companyId: 0,
         content: msgData.content,
-        type: msgData.type || "text",
+        type: (msgData.type || "text") as Message["type"],
         fileUrl: msgData.fileUrl || null,
         fileName: msgData.fileName || null,
         fileSize: msgData.fileSize || null,
@@ -442,6 +424,7 @@ export default function ChatScreen() {
     });
 
     // Typing indicator
+    const typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
     channel.bind(
       "typing",
       (evt: { userId: number; userName: string }) => {
@@ -450,14 +433,22 @@ export default function ChatScreen() {
           if (prev.includes(evt.userName)) return prev;
           return [...prev, evt.userName];
         });
-        // Clear after 5 seconds
-        setTimeout(() => {
-          setTypingUsers((prev) => prev.filter((n) => n !== evt.userName));
-        }, 5000);
+        // Reset timer for this user
+        const existing = typingTimers.get(evt.userName);
+        if (existing) clearTimeout(existing);
+        typingTimers.set(
+          evt.userName,
+          setTimeout(() => {
+            setTypingUsers((prev) => prev.filter((n) => n !== evt.userName));
+            typingTimers.delete(evt.userName);
+          }, 5000)
+        );
       }
     );
 
     return () => {
+      typingTimers.forEach((t) => clearTimeout(t));
+      typingTimers.clear();
       pusher.unsubscribe(`private-chat-${id}`);
     };
   }, [id, queryClient, user?.id]);
@@ -836,6 +827,15 @@ export default function ChatScreen() {
           onScroll={handleScroll}
           scrollEventThrottle={250}
           ListHeaderComponent={null}
+          ListEmptyComponent={
+            messagesLoading ? (
+              <View style={{ paddingVertical: 8, transform: [{ scaleY: -1 }] }}>
+                {[false, true, false, true, true, false, true, false].map((isMe, i) => (
+                  <SkeletonMessage key={i} isMe={isMe} />
+                ))}
+              </View>
+            ) : null
+          }
         />
 
         {/* Scroll to bottom button */}
