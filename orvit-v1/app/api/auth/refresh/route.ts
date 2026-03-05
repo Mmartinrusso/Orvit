@@ -54,8 +54,16 @@ export async function POST(request: NextRequest) {
     }
     await incrementRateLimit(clientIp, 'login');
 
-    // Obtener refresh token de cookies
-    const { refreshToken } = getAuthCookies();
+    // Obtener refresh token: cookie (web) o JSON body (mobile)
+    let refreshToken = getAuthCookies().refreshToken;
+    if (!refreshToken) {
+      try {
+        const body = await request.json();
+        refreshToken = body.refreshToken;
+      } catch {
+        // No JSON body
+      }
+    }
 
     if (!refreshToken) {
       return NextResponse.json(
@@ -191,6 +199,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      accessToken: newAccessToken,
+      refreshToken: rotationResult.newRefreshToken,
       expiresAt: accessTokenExpires.toISOString(),
     });
   } catch (error) {

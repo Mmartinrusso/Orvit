@@ -9,7 +9,7 @@ import { verifyJWT } from '@/lib/auth';
 import { createChatbot } from '@/lib/ai/chatbot';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
-import { requireAuth } from '@/lib/auth/shared-helpers';
+import { getAuthPayload } from '@/lib/chat/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,22 +28,14 @@ const chatRequestSchema = z.object({
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireAuth();
-  if (error) return error;
+  const auth = await getAuthPayload(req);
+  if (!auth) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
 
   try {
-    // Get user from JWT
-    const token = req.cookies.get('token')?.value;
-    let user: any = null;
+    const user = auth;
     let clientId: number | undefined = undefined;
-
-    if (token) {
-      try {
-        user = await verifyJWT(token);
-      } catch {
-        // Continue as anonymous
-      }
-    }
 
     // Parse request
     const body = await req.json();
@@ -58,14 +50,8 @@ export async function POST(req: NextRequest) {
 
     const { message, sessionId, language } = validation.data;
 
-    // Get or create company ID (for multi-tenant)
-    // If no user, try to get from public client portal
-    let companyId = user?.companyId || 1; // Default to company 1 for demo
-
-    // If user is a client (portal), get their client ID
-    if (user && user.clientId) {
-      clientId = user.clientId;
-    }
+    // Get company ID from auth
+    const companyId = user.companyId || 1;
 
     // Get or create chat session
     let session;
@@ -179,8 +165,10 @@ export async function POST(req: NextRequest) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export async function GET(req: NextRequest) {
-  const { error: getError } = await requireAuth();
-  if (getError) return getError;
+  const auth = await getAuthPayload(req);
+  if (!auth) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+  }
 
   try {
     const { searchParams } = new URL(req.url);
