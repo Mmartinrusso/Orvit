@@ -32,7 +32,8 @@ export const darkPalette = {
   bubbleOtherBg: "#1f2c34",
   bubbleOtherText: "#ffffff",
   chatBg: "#0b141a",
-  chatHeaderBg: "#1f2c34",
+  chatHeaderBg: "#111820",
+  chatInputBg: "#2a2f38",
 
   // Misc
   overlay: "rgba(0, 0, 0, 0.6)",
@@ -75,12 +76,13 @@ export const lightPalette: typeof darkPalette = {
   warning: "#f59e0b",
 
   // Message bubbles
-  bubbleMeBg: "#1a4a7a",
-  bubbleMeText: "#ffffff",
-  bubbleOtherBg: "#2a2a2e",
-  bubbleOtherText: "#ffffff",
+  bubbleMeBg: "#d9fdd3",
+  bubbleMeText: "#111b21",
+  bubbleOtherBg: "#ffffff",
+  bubbleOtherText: "#111b21",
   chatBg: "#efeae2",
-  chatHeaderBg: "#008069",
+  chatHeaderBg: "#f0f2f5",
+  chatInputBg: "#ffffff",
 
   overlay: "rgba(0, 0, 0, 0.4)",
   skeleton: "#e2e8f0",

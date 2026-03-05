@@ -28,9 +28,9 @@ export default function ChatHeader({
 }: Props) {
   const { colors, isDark } = useTheme();
 
-  const headerBg = "#111820";
-  const headerText = "#ffffff";
-  const headerSubtext = "rgba(255,255,255,0.5)";
+  const headerBg = colors.chatHeaderBg;
+  const headerText = colors.textPrimary;
+  const headerSubtext = colors.textMuted;
 
   const hasTyping = typingNames && typingNames.length > 0;
   let statusText: string;
@@ -72,7 +72,7 @@ export default function ChatHeader({
           alignItems: "center",
         }}
       >
-        <Ionicons name="arrow-back" size={22} color={headerText} />
+        <Ionicons name="arrow-back-outline" size={22} color={headerText} />
       </AnimatedPressable>
 
       {/* Avatar + Title — takes all remaining space */}
@@ -98,7 +98,7 @@ export default function ChatHeader({
               alignItems: "center",
             }}
           >
-            <Ionicons name="sparkles" size={20} color="#fff" />
+            <Ionicons name="sparkles-outline" size={20} color="#fff" />
           </View>
         ) : isGroup ? (
           <View
@@ -106,12 +106,12 @@ export default function ChatHeader({
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: "rgba(255,255,255,0.15)",
+              backgroundColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)",
               justifyContent: "center",
               alignItems: "center",
             }}
           >
-            <Ionicons name="people" size={20} color={headerText} />
+            <Ionicons name="people-outline" size={20} color={headerText} />
           </View>
         ) : (
           <Avatar name={title} size="sm" />
@@ -149,7 +149,7 @@ export default function ChatHeader({
         }}
       >
         {onSearchPress && (
-          <Ionicons name="search" size={20} color={headerText} />
+          <Ionicons name="search-outline" size={20} color={headerText} />
         )}
       </TouchableOpacity>
     </View>

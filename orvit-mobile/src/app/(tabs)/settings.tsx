@@ -1,6 +1,8 @@
-import { View, Text, Alert, ScrollView, Platform } from "react-native";
+import { useState } from "react";
+import { View, Text, Alert, ScrollView, Platform, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCreateStyles } from "@/hooks/useCreateStyles";
@@ -8,12 +10,60 @@ import AnimatedPressable from "@/components/ui/AnimatedPressable";
 import AnimatedFadeIn from "@/components/ui/AnimatedFadeIn";
 import Avatar from "@/components/ui/Avatar";
 import { router } from "expo-router";
+import { API_URL } from "@/api/client";
+import { getAccessToken } from "@/lib/storage";
 
 type IoniconsName = keyof typeof Ionicons.glyphMap;
 
 export default function SettingsScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const { colors, isDark, toggleTheme } = useTheme();
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  async function handleChangeAvatar() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permiso denegado", "Se necesita acceso a la galeria para cambiar tu foto.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+
+    setUploadingAvatar(true);
+    try {
+      const asset = result.assets[0];
+      const formData = new FormData();
+      formData.append("file", {
+        uri: asset.uri,
+        name: `avatar.${asset.uri.split(".").pop() || "jpg"}`,
+        type: asset.mimeType || "image/jpeg",
+      } as unknown as Blob);
+
+      const token = await getAccessToken();
+      const res = await fetch(`${API_URL}/api/auth/avatar`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+
+      // Refresh user data to get new avatar URL
+      await refreshUser();
+      Alert.alert("Listo", "Foto de perfil actualizada");
+    } catch {
+      Alert.alert("Error", "No se pudo cambiar la foto");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  }
 
   const styles = useCreateStyles((c, t, s, r) => ({
     container: {
@@ -265,7 +315,7 @@ export default function SettingsScreen() {
           )}
         </View>
         {options?.trailing || (
-          <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          <Ionicons name="chevron-forward-outline" size={16} color={colors.textMuted} />
         )}
       </View>
     );
@@ -299,7 +349,7 @@ export default function SettingsScreen() {
       >
         <View style={styles.toggleKnob}>
           <Ionicons
-            name={isDark ? "moon" : "sunny"}
+            name={isDark ? "moon-outline" : "sunny-outline"}
             size={13}
             color={isDark ? colors.primary : colors.warning}
           />
@@ -323,14 +373,40 @@ export default function SettingsScreen() {
         <AnimatedFadeIn delay={0}>
           <View style={styles.profileCard}>
             <View style={styles.profileTop}>
-              <View style={styles.avatarContainer}>
+              <AnimatedPressable
+                onPress={handleChangeAvatar}
+                haptic="light"
+                disabled={uploadingAvatar}
+                style={styles.avatarContainer}
+              >
                 <Avatar
                   name={user?.name || "Usuario"}
                   size="lg"
                   imageUrl={user?.avatar}
                 />
                 <View style={styles.onlineDot} />
-              </View>
+                <View
+                  style={{
+                    position: "absolute",
+                    bottom: -2,
+                    right: -2,
+                    width: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    backgroundColor: colors.primary,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    borderWidth: 2,
+                    borderColor: colors.bgSecondary,
+                  }}
+                >
+                  {uploadingAvatar ? (
+                    <ActivityIndicator size={10} color="#fff" />
+                  ) : (
+                    <Ionicons name="camera-outline" size={12} color="#fff" />
+                  )}
+                </View>
+              </AnimatedPressable>
               <View style={styles.profileInfo}>
                 <Text style={styles.profileName} numberOfLines={1}>
                   {user?.name || "Usuario"}
@@ -341,7 +417,7 @@ export default function SettingsScreen() {
                 {user?.companyName ? (
                   <View style={styles.companyRow}>
                     <Ionicons
-                      name="business"
+                      name="business-outline"
                       size={12}
                       color={colors.primary}
                     />
@@ -358,7 +434,7 @@ export default function SettingsScreen() {
           <Text style={styles.sectionLabel}>General</Text>
           <View style={styles.menuGroup}>
             {renderMenuItem(
-              isDark ? "moon" : "sunny",
+              isDark ? "moon-outline" : "sunny-outline",
               isDark ? "#a78bfa" : "#f59e0b",
               isDark ? "rgba(167,139,250,0.15)" : "rgba(245,158,11,0.15)",
               isDark ? "Modo oscuro" : "Modo claro",

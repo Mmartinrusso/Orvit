@@ -1,6 +1,7 @@
 import { Tabs } from "expo-router";
 import { Platform, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/contexts/ThemeContext";
 
 function TabIcon({
@@ -64,6 +65,8 @@ function TabIcon({
 
 export default function TabsLayout() {
   const { colors, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const bottomPad = Platform.OS === "web" ? 8 : Math.max(insets.bottom, 8);
 
   const inactiveColor = isDark ? "rgba(255,255,255,0.5)" : "#8696a0";
 
@@ -84,9 +87,9 @@ export default function TabsLayout() {
           backgroundColor: colors.tabBarBg,
           borderTopColor: colors.tabBarBorder,
           borderTopWidth: 0.5,
-          height: Platform.OS === "web" ? 68 : 90,
+          height: Platform.OS === "web" ? 68 : 56 + bottomPad,
           paddingTop: 6,
-          paddingBottom: Platform.OS === "web" ? 8 : 28,
+          paddingBottom: bottomPad,
           elevation: 8,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: -3 },

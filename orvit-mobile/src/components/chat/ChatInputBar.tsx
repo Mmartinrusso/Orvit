@@ -38,6 +38,7 @@ interface Props {
   isSending: boolean;
   replyTo: Message | null;
   onCancelReply: () => void;
+  bottomInset?: number;
 }
 
 export default function ChatInputBar({
@@ -50,6 +51,7 @@ export default function ChatInputBar({
   isSending,
   replyTo,
   onCancelReply,
+  bottomInset = 0,
 }: Props) {
   const { colors, isDark } = useTheme();
   const haptics = useHaptics();
@@ -72,15 +74,15 @@ export default function ChatInputBar({
     transform: [{ scale: sendScale.value }],
   }));
 
-  const barBg = "#111820";
-  const inputBg = isDark ? "#1c1c1e" : "#2c2c2e";
+  const barBg = colors.chatHeaderBg;
+  const inputBg = colors.chatInputBg;
   const accentBlue = "#3b82f6";
-  const iconColor = "#ffffff";
+  const iconColor = colors.textPrimary;
 
   // ── Recording mode: full-width AudioRecorder with autoStart ──
   if (isRecording) {
     return (
-      <View style={{ backgroundColor: barBg }}>
+      <View style={{ backgroundColor: barBg, paddingBottom: bottomInset }}>
         <AudioRecorder
           onAudioReady={onAudioReady}
           onRecordingChange={setIsRecording}
@@ -111,7 +113,7 @@ export default function ChatInputBar({
               borderRadius: 12,
               justifyContent: "center",
               alignItems: "center",
-              backgroundColor: "rgba(255,255,255,0.08)",
+              backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
             }}
             onPress={() => { setShowAttachments(false); onPickFile(); }}
             haptic="light"
@@ -125,7 +127,7 @@ export default function ChatInputBar({
               borderRadius: 12,
               justifyContent: "center",
               alignItems: "center",
-              backgroundColor: "rgba(255,255,255,0.08)",
+              backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
             }}
             onPress={() => { setShowAttachments(false); onPickImage(); }}
             haptic="light"
@@ -145,7 +147,7 @@ export default function ChatInputBar({
             marginHorizontal: 8,
             marginTop: 8,
             marginBottom: 0,
-            backgroundColor: "#1a1f2a",
+            backgroundColor: isDark ? "#1a1f2a" : colors.bgTertiary,
             borderRadius: 12,
             overflow: "hidden",
             paddingRight: 12,
@@ -169,7 +171,7 @@ export default function ChatInputBar({
               {replyTo.sender?.name || ""}
             </Animated.Text>
             <Animated.Text
-              style={{ fontSize: 14, color: "#ffffff", marginTop: 2 }}
+              style={{ fontSize: 14, color: colors.textPrimary, marginTop: 2 }}
               numberOfLines={1}
             >
               {replyTo.type === "audio" ? "🎤 Audio" : replyTo.content}
@@ -186,7 +188,7 @@ export default function ChatInputBar({
               alignItems: "center",
             }}
           >
-            <Ionicons name="close-circle-outline" size={26} color="rgba(255,255,255,0.5)" />
+            <Ionicons name="close-circle-outline" size={26} color={colors.textMuted} />
           </AnimatedPressable>
         </Animated.View>
       )}
@@ -198,7 +200,7 @@ export default function ChatInputBar({
           alignItems: "center",
           paddingHorizontal: 8,
           paddingTop: replyTo ? 6 : 12,
-          paddingBottom: 14,
+          paddingBottom: 14 + bottomInset,
           gap: 8,
         }}
       >
@@ -217,7 +219,7 @@ export default function ChatInputBar({
           }}
         >
           <Ionicons
-            name={showAttachments ? "close" : "add"}
+            name={showAttachments ? "close-outline" : "add-outline"}
             size={26}
             color={iconColor}
           />
@@ -231,6 +233,8 @@ export default function ChatInputBar({
             alignItems: "center",
             backgroundColor: inputBg,
             borderRadius: 20,
+            borderWidth: isDark ? 0 : 1,
+            borderColor: colors.border,
             paddingHorizontal: 14,
             height: 36,
           }}
@@ -239,13 +243,13 @@ export default function ChatInputBar({
             style={{
               flex: 1,
               fontSize: 14,
-              color: "#ffffff",
+              color: colors.textPrimary,
               height: 36,
               textAlignVertical: "center",
               includeFontPadding: false,
             } as any}
             placeholder="Mensaje"
-            placeholderTextColor="rgba(255,255,255,0.35)"
+            placeholderTextColor={colors.textMuted}
             value={inputText}
             onChangeText={onChangeText}
             maxLength={4000}
@@ -282,7 +286,7 @@ export default function ChatInputBar({
               disabled={isSending}
               haptic="none"
             >
-              <Ionicons name="send" size={18} color="#fff" />
+              <Ionicons name="send-outline" size={18} color="#fff" />
             </AnimatedPressable>
           </Animated.View>
         ) : (

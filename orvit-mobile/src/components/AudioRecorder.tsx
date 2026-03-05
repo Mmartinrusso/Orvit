@@ -16,6 +16,7 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import AnimatedPressable from "@/components/ui/AnimatedPressable";
+import { useTheme } from "@/contexts/ThemeContext";
 import { API_URL } from "@/api/client";
 import { getAccessToken } from "@/lib/storage";
 
@@ -35,11 +36,11 @@ interface AudioRecorderProps {
 // ── Waveform dots (WhatsApp-style) ──
 const DOT_COUNT = 40;
 
-function WaveformDots({ isRecording }: { isRecording: boolean }) {
+function WaveformDots({ isRecording, dotColor }: { isRecording: boolean; dotColor: string }) {
   const dots = [];
   for (let i = 0; i < DOT_COUNT; i++) {
     dots.push(
-      <WaveformDot key={i} index={i} isRecording={isRecording} />
+      <WaveformDot key={i} index={i} isRecording={isRecording} dotColor={dotColor} />
     );
   }
   return (
@@ -58,7 +59,7 @@ function WaveformDots({ isRecording }: { isRecording: boolean }) {
   );
 }
 
-function WaveformDot({ index, isRecording }: { index: number; isRecording: boolean }) {
+function WaveformDot({ index, isRecording, dotColor }: { index: number; isRecording: boolean; dotColor: string }) {
   const opacity = useSharedValue(0.3);
 
   useEffect(() => {
@@ -90,7 +91,7 @@ function WaveformDot({ index, isRecording }: { index: number; isRecording: boole
           width: 3,
           height: 3,
           borderRadius: 1.5,
-          backgroundColor: "#ffffff",
+          backgroundColor: dotColor,
         },
         style,
       ]}
@@ -144,6 +145,7 @@ export default function AudioRecorder({
   onRecordingChange,
   autoStart,
 }: AudioRecorderProps) {
+  const { colors, isDark } = useTheme();
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -319,10 +321,10 @@ export default function AudioRecorder({
             gap: 12,
           }}
         >
-          <Text style={{ fontSize: 18, fontWeight: "600", color: "#fff", minWidth: 44 }}>
+          <Text style={{ fontSize: 18, fontWeight: "600", color: colors.textPrimary, minWidth: 44 }}>
             {formatTime(duration)}
           </Text>
-          <WaveformDots isRecording={isRecording && !isPaused} />
+          <WaveformDots isRecording={isRecording && !isPaused} dotColor={colors.textPrimary} />
         </View>
 
         {/* Bottom: delete / pause / send */}
@@ -337,7 +339,7 @@ export default function AudioRecorder({
         >
           {/* Delete */}
           <AnimatedPressable onPress={cancelRecording} haptic="light">
-            <Ionicons name="trash-outline" size={26} color="rgba(255,255,255,0.6)" />
+            <Ionicons name="trash-outline" size={26} color={colors.textMuted} />
           </AnimatedPressable>
 
           {/* Pause / Resume */}
@@ -355,7 +357,7 @@ export default function AudioRecorder({
             }}
           >
             <Ionicons
-              name={isPaused ? "play" : "pause"}
+              name={isPaused ? "play-outline" : "pause-outline"}
               size={22}
               color="#ef4444"
             />
@@ -374,7 +376,7 @@ export default function AudioRecorder({
               alignItems: "center",
             }}
           >
-            <Ionicons name="send" size={20} color="#fff" />
+            <Ionicons name="send-outline" size={20} color="#fff" />
           </AnimatedPressable>
         </View>
       </Animated.View>
@@ -399,7 +401,7 @@ export default function AudioRecorder({
         disabled={disabled}
         haptic="none"
       >
-        <Ionicons name="mic-outline" size={24} color="#ffffff" />
+        <Ionicons name="mic-outline" size={24} color={colors.textPrimary} />
       </AnimatedPressable>
     </Animated.View>
   );

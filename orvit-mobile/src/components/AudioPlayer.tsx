@@ -154,7 +154,7 @@ export default function AudioPlayer({ uri, duration = 0, isMe }: AudioPlayerProp
       >
         <Animated.View style={animatedIconStyle}>
           <Ionicons
-            name={isPlaying ? "pause" : "play"}
+            name={isPlaying ? "pause-outline" : "play-outline"}
             size={16}
             color={isMe ? colors.bubbleMeText : colors.primary}
           />

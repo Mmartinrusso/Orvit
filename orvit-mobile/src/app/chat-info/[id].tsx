@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useHaptics } from "@/hooks/useHaptics";
 import {
   getConversation,
@@ -28,26 +29,80 @@ import {
 import Avatar from "@/components/ui/Avatar";
 import type { Conversation, ConversationMember } from "@/types/chat";
 
-// ── WhatsApp Dark palette ─────────────────────────────────
-const C = {
-  bg: "#0b1014",
-  card: "#111820",
-  textPrimary: "#ffffff",
-  textSecondary: "rgba(255,255,255,0.5)",
-  accent: "#3b82f6",
-  danger: "#ef4444",
-  success: "#22c55e",
-  divider: "rgba(255,255,255,0.06)",
-  actionBg: "rgba(255,255,255,0.08)",
-};
-
-
 // ── Component ─────────────────────────────────────────────
 export default function ChatInfoScreen() {
+  const { colors, isDark } = useTheme();
+
+  // Dynamic palette derived from theme
+  const C = useMemo(() => ({
+    bg: colors.chatBg,
+    card: colors.chatHeaderBg,
+    textPrimary: colors.textPrimary,
+    textSecondary: colors.textMuted,
+    accent: colors.primary,
+    danger: colors.error,
+    success: colors.success,
+    divider: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
+    actionBg: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
+  }), [colors, isDark]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const haptics = useHaptics();
   const queryClient = useQueryClient();
+
+  // Dynamic styles
+  const s = useMemo(() => StyleSheet.create({
+    container: { flex: 1, backgroundColor: C.bg },
+    scroll: { flex: 1 },
+    scrollContent: { paddingBottom: 20 },
+    header: { flexDirection: "row", alignItems: "center", backgroundColor: C.card, paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
+    backBtn: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
+    headerTitle: { fontSize: 18, fontWeight: "600", color: C.textPrimary, flex: 1 },
+    profileSection: { alignItems: "center", paddingVertical: 28, gap: 8 },
+    avatarLarge: { width: 80, height: 80, borderRadius: 40, backgroundColor: C.actionBg, justifyContent: "center", alignItems: "center" },
+    profileName: { fontSize: 20, fontWeight: "700", color: C.textPrimary, textAlign: "center", paddingHorizontal: 20 },
+    profileSubtitle: { fontSize: 13, color: C.textSecondary },
+    editContainer: { paddingHorizontal: 16, marginBottom: 12 },
+    editInput: { backgroundColor: C.card, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: C.textPrimary, borderWidth: 1, borderColor: C.accent },
+    editActions: { flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 10 },
+    editBtnCancel: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, backgroundColor: C.actionBg },
+    editBtnCancelText: { fontSize: 13, fontWeight: "600", color: C.textSecondary },
+    editBtnSave: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, backgroundColor: C.accent },
+    editBtnSaveText: { fontSize: 13, fontWeight: "600", color: "#fff" },
+    quickActions: { flexDirection: "row", justifyContent: "center", gap: 24, paddingVertical: 8, paddingHorizontal: 16, marginBottom: 16 },
+    quickActionBtn: { alignItems: "center", gap: 6 },
+    quickActionCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.actionBg, justifyContent: "center", alignItems: "center" },
+    quickActionLabel: { fontSize: 11, color: C.textSecondary },
+    card: { marginHorizontal: 16, marginBottom: 12, backgroundColor: C.card, borderRadius: 12, overflow: "hidden" },
+    cardDescription: { fontSize: 14, color: C.textPrimary, padding: 14, lineHeight: 20 },
+    rowItem: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
+    rowText: { fontSize: 14, color: C.textPrimary },
+    rowIconCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.actionBg, justifyContent: "center", alignItems: "center" },
+    sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginBottom: 6 },
+    sectionTitle: { fontSize: 13, fontWeight: "600", color: C.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, paddingHorizontal: 16, paddingVertical: 8 },
+    memberRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, gap: 12 },
+    memberRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.divider },
+    memberAvatar: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
+    memberInfo: { flex: 1 },
+    memberName: { fontSize: 15, fontWeight: "500", color: C.textPrimary },
+    memberSub: { fontSize: 12, color: C.textSecondary, marginTop: 1 },
+    badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: `${C.accent}20` },
+    badgeText: { fontSize: 11, fontWeight: "600", color: C.accent },
+    removeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: `${C.danger}15` },
+    removeBadgeText: { fontSize: 11, fontWeight: "600", color: C.danger },
+    dangerCard: { marginHorizontal: 16, marginTop: 8, marginBottom: 12, backgroundColor: C.card, borderRadius: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 14, gap: 8 },
+    dangerText: { fontSize: 15, fontWeight: "500", color: C.danger },
+    emptyCenter: { flex: 1, justifyContent: "center", alignItems: "center", paddingTop: 40 },
+    emptyText: { fontSize: 14, color: C.textSecondary },
+    emptyCard: { alignItems: "center", paddingVertical: 24, gap: 8 },
+    emptyCardText: { fontSize: 13, color: C.textSecondary },
+    modalContainer: { flex: 1, backgroundColor: C.bg },
+    modalHeader: { flexDirection: "row", alignItems: "center", backgroundColor: C.card, paddingHorizontal: 16, paddingVertical: 12, gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.divider },
+    modalSearch: { backgroundColor: C.card, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, color: C.textPrimary, marginHorizontal: 16, marginVertical: 12 },
+    alreadyText: { fontSize: 12, color: C.textSecondary },
+    addMemberBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, backgroundColor: C.accent },
+    addMemberBtnText: { fontSize: 13, fontWeight: "600", color: "#fff" },
+  }), [C]);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const [showAddMember, setShowAddMember] = useState(false);
@@ -199,27 +254,27 @@ export default function ChatInfoScreen() {
   const quickActions = useMemo(() => {
     if (isOrvitBot) {
       return [
-        { icon: "mic" as const, label: "Audio", onPress: () => Alert.alert("Tip", "Mandá un audio desde el chat y Orvit lo procesa automáticamente") },
-        { icon: "search" as const, label: "Buscar", onPress: () => Alert.alert("Próximamente", "Búsqueda dentro del chat") },
-        { icon: "notifications-off" as const, label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
-        { icon: "help-circle" as const, label: "Ayuda", onPress: () => Alert.alert("Orvit AI", "Podés mandarme:\n\n🎤 Audios para crear fallas, tareas o consultas\n✍️ Texto con instrucciones\n📊 Pedidos de reportes y resúmenes\n\nEjemplos:\n• \"La máquina 5 tiene una falla\"\n• \"Creame una tarea para mañana\"\n• \"Cómo viene la producción?\"") },
+        { icon: "mic-outline" as const, label: "Audio", onPress: () => Alert.alert("Tip", "Mandá un audio desde el chat y Orvit lo procesa automáticamente") },
+        { icon: "search-outline" as const, label: "Buscar", onPress: () => Alert.alert("Próximamente", "Búsqueda dentro del chat") },
+        { icon: "notifications-off-outline" as const, label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
+        { icon: "help-circle-outline" as const, label: "Ayuda", onPress: () => Alert.alert("Orvit AI", "Podés mandarme:\n\n🎤 Audios para crear fallas, tareas o consultas\n✍️ Texto con instrucciones\n📊 Pedidos de reportes y resúmenes\n\nEjemplos:\n• \"La máquina 5 tiene una falla\"\n• \"Creame una tarea para mañana\"\n• \"Cómo viene la producción?\"") },
       ];
     }
     if (isGroup) {
       return [
         ...(isAdmin
-          ? [{ icon: "person-add" as const, label: "Agregar", onPress: () => setShowAddMember(true) }]
+          ? [{ icon: "person-add-outline" as const, label: "Agregar", onPress: () => setShowAddMember(true) }]
           : []),
-        { icon: "search" as const, label: "Buscar", onPress: () => Alert.alert("Próximamente", "Búsqueda dentro del chat") },
-        { icon: "notifications-off" as const, label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
-        { icon: "ellipsis-horizontal" as const, label: "Más", onPress: handleToggleArchive },
+        { icon: "search-outline" as const, label: "Buscar", onPress: () => Alert.alert("Próximamente", "Búsqueda dentro del chat") },
+        { icon: "notifications-off-outline" as const, label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
+        { icon: "ellipsis-horizontal-outline" as const, label: "Más", onPress: handleToggleArchive },
       ];
     }
     return [
-      { icon: "call" as const, label: "Audio", onPress: () => Alert.alert("Próximamente", "Llamadas de voz") },
-      { icon: "videocam" as const, label: "Video", onPress: () => Alert.alert("Próximamente", "Videollamadas") },
-      { icon: "search" as const, label: "Buscar", onPress: () => Alert.alert("Próximamente", "Búsqueda dentro del chat") },
-      { icon: "notifications-off" as const, label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
+      { icon: "call-outline" as const, label: "Audio", onPress: () => Alert.alert("Próximamente", "Llamadas de voz") },
+      { icon: "videocam-outline" as const, label: "Video", onPress: () => Alert.alert("Próximamente", "Videollamadas") },
+      { icon: "search-outline" as const, label: "Buscar", onPress: () => Alert.alert("Próximamente", "Búsqueda dentro del chat") },
+      { icon: "notifications-off-outline" as const, label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
     ];
   }, [isGroup, isAdmin, isOrvitBot, conv?.muted, handleToggleMute, handleToggleArchive]);
 
@@ -228,7 +283,7 @@ export default function ChatInfoScreen() {
       <SafeAreaView style={s.container} edges={["top"]}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={22} color={C.textPrimary} />
+            <Ionicons name="arrow-back-outline" size={22} color={C.textPrimary} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>Info</Text>
         </View>
@@ -244,7 +299,7 @@ export default function ChatInfoScreen() {
       {/* ── Header ─────────────────────────────────────── */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={22} color={C.textPrimary} />
+          <Ionicons name="arrow-back-outline" size={22} color={C.textPrimary} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Info</Text>
       </View>
@@ -254,7 +309,7 @@ export default function ChatInfoScreen() {
         <View style={s.profileSection}>
           {isOrvitBot ? (
             <View style={[s.avatarLarge, { backgroundColor: C.accent }]}>
-              <Ionicons name="sparkles" size={36} color="#fff" />
+              <Ionicons name="sparkles-outline" size={36} color="#fff" />
             </View>
           ) : isGroup ? (
             <View style={s.avatarLarge}>
@@ -336,7 +391,7 @@ export default function ChatInfoScreen() {
             activeOpacity={0.7}
           >
             <View style={s.rowItem}>
-              <Ionicons name="pencil" size={18} color={C.accent} />
+              <Ionicons name="pencil-outline" size={18} color={C.accent} />
               <Text style={[s.rowText, { color: C.accent }]}>Editar nombre del grupo</Text>
             </View>
           </TouchableOpacity>
@@ -349,9 +404,9 @@ export default function ChatInfoScreen() {
           activeOpacity={0.7}
         >
           <View style={s.rowItem}>
-            <Ionicons name="image" size={18} color={C.textSecondary} />
+            <Ionicons name="image-outline" size={18} color={C.textSecondary} />
             <Text style={[s.rowText, { flex: 1 }]}>Archivos, enlaces y documentos</Text>
-            <Ionicons name="chevron-forward" size={16} color={C.textSecondary} />
+            <Ionicons name="chevron-forward-outline" size={16} color={C.textSecondary} />
           </View>
         </TouchableOpacity>
 
@@ -373,7 +428,7 @@ export default function ChatInfoScreen() {
                   />
                 </View>
                 <Text style={[s.rowText, { flex: 1 }]}>{conv.parent.name || "Sin nombre"}</Text>
-                <Ionicons name="chevron-forward" size={16} color={C.textSecondary} />
+                <Ionicons name="chevron-forward-outline" size={16} color={C.textSecondary} />
               </View>
             </TouchableOpacity>
           </>
@@ -388,7 +443,7 @@ export default function ChatInfoScreen() {
               </Text>
               {isGroup && isAdmin && (
                 <TouchableOpacity onPress={() => setShowAddMember(true)} activeOpacity={0.7}>
-                  <Ionicons name="search" size={18} color={C.textSecondary} />
+                  <Ionicons name="search-outline" size={18} color={C.textSecondary} />
                 </TouchableOpacity>
               )}
             </View>
@@ -401,7 +456,7 @@ export default function ChatInfoScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={[s.memberAvatar, { backgroundColor: C.success }]}>
-                    <Ionicons name="person-add" size={16} color="#fff" />
+                    <Ionicons name="person-add-outline" size={16} color="#fff" />
                   </View>
                   <Text style={[s.memberName, { color: C.textPrimary }]}>Agregar miembro</Text>
                 </TouchableOpacity>
@@ -456,7 +511,7 @@ export default function ChatInfoScreen() {
                   onPress={() => router.push(`/new-chat?parentId=${conv.id}`)}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="add-circle" size={22} color={C.accent} />
+                  <Ionicons name="add-circle-outline" size={22} color={C.accent} />
                 </TouchableOpacity>
               )}
             </View>
@@ -490,7 +545,7 @@ export default function ChatInfoScreen() {
                         {child.memberCount} miembro{child.memberCount !== 1 ? "s" : ""}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color={C.textSecondary} />
+                    <Ionicons name="chevron-forward-outline" size={16} color={C.textSecondary} />
                   </TouchableOpacity>
                 ))
               )}
@@ -501,7 +556,7 @@ export default function ChatInfoScreen() {
                   onPress={() => router.push(`/new-chat?parentId=${conv.id}`)}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="add" size={18} color={C.accent} />
+                  <Ionicons name="add-outline" size={18} color={C.accent} />
                   <Text style={[s.memberName, { color: C.accent, flex: 0, marginLeft: 6 }]}>
                     Crear subgrupo
                   </Text>
@@ -542,7 +597,7 @@ export default function ChatInfoScreen() {
               style={s.backBtn}
               activeOpacity={0.7}
             >
-              <Ionicons name="arrow-back" size={22} color={C.textPrimary} />
+              <Ionicons name="arrow-back-outline" size={22} color={C.textPrimary} />
             </TouchableOpacity>
             <Text style={s.headerTitle}>Agregar miembro</Text>
           </View>
@@ -597,326 +652,3 @@ export default function ChatInfoScreen() {
   );
 }
 
-// ── Styles ──────────────────────────────────────────────────
-const s = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: C.bg,
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 20,
-  },
-
-  // Header
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: C.card,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: C.textPrimary,
-    flex: 1,
-  },
-
-  // Profile
-  profileSection: {
-    alignItems: "center",
-    paddingVertical: 28,
-    gap: 8,
-  },
-  avatarLarge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: C.actionBg,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  profileName: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: C.textPrimary,
-    textAlign: "center",
-    paddingHorizontal: 20,
-  },
-  profileSubtitle: {
-    fontSize: 13,
-    color: C.textSecondary,
-  },
-
-  // Edit name
-  editContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  editInput: {
-    backgroundColor: C.card,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: C.textPrimary,
-    borderWidth: 1,
-    borderColor: C.accent,
-  },
-  editActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 10,
-    marginTop: 10,
-  },
-  editBtnCancel: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: C.actionBg,
-  },
-  editBtnCancelText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: C.textSecondary,
-  },
-  editBtnSave: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: C.accent,
-  },
-  editBtnSaveText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#fff",
-  },
-
-  // Quick actions
-  quickActions: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 24,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  quickActionBtn: {
-    alignItems: "center",
-    gap: 6,
-  },
-  quickActionCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: C.actionBg,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  quickActionLabel: {
-    fontSize: 11,
-    color: C.textSecondary,
-  },
-
-  // Cards
-  card: {
-    marginHorizontal: 16,
-    marginBottom: 12,
-    backgroundColor: C.card,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: C.textPrimary,
-    padding: 14,
-    lineHeight: 20,
-  },
-
-  // Row item (media, edit, parent)
-  rowItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 14,
-    gap: 12,
-  },
-  rowText: {
-    fontSize: 14,
-    color: C.textPrimary,
-  },
-  rowIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: C.actionBg,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  // Section headers
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    marginBottom: 6,
-  },
-  sectionTitle: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: C.textSecondary,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-
-  // Member rows
-  memberRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 12,
-  },
-  memberRowBorder: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: C.divider,
-  },
-  memberAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  memberInfo: {
-    flex: 1,
-  },
-  memberName: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: C.textPrimary,
-  },
-  memberSub: {
-    fontSize: 12,
-    color: C.textSecondary,
-    marginTop: 1,
-  },
-
-  // Badges
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: `${C.accent}20`,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: C.accent,
-  },
-  removeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    backgroundColor: `${C.danger}15`,
-  },
-  removeBadgeText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: C.danger,
-  },
-
-  // Danger
-  dangerCard: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 12,
-    backgroundColor: C.card,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    gap: 8,
-  },
-  dangerText: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: C.danger,
-  },
-
-  // Empty states
-  emptyCenter: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingTop: 40,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: C.textSecondary,
-  },
-  emptyCard: {
-    alignItems: "center",
-    paddingVertical: 24,
-    gap: 8,
-  },
-  emptyCardText: {
-    fontSize: 13,
-    color: C.textSecondary,
-  },
-
-  // Modal
-  modalContainer: {
-    flex: 1,
-    backgroundColor: C.bg,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: C.card,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: C.divider,
-  },
-  modalSearch: {
-    backgroundColor: C.card,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: C.textPrimary,
-    marginHorizontal: 16,
-    marginVertical: 12,
-  },
-  alreadyText: {
-    fontSize: 12,
-    color: C.textSecondary,
-  },
-  addMemberBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: C.accent,
-  },
-  addMemberBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#fff",
-  },
-});

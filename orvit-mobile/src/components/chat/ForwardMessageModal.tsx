@@ -12,18 +12,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { getConversations, sendMessage } from "@/api/chat";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import AnimatedPressable from "@/components/ui/AnimatedPressable";
 import type { Message, Conversation } from "@/types/chat";
-
-const C = {
-  bg: "#0b1014",
-  card: "#111820",
-  border: "rgba(255,255,255,0.06)",
-  text: "#ffffff",
-  muted: "rgba(255,255,255,0.5)",
-  accent: "#3b82f6",
-  input: "#1c1c1e",
-};
 
 interface Props {
   visible: boolean;
@@ -39,6 +30,7 @@ export default function ForwardMessageModal({
   onForwarded,
 }: Props) {
   const { user } = useAuth();
+  const { colors, isDark } = useTheme();
   const [search, setSearch] = useState("");
   const [sending, setSending] = useState<string | null>(null);
 
@@ -127,28 +119,30 @@ export default function ForwardMessageModal({
             width: 44,
             height: 44,
             borderRadius: 22,
-            backgroundColor: isGroup ? "rgba(255,255,255,0.08)" : C.accent,
+            backgroundColor: isGroup
+              ? (isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)")
+              : colors.primary,
             justifyContent: "center",
             alignItems: "center",
           }}
         >
           <Ionicons
-            name={isGroup ? "people" : "person"}
+            name={isGroup ? "people-outline" : "person-outline"}
             size={20}
-            color="#fff"
+            color={isGroup ? colors.textPrimary : "#fff"}
           />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: C.text, fontSize: 15, fontWeight: "500" }}>
+          <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: "500" }}>
             {name}
           </Text>
           {isGroup && (
-            <Text style={{ color: C.muted, fontSize: 12, marginTop: 1 }}>
+            <Text style={{ color: colors.textMuted, fontSize: 12, marginTop: 1 }}>
               Grupo
             </Text>
           )}
         </View>
-        {isSending && <ActivityIndicator size="small" color={C.accent} />}
+        {isSending && <ActivityIndicator size="small" color={colors.primary} />}
       </AnimatedPressable>
     );
   };
@@ -162,7 +156,7 @@ export default function ForwardMessageModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
         {/* Header */}
         <View
           style={{
@@ -171,41 +165,41 @@ export default function ForwardMessageModal({
             paddingHorizontal: 16,
             paddingTop: 16,
             paddingBottom: 12,
-            backgroundColor: C.card,
+            backgroundColor: colors.chatHeaderBg,
             gap: 12,
           }}
         >
           <AnimatedPressable onPress={onClose} haptic="light">
-            <Ionicons name="close" size={24} color={C.text} />
+            <Ionicons name="close-outline" size={24} color={colors.textPrimary} />
           </AnimatedPressable>
-          <Text style={{ flex: 1, color: C.text, fontSize: 18, fontWeight: "600" }}>
+          <Text style={{ flex: 1, color: colors.textPrimary, fontSize: 18, fontWeight: "600" }}>
             Reenviar a...
           </Text>
         </View>
 
         {/* Search */}
-        <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: C.card }}>
+        <View style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.chatHeaderBg }}>
           <View
             style={{
               flexDirection: "row",
               alignItems: "center",
-              backgroundColor: C.input,
+              backgroundColor: colors.chatInputBg,
               borderRadius: 10,
               paddingHorizontal: 12,
               height: 36,
             }}
           >
-            <Ionicons name="search" size={16} color={C.muted} />
+            <Ionicons name="search-outline" size={16} color={colors.textMuted} />
             <TextInput
               style={{
                 flex: 1,
-                color: C.text,
+                color: colors.textPrimary,
                 fontSize: 14,
                 marginLeft: 8,
                 height: 36,
               }}
               placeholder="Buscar conversación..."
-              placeholderTextColor={C.muted}
+              placeholderTextColor={colors.textMuted}
               value={search}
               onChangeText={setSearch}
             />
@@ -218,17 +212,17 @@ export default function ForwardMessageModal({
             marginHorizontal: 16,
             marginTop: 8,
             marginBottom: 4,
-            backgroundColor: C.card,
+            backgroundColor: colors.bgSecondary,
             borderRadius: 10,
             padding: 12,
             borderLeftWidth: 3,
-            borderLeftColor: C.accent,
+            borderLeftColor: colors.primary,
           }}
         >
-          <Text style={{ color: C.muted, fontSize: 12, marginBottom: 2 }}>
+          <Text style={{ color: colors.textMuted, fontSize: 12, marginBottom: 2 }}>
             {message.sender?.name || "Mensaje"}
           </Text>
-          <Text style={{ color: C.text, fontSize: 13 }} numberOfLines={2}>
+          <Text style={{ color: colors.textPrimary, fontSize: 13 }} numberOfLines={2}>
             {message.type === "audio"
               ? "🎤 Audio"
               : message.type === "image"
@@ -247,7 +241,7 @@ export default function ForwardMessageModal({
           contentContainerStyle={{ paddingTop: 4 }}
           ListEmptyComponent={
             <View style={{ padding: 32, alignItems: "center" }}>
-              <Text style={{ color: C.muted, fontSize: 14 }}>
+              <Text style={{ color: colors.textMuted, fontSize: 14 }}>
                 No se encontraron conversaciones
               </Text>
             </View>

@@ -358,7 +358,8 @@ model Company {
   solutionControlInstances SolutionControlInstance[]
 
   // Chat Empresarial
-  conversations Conversation[]
+  conversations     Conversation[]
+  chatStorageUsage  ChatStorageUsage?
 
   @@index([subscriptionId])
   @@index([primaryAdminId])
@@ -16532,6 +16533,19 @@ model Message {
   @@index([conversationId, createdAt(sort: Desc)])
   @@index([companyId, createdAt(sort: Desc)])
   @@map("messages")
+}
+
+model ChatStorageUsage {
+  id             Int      @id @default(autoincrement())
+  companyId      Int      @unique @map("company_id")
+  usedBytes      BigInt   @default(0) @map("used_bytes")
+  limitBytes     BigInt   @default(1073741824) @map("limit_bytes") // 1 GB default
+  retentionDays  Int      @default(365) @map("retention_days")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  company        Company  @relation(fields: [companyId], references: [id])
+
+  @@map("chat_storage_usage")
 }
 
 model MessageReaction {

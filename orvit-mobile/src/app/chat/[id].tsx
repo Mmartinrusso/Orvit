@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
@@ -69,7 +69,7 @@ function formatDateSeparator(dateStr: string): string {
   });
 }
 
-function DateSeparator({ date, isDark }: { date: string; isDark: boolean }) {
+const DateSeparator = React.memo(function DateSeparator({ date, isDark }: { date: string; isDark: boolean }) {
   return (
     <View style={{ alignItems: "center", marginVertical: 10 }}>
       <View
@@ -97,10 +97,10 @@ function DateSeparator({ date, isDark }: { date: string; isDark: boolean }) {
       </View>
     </View>
   );
-}
+});
 
 // ── Chat background texture (WhatsApp-style dense doodle) ──
-function ChatBackgroundPattern() {
+const ChatBackgroundPattern = React.memo(function ChatBackgroundPattern({ isDark }: { isDark: boolean }) {
   const icons = [
     "heart-outline", "camera-outline", "musical-notes-outline", "gift-outline",
     "happy-outline", "star-outline", "call-outline", "chatbubble-outline",
@@ -147,7 +147,7 @@ function ChatBackgroundPattern() {
           <Ionicons
             name={icons[idx]}
             size={size}
-            color="#ffffff"
+            color={isDark ? "#ffffff" : "#000000"}
             style={{ transform: [{ rotate: `${rot}deg` }] }}
           />
         </View>
@@ -163,13 +163,14 @@ function ChatBackgroundPattern() {
         flexWrap: "wrap",
         opacity: 0.04,
         paddingTop: 2,
+        zIndex: 0,
       }}
       pointerEvents="none"
     >
       {items}
     </View>
   );
-}
+});
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -178,9 +179,6 @@ export default function ChatScreen() {
   const haptics = useHaptics();
   const queryClient = useQueryClient();
   const [inputText, setInputText] = useState("");
-  const [title, setTitle] = useState("Chat");
-  const [isGroup, setIsGroup] = useState(false);
-  const [memberCount, setMemberCount] = useState(0);
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [reactionTargetId, setReactionTargetId] = useState<string | null>(null);
@@ -196,30 +194,56 @@ export default function ChatScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<number[]>([]);
   const [searchIndex, setSearchIndex] = useState(0);
+  const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const lastTypingSentRef = useRef(0);
 
-  // Conversation info
-  useEffect(() => {
-    if (!id) return;
-    getConversation(id)
-      .then((conv) => {
-        if (conv.type === "DIRECT") {
-          const other = conv.members?.find((m) => m.userId !== user?.id);
-          setTitle(other?.user?.name || "Chat directo");
-          setIsGroup(false);
-        } else {
-          setTitle(conv.name || "Chat");
-          setIsGroup(true);
-          setMemberCount(conv.members?.length ?? 0);
-        }
-      })
-      .catch((err) => {
-        console.error("[Chat] Failed to load conversation:", err);
-        setTitle("Chat");
-      });
-  }, [id, user?.id]);
+  // Conversation info — useQuery so we can seed from list cache
+  const { data: conv } = useQuery({
+    queryKey: ["conversation", id],
+    queryFn: () => getConversation(id!),
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+    initialData: () => {
+      // Try conversations list cache first
+      const cached = queryClient.getQueryData<{ conversations?: any[] }>(["conversations", { archived: false }]);
+      const fromList = cached?.conversations?.find((c: any) => c.id === id);
+      if (fromList) return fromList;
+      // Try bot-conversation cache
+      const botConv = queryClient.getQueryData<any>(["bot-conversation"]);
+      if (botConv?.id === id) return botConv;
+      return undefined;
+    },
+  });
+
+  const { title, isGroup, memberCount, isOrvitBot } = useMemo(() => {
+    if (!conv) return { title: "Chat", isGroup: false, memberCount: 0, isOrvitBot: false };
+    const isBotConv = conv.isSystemBot === true;
+    if (isBotConv) {
+      return {
+        title: conv.name || "ORVIT",
+        isGroup: false,
+        memberCount: 0,
+        isOrvitBot: true,
+      };
+    }
+    if (conv.type === "DIRECT") {
+      const other = conv.members?.find((m: any) => m.userId !== user?.id);
+      return {
+        title: other?.user?.name || "Chat directo",
+        isGroup: false,
+        memberCount: 0,
+        isOrvitBot: false,
+      };
+    }
+    return {
+      title: conv.name || "Chat",
+      isGroup: true,
+      memberCount: conv.members?.length ?? 0,
+      isOrvitBot: false,
+    };
+  }, [conv, user?.id]);
 
   // Members for mentions
   const { data: members } = useQuery({
@@ -242,8 +266,16 @@ export default function ChatScreen() {
       enabled: !!id,
     });
 
-  const realMessages = data?.pages.flat() ?? [];
-  const allMessages = realMessages;
+  const allMessages = useMemo(() => {
+    const flat = data?.pages.flat() ?? [];
+    // Deduplicate by id (Pusher + optimistic update can cause dupes)
+    const seen = new Set<string>();
+    return flat.filter((m) => {
+      if (seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+  }, [data]);
 
   
 
@@ -278,6 +310,10 @@ export default function ChatScreen() {
       queryClient.setQueryData(["messages", id], (old: typeof data) => {
         if (!old || !("pages" in old)) return old;
         const typedOld = old as { pages: Message[][]; pageParams: unknown[] };
+        // Skip if message already exists (optimistic update already added it)
+        if (typedOld.pages.some((p) => p.some((m) => m.id === evt.message.id))) {
+          return typedOld;
+        }
         return {
           ...typedOld,
           pages: [
@@ -611,13 +647,67 @@ export default function ChatScreen() {
     [inputText]
   );
 
+  // ── Stable callbacks for FlatList ──
+  const handleReply = useCallback((msg: Message) => setReplyTo(msg), []);
+  const handleForward = useCallback((msg: Message) => setForwardMessage(msg), []);
+  const handleReaction = useCallback((msg: Message) => {
+    setReactionTargetId(msg.id);
+    setShowReactionPicker(true);
+  }, []);
+  const handleImagePreview = useCallback((url: string) => setImagePreviewUrl(url), []);
+
+  const scrollBtnVisible = useRef(false);
+  const handleScroll = useCallback((e: any) => {
+    const offsetY = e.nativeEvent.contentOffset.y;
+    const shouldShow = offsetY > 300;
+    if (shouldShow !== scrollBtnVisible.current) {
+      scrollBtnVisible.current = shouldShow;
+      setShowScrollBtn(shouldShow);
+    }
+  }, []);
+
+  const keyExtractor = useCallback((item: Message) => item.id, []);
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: Message; index: number }) => {
+      const nextMsg = allMessages[index + 1];
+      const showDate =
+        !nextMsg ||
+        new Date(item.createdAt).toDateString() !==
+          new Date(nextMsg.createdAt).toDateString();
+
+      return (
+        <>
+          <MessageBubble
+            message={item}
+            isMe={item.senderId === (user?.id ?? 1)}
+            userId={user?.id ?? 0}
+            highlighted={searchMode && searchResults.includes(index)}
+            onReply={handleReply}
+            onForward={handleForward}
+            onReaction={handleReaction}
+            onToggleReaction={handleToggleReaction}
+            onEdit={handleStartEdit}
+            onDelete={handleDelete}
+            onImagePreview={handleImagePreview}
+            showSender={isGroup}
+          />
+          {showDate && <DateSeparator date={item.createdAt} isDark={isDark} />}
+        </>
+      );
+    },
+    [allMessages, user?.id, searchMode, searchResults, isGroup, isDark,
+     handleReply, handleForward, handleReaction, handleToggleReaction,
+     handleStartEdit, handleDelete, handleImagePreview]
+  );
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#111820" }} edges={["top"]}>
+    <View style={{ flex: 1, backgroundColor: colors.chatHeaderBg, paddingTop: insets.top }}>
       <ChatHeader
         title={title}
         conversationId={id!}
         isGroup={isGroup}
-        isOrvitBot={conv?.isSystemBot === true}
+        isOrvitBot={isOrvitBot}
         memberCount={memberCount}
         typingNames={typingUsers}
         onSearchPress={() => {
@@ -629,59 +719,29 @@ export default function ChatScreen() {
       />
 
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: "#0b1014" }}
+        style={{ flex: 1, backgroundColor: colors.chatBg }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={{ flex: 1, position: "relative" }}>
-        <ChatBackgroundPattern />
+        <ChatBackgroundPattern isDark={isDark} />
         <FlatList
           ref={flatListRef}
+          style={{ zIndex: 1 }}
           data={allMessages}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => {
-            // Date separator: show when date changes from next message (inverted list)
-            const nextMsg = allMessages[index + 1];
-            const showDate =
-              !nextMsg ||
-              new Date(item.createdAt).toDateString() !==
-                new Date(nextMsg.createdAt).toDateString();
-
-            return (
-              <>
-                <MessageBubble
-                  message={item}
-                  isMe={item.senderId === (user?.id ?? 1)}
-                  userId={user?.id ?? 0}
-                  highlighted={searchMode && searchResults.includes(index)}
-                  onReply={(msg) => setReplyTo(msg)}
-                  onForward={(msg) => setForwardMessage(msg)}
-                  onReaction={(msg) => {
-                    setReactionTargetId(msg.id);
-                    setShowReactionPicker(true);
-                  }}
-                  onToggleReaction={handleToggleReaction}
-                  onEdit={handleStartEdit}
-                  onDelete={handleDelete}
-                  onImagePreview={(url) => setImagePreviewUrl(url)}
-                  showSender={isGroup}
-                />
-                {showDate && (
-                  <DateSeparator date={item.createdAt} isDark={isDark} />
-                )}
-              </>
-            );
-          }}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
           inverted
+          removeClippedSubviews={Platform.OS !== "web"}
+          maxToRenderPerBatch={15}
+          windowSize={11}
+          initialNumToRender={20}
           onEndReached={() => {
             if (hasNextPage && !isFetchingNextPage) fetchNextPage();
           }}
           onEndReachedThreshold={0.3}
           contentContainerStyle={{ paddingHorizontal: 4, paddingVertical: 6 }}
-          onScroll={(e) => {
-            const offsetY = e.nativeEvent.contentOffset.y;
-            setShowScrollBtn(offsetY > 300);
-          }}
-          scrollEventThrottle={100}
+          onScroll={handleScroll}
+          scrollEventThrottle={250}
           ListHeaderComponent={
             typingUsers.length > 0 ? (
               <TypingIndicator names={typingUsers} />
@@ -708,17 +768,17 @@ export default function ChatScreen() {
                 width: 40,
                 height: 40,
                 borderRadius: 20,
-                backgroundColor: "#111820",
+                backgroundColor: colors.bgSecondary,
                 justifyContent: "center",
                 alignItems: "center",
                 shadowColor: "#000",
                 shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.3,
+                shadowOpacity: isDark ? 0.3 : 0.15,
                 shadowRadius: 4,
                 elevation: 4,
               }}
             >
-              <Ionicons name="chevron-down" size={22} color="#fff" />
+              <Ionicons name="chevron-down" size={22} color={colors.textPrimary} />
             </AnimatedPressable>
           </Animated.View>
         )}
@@ -731,28 +791,28 @@ export default function ChatScreen() {
             style={{
               flexDirection: "row",
               alignItems: "center",
-              backgroundColor: "#111820",
+              backgroundColor: colors.chatHeaderBg,
               paddingHorizontal: 12,
               paddingVertical: 8,
               gap: 8,
               borderBottomWidth: 1,
-              borderBottomColor: "rgba(255,255,255,0.06)",
+              borderBottomColor: colors.border,
             }}
           >
-            <Ionicons name="search" size={18} color="rgba(255,255,255,0.5)" />
+            <Ionicons name="search-outline" size={18} color={colors.textMuted} />
             <TextInput
               style={{
                 flex: 1,
-                color: "#fff",
+                color: colors.textPrimary,
                 fontSize: 14,
-                backgroundColor: "#1c1c1e",
+                backgroundColor: colors.bgInput,
                 borderRadius: 8,
                 paddingHorizontal: 10,
                 paddingVertical: 6,
                 height: 34,
               }}
               placeholder="Buscar en la conversación..."
-              placeholderTextColor="rgba(255,255,255,0.35)"
+              placeholderTextColor={colors.textMuted}
               value={searchQuery}
               onChangeText={(text) => {
                 setSearchQuery(text);
@@ -781,7 +841,7 @@ export default function ChatScreen() {
             />
             {searchResults.length > 0 && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
-                <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12 }}>
+                <Text style={{ color: colors.textMuted, fontSize: 12 }}>
                   {searchIndex + 1}/{searchResults.length}
                 </Text>
                 <AnimatedPressable
@@ -793,7 +853,7 @@ export default function ChatScreen() {
                   haptic="light"
                   style={{ padding: 4 }}
                 >
-                  <Ionicons name="chevron-down" size={18} color="#fff" />
+                  <Ionicons name="chevron-down" size={18} color={colors.textPrimary} />
                 </AnimatedPressable>
                 <AnimatedPressable
                   onPress={() => {
@@ -804,7 +864,7 @@ export default function ChatScreen() {
                   haptic="light"
                   style={{ padding: 4 }}
                 >
-                  <Ionicons name="chevron-up" size={18} color="#fff" />
+                  <Ionicons name="chevron-up" size={18} color={colors.textPrimary} />
                 </AnimatedPressable>
               </View>
             )}
@@ -816,7 +876,7 @@ export default function ChatScreen() {
               }}
               haptic="light"
             >
-              <Ionicons name="close" size={22} color="#fff" />
+              <Ionicons name="close-outline" size={22} color={colors.textPrimary} />
             </AnimatedPressable>
           </Animated.View>
         )}
@@ -846,7 +906,7 @@ export default function ChatScreen() {
               gap: 8,
             }}
           >
-            <Ionicons name="pencil" size={18} color={colors.primary} />
+            <Ionicons name="pencil-outline" size={18} color={colors.primary} />
             <TextInput
               style={{
                 flex: 1,
@@ -867,10 +927,10 @@ export default function ChatScreen() {
               onPress={() => setEditingMessage(null)}
               haptic="light"
             >
-              <Ionicons name="close" size={22} color={colors.textMuted} />
+              <Ionicons name="close-outline" size={22} color={colors.textMuted} />
             </AnimatedPressable>
             <AnimatedPressable onPress={handleSaveEdit} haptic="medium">
-              <Ionicons name="checkmark" size={22} color={colors.primary} />
+              <Ionicons name="checkmark-outline" size={22} color={colors.primary} />
             </AnimatedPressable>
           </Animated.View>
         )}
@@ -886,6 +946,7 @@ export default function ChatScreen() {
             isSending={sendMutation.isPending}
             replyTo={replyTo}
             onCancelReply={() => setReplyTo(null)}
+            bottomInset={insets.bottom}
           />
         )}
       </KeyboardAvoidingView>
@@ -934,7 +995,7 @@ export default function ChatScreen() {
             onPress={() => setImagePreviewUrl(null)}
             haptic="light"
           >
-            <Ionicons name="close-circle" size={36} color="#fff" />
+            <Ionicons name="close-circle-outline" size={36} color="#fff" />
           </AnimatedPressable>
           {imagePreviewUrl && (
             <Image
@@ -948,6 +1009,6 @@ export default function ChatScreen() {
           )}
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }

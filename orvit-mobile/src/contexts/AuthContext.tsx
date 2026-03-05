@@ -7,6 +7,7 @@ import {
   setStoredUser,
 } from "@/lib/storage";
 import { mobileLogin } from "@/api/chat";
+import { apiFetch } from "@/api/client";
 import type { AuthUser } from "@/types/chat";
 
 interface AuthState {
@@ -15,6 +16,7 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState>({
@@ -23,6 +25,7 @@ const AuthContext = createContext<AuthState>({
   isAuthenticated: false,
   login: async () => {},
   logout: async () => {},
+  refreshUser: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -63,6 +66,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const token = await getAccessToken();
+      if (!token) return;
+      const data = await apiFetch<Partial<AuthUser>>("/api/auth/me?refresh=true");
+      // Merge server data with current user (server may not return companyId/companyName)
+      setUser((prev) => {
+        if (!prev) return prev;
+        const merged = { ...prev, ...data };
+        setStoredUser(JSON.stringify(merged));
+        return merged;
+      });
+    } catch {
+      // Silently fail — user stays with current data
+    }
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -71,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         login,
         logout,
+        refreshUser,
       }}
     >
       {children}

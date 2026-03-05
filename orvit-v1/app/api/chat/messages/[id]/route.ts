@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthPayload } from "@/lib/chat/auth";
 import { getPusher, chatChannel, triggerMessageDeleted } from "@/lib/chat/pusher";
+import { deleteS3File } from "@/lib/s3-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,7 @@ const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 async function getOwnMessage(userId: number, messageId: string) {
   const message = await prisma.message.findUnique({
     where: { id: messageId },
-    select: { id: true, conversationId: true, senderId: true, createdAt: true, type: true },
+    select: { id: true, conversationId: true, senderId: true, createdAt: true, type: true, fileUrl: true, fileSize: true, companyId: true },
   });
   if (!message || message.senderId !== userId) return null;
   return message;
@@ -105,8 +106,21 @@ export async function DELETE(
 
   await prisma.message.update({
     where: { id: messageId },
-    data: { isDeleted: true, content: "" },
+    data: { isDeleted: true, content: "", fileUrl: null, fileName: null, fileSize: null, fileDuration: null },
   });
+
+  // Delete S3 file if message had an attachment (fire-and-forget)
+  if (message.fileUrl) {
+    deleteS3File(message.fileUrl).catch(() => {});
+    // Decrement company storage usage
+    if (message.fileSize && message.companyId) {
+      prisma.chatStorageUsage.upsert({
+        where: { companyId: message.companyId },
+        create: { companyId: message.companyId, usedBytes: BigInt(0) },
+        update: { usedBytes: { decrement: BigInt(message.fileSize) } },
+      }).catch(() => {});
+    }
+  }
 
   // Broadcast deletion via Pusher (fire-and-forget)
   triggerMessageDeleted(message.conversationId, messageId).catch(() => {});

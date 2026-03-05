@@ -83,7 +83,7 @@ function ConversationItem({
   const isGroup = item.type === "CHANNEL";
 
   const dividerColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
-  const subgroupBorderColor = `${colors.primary}40`;
+  const subgroupBorderColor = `${colors.primary}90`;
   const depth = (item as any)._depth ?? (isSubgroup ? 1 : 0);
   const indentLeft = depth > 0 ? 20 + (depth - 1) * 16 : 0;
 
@@ -94,8 +94,9 @@ function ConversationItem({
         {isSubgroup && (
           <View
             style={{
-              width: 2,
+              width: 3,
               backgroundColor: subgroupBorderColor,
+              borderRadius: 1.5,
               marginLeft: 20 + indentLeft,
             }}
           />

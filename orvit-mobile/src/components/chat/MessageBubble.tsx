@@ -1,7 +1,7 @@
+import React from "react";
 import { View, Text, Image, Linking, ActionSheetIOS, Platform, Alert } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import Animated, {
-  FadeInDown,
   useSharedValue,
   useAnimatedStyle,
   withSpring,
@@ -46,7 +46,7 @@ interface Props {
   highlighted?: boolean;
 }
 
-export default function MessageBubble({
+function MessageBubble({
   message,
   isMe,
   userId,
@@ -198,7 +198,7 @@ export default function MessageBubble({
 
   const bubbleBg = isMe ? colors.bubbleMeBg : colors.bubbleOtherBg;
   const textColor = isMe ? colors.bubbleMeText : colors.bubbleOtherText;
-  const timeColor = "rgba(255,255,255,0.45)";
+  const timeColor = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.4)";
   const senderColor = message.sender
     ? getSenderColor(message.senderId ?? 0)
     : colors.primary;
@@ -206,7 +206,7 @@ export default function MessageBubble({
   const hasReactions = message.reactions && message.reactions.length > 0;
 
   return (
-    <Animated.View entering={FadeInDown.duration(150)}>
+    <View>
       {/* Reply icon that appears behind the bubble on swipe */}
       <Animated.View
         style={[
@@ -220,7 +220,7 @@ export default function MessageBubble({
             width: 36,
             height: 36,
             borderRadius: 18,
-            backgroundColor: "rgba(255,255,255,0.1)",
+            backgroundColor: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
             alignSelf: "center",
             marginTop: 8,
           },
@@ -228,7 +228,7 @@ export default function MessageBubble({
         ]}
         pointerEvents="none"
       >
-        <Ionicons name="arrow-undo" size={18} color="#fff" />
+        <Ionicons name="arrow-undo-outline" size={18} color={colors.textPrimary} />
       </Animated.View>
 
       <GestureDetector gesture={panGesture}>
@@ -237,9 +237,9 @@ export default function MessageBubble({
             onLongPress={handleLongPress}
             style={{
               alignItems: isMe ? "flex-end" : "flex-start",
-              marginVertical: 1,
+              marginVertical: 5,
               marginHorizontal: 4,
-              marginBottom: hasReactions ? 16 : 1,
+              marginBottom: hasReactions ? 18 : 5,
               overflow: "visible" as any,
             }}
             haptic="none"
@@ -444,7 +444,7 @@ export default function MessageBubble({
                 </Text>
                 {isMe && (
                   <Ionicons
-                    name="checkmark-done"
+                    name="checkmark-done-outline"
                     size={16}
                     color="#53bdeb"
                   />
@@ -473,6 +473,19 @@ export default function MessageBubble({
           </AnimatedPressable>
         </Animated.View>
       </GestureDetector>
-    </Animated.View>
+    </View>
   );
 }
+
+export default React.memo(MessageBubble, (prev, next) => {
+  return (
+    prev.message.id === next.message.id &&
+    prev.message.content === next.message.content &&
+    prev.message.isDeleted === next.message.isDeleted &&
+    prev.message.editedAt === next.message.editedAt &&
+    prev.message.reactions === next.message.reactions &&
+    prev.isMe === next.isMe &&
+    prev.highlighted === next.highlighted &&
+    prev.showSender === next.showSender
+  );
+});

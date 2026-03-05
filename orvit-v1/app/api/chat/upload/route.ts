@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { v4 as uuidv4 } from "uuid";
 import { getAuthPayload } from "@/lib/chat/auth";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +80,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check company storage quota
+    const storageUsage = await prisma.chatStorageUsage.findUnique({
+      where: { companyId: auth.companyId },
+    });
+    if (storageUsage) {
+      const currentUsed = Number(storageUsage.usedBytes);
+      const limit = Number(storageUsage.limitBytes);
+      if (currentUsed + file.size > limit) {
+        return NextResponse.json(
+          { error: `Almacenamiento de chat lleno. Usado: ${Math.round(currentUsed / 1024 / 1024)}MB / ${Math.round(limit / 1024 / 1024)}MB` },
+          { status: 413 }
+        );
+      }
+    }
+
     const ext = file.name.split(".").pop()?.toLowerCase() || "bin";
     const s3Key = `chat/${category}/${auth.companyId}/${Date.now()}-${uuidv4()}.${ext}`;
 
@@ -99,6 +115,13 @@ export async function POST(request: NextRequest) {
         },
       })
     );
+
+    // Increment company storage usage (fire-and-forget)
+    prisma.chatStorageUsage.upsert({
+      where: { companyId: auth.companyId },
+      create: { companyId: auth.companyId, usedBytes: BigInt(file.size) },
+      update: { usedBytes: { increment: BigInt(file.size) } },
+    }).catch(() => {});
 
     const region = process.env.AWS_REGION;
     const url = `https://${BUCKET}.s3.${region}.amazonaws.com/${s3Key}`;
