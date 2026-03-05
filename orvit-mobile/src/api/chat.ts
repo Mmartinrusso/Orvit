@@ -86,6 +86,22 @@ export async function getMessages(
   );
 }
 
+export async function searchMessages(
+  conversationId: string,
+  query: string,
+  params?: { cursor?: string; limit?: number }
+): Promise<Message[]> {
+  const search = new URLSearchParams();
+  search.set("search", query);
+  if (params?.cursor) search.set("cursor", params.cursor);
+  if (params?.limit) search.set("limit", String(params.limit));
+
+  const qs = search.toString();
+  return apiFetch(
+    `/api/chat/conversations/${conversationId}/messages?${qs}`
+  );
+}
+
 export async function sendMessage(
   conversationId: string,
   data: {
@@ -203,6 +219,17 @@ export async function removeMember(
     `/api/chat/conversations/${conversationId}/members?userId=${userId}`,
     { method: "DELETE" }
   );
+}
+
+export async function updateMemberRole(
+  conversationId: string,
+  userId: number,
+  role: "admin" | "member"
+): Promise<{ ok: boolean; role: string }> {
+  return apiFetch(`/api/chat/conversations/${conversationId}/members`, {
+    method: "PATCH",
+    body: JSON.stringify({ userId, role }),
+  });
 }
 
 // ── Typing ───────────────────────────────────────────────────────

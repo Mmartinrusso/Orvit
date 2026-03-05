@@ -9,6 +9,9 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
+  Switch,
+  ActionSheetIOS,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,6 +27,7 @@ import {
   updateConversation,
   addMembers,
   removeMember,
+  updateMemberRole,
   getCompanyUsers,
 } from "@/api/chat";
 import Avatar from "@/components/ui/Avatar";
@@ -102,11 +106,20 @@ export default function ChatInfoScreen() {
     alreadyText: { fontSize: 12, color: C.textSecondary },
     addMemberBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, backgroundColor: C.accent },
     addMemberBtnText: { fontSize: 13, fontWeight: "600", color: "#fff" },
+    toggleRow: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
+    toggleRowText: { flex: 1, fontSize: 14, color: C.textPrimary },
+    toggleRowSub: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
+    descEditContainer: { paddingHorizontal: 16, marginBottom: 12 },
+    descEditInput: { backgroundColor: C.card, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: C.textPrimary, borderWidth: 1, borderColor: C.accent, minHeight: 60, textAlignVertical: "top" },
+    memberActionBtn: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: C.actionBg },
   }), [C]);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [newDescription, setNewDescription] = useState("");
   const [showAddMember, setShowAddMember] = useState(false);
   const [addSearch, setAddSearch] = useState("");
+  const [togglingAdminsOnly, setTogglingAdminsOnly] = useState(false);
 
   const { data: conv } = useQuery({
     queryKey: ["conversation", id],
@@ -186,6 +199,59 @@ export default function ChatInfoScreen() {
     }
   }, [newName, id, queryClient, haptics]);
 
+  const handleSaveDescription = useCallback(async () => {
+    try {
+      await updateConversation(id!, { description: newDescription.trim() });
+      queryClient.invalidateQueries({ queryKey: ["conversation", id] });
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      setEditingDescription(false);
+      haptics.success();
+    } catch {
+      Alert.alert("Error", "No se pudo actualizar la descripción");
+    }
+  }, [newDescription, id, queryClient, haptics]);
+
+  const handleToggleAdminsOnly = useCallback(async (value: boolean) => {
+    if (!conv) return;
+    try {
+      setTogglingAdminsOnly(true);
+      await updateConversation(conv.id, { onlyAdminsPost: value });
+      queryClient.invalidateQueries({ queryKey: ["conversation", id] });
+      haptics.selection();
+    } catch {
+      Alert.alert("Error", "No se pudo actualizar la configuración");
+    } finally {
+      setTogglingAdminsOnly(false);
+    }
+  }, [conv, id, queryClient, haptics]);
+
+  const handleToggleRole = useCallback(
+    (memberId: number, memberName: string, currentRole: string) => {
+      const newRole = currentRole === "admin" ? "member" : "admin";
+      const actionText = newRole === "admin" ? "hacer administrador" : "quitar como administrador";
+      Alert.alert(
+        "Cambiar rol",
+        `¿Querés ${actionText} a ${memberName}?`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Confirmar",
+            onPress: async () => {
+              try {
+                await updateMemberRole(id!, memberId, newRole);
+                refetchMembers();
+                haptics.success();
+              } catch {
+                Alert.alert("Error", "No se pudo cambiar el rol");
+              }
+            },
+          },
+        ]
+      );
+    },
+    [id, refetchMembers, haptics]
+  );
+
   const handleAddMember = useCallback(
     async (userId: number) => {
       try {
@@ -230,6 +296,45 @@ export default function ChatInfoScreen() {
       );
     },
     [id, user?.id, refetchMembers, haptics]
+  );
+
+  const handleMemberActions = useCallback(
+    (memberId: number, memberName: string, currentRole: string) => {
+      const isTargetAdmin = currentRole === "admin";
+      const roleAction = isTargetAdmin ? "Quitar admin" : "Hacer admin";
+
+      if (Platform.OS === "ios") {
+        ActionSheetIOS.showActionSheetWithOptions(
+          {
+            options: ["Cancelar", roleAction, "Eliminar del grupo"],
+            destructiveButtonIndex: 2,
+            cancelButtonIndex: 0,
+            title: memberName,
+          },
+          (buttonIndex) => {
+            if (buttonIndex === 1) {
+              handleToggleRole(memberId, memberName, currentRole);
+            } else if (buttonIndex === 2) {
+              handleRemoveMember(memberId, memberName);
+            }
+          }
+        );
+      } else {
+        Alert.alert(memberName, "Elegí una acción", [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: roleAction,
+            onPress: () => handleToggleRole(memberId, memberName, currentRole),
+          },
+          {
+            text: "Eliminar del grupo",
+            style: "destructive",
+            onPress: () => handleRemoveMember(memberId, memberName),
+          },
+        ]);
+      }
+    },
+    [handleToggleRole, handleRemoveMember]
   );
 
   const handleDangerAction = useCallback(() => {
@@ -374,10 +479,64 @@ export default function ChatInfoScreen() {
         </View>
 
         {/* ── Description (group or Orvit bot) ─────────────── */}
-        {(isGroup || isOrvitBot) && conv.description && (
-          <View style={s.card}>
-            <Text style={s.cardDescription}>{conv.description}</Text>
-          </View>
+        {(isGroup || isOrvitBot) && (
+          <>
+            {editingDescription ? (
+              <Animated.View entering={FadeInDown.duration(200)} style={s.descEditContainer}>
+                <TextInput
+                  style={s.descEditInput}
+                  value={newDescription}
+                  onChangeText={setNewDescription}
+                  placeholder="Descripción del grupo"
+                  placeholderTextColor={C.textSecondary}
+                  multiline
+                  autoFocus
+                />
+                <View style={s.editActions}>
+                  <TouchableOpacity
+                    style={s.editBtnCancel}
+                    onPress={() => setEditingDescription(false)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={s.editBtnCancelText}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={s.editBtnSave}
+                    onPress={handleSaveDescription}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={s.editBtnSaveText}>Guardar</Text>
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            ) : conv.description ? (
+              <TouchableOpacity
+                style={s.card}
+                onPress={isAdmin && isGroup ? () => {
+                  setNewDescription(conv.description || "");
+                  setEditingDescription(true);
+                } : undefined}
+                activeOpacity={isAdmin && isGroup ? 0.7 : 1}
+                disabled={!isAdmin || !isGroup}
+              >
+                <Text style={s.cardDescription}>{conv.description}</Text>
+              </TouchableOpacity>
+            ) : isAdmin && isGroup ? (
+              <TouchableOpacity
+                style={s.card}
+                onPress={() => {
+                  setNewDescription("");
+                  setEditingDescription(true);
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={s.rowItem}>
+                  <Ionicons name="document-text-outline" size={18} color={C.accent} />
+                  <Text style={[s.rowText, { color: C.accent }]}>Agregar descripción</Text>
+                </View>
+              </TouchableOpacity>
+            ) : null}
+          </>
         )}
 
         {/* ── Edit name row (admin) ──────────────────────── */}
@@ -395,6 +554,26 @@ export default function ChatInfoScreen() {
               <Text style={[s.rowText, { color: C.accent }]}>Editar nombre del grupo</Text>
             </View>
           </TouchableOpacity>
+        )}
+
+        {/* ── Admin-only mode toggle ──────────────────────── */}
+        {isGroup && isAdmin && (
+          <View style={s.card}>
+            <View style={s.toggleRow}>
+              <Ionicons name="shield-checkmark-outline" size={18} color={C.accent} />
+              <View style={{ flex: 1 }}>
+                <Text style={s.toggleRowText}>Solo admins pueden enviar</Text>
+                <Text style={s.toggleRowSub}>Solo administradores pueden escribir mensajes</Text>
+              </View>
+              <Switch
+                value={conv?.onlyAdminsPost ?? false}
+                onValueChange={handleToggleAdminsOnly}
+                disabled={togglingAdminsOnly}
+                trackColor={{ false: C.actionBg, true: `${C.accent}60` }}
+                thumbColor={conv?.onlyAdminsPost ? C.accent : C.textSecondary}
+              />
+            </View>
+          </View>
         )}
 
         {/* ── Media placeholder ──────────────────────────── */}
@@ -473,24 +652,22 @@ export default function ChatInfoScreen() {
                   <Avatar name={member.user?.name || "?"} size="sm" />
                   <View style={s.memberInfo}>
                     <Text style={s.memberName}>{member.user?.name || "Usuario"}</Text>
+                    {member.role === "admin" && (
+                      <Text style={[s.memberSub, { color: C.accent }]}>Administrador</Text>
+                    )}
                   </View>
-                  {member.role === "admin" && (
-                    <View style={s.badge}>
-                      <Text style={s.badgeText}>Admin</Text>
-                    </View>
-                  )}
                   {member.userId === user?.id && (
                     <View style={[s.badge, { backgroundColor: `${C.success}20` }]}>
                       <Text style={[s.badgeText, { color: C.success }]}>Tú</Text>
                     </View>
                   )}
-                  {isAdmin && member.userId !== user?.id && member.role !== "admin" && (
+                  {isAdmin && member.userId !== user?.id && (
                     <TouchableOpacity
-                      style={s.removeBadge}
-                      onPress={() => handleRemoveMember(member.userId, member.user?.name || "")}
+                      style={s.memberActionBtn}
+                      onPress={() => handleMemberActions(member.userId, member.user?.name || "", member.role)}
                       activeOpacity={0.7}
                     >
-                      <Text style={s.removeBadgeText}>Remover</Text>
+                      <Ionicons name="ellipsis-vertical-outline" size={18} color={C.textSecondary} />
                     </TouchableOpacity>
                   )}
                 </View>

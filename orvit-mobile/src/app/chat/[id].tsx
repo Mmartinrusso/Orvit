@@ -37,6 +37,7 @@ import {
   editMessage,
   deleteMessage,
   sendTyping,
+  searchMessages,
 } from "@/api/chat";
 import { getAccessToken } from "@/lib/storage";
 import { API_URL } from "@/api/client";
@@ -192,12 +193,14 @@ export default function ChatScreen() {
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [searchMode, setSearchMode] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<number[]>([]);
+  const [searchResultIds, setSearchResultIds] = useState<string[]>([]);
   const [searchIndex, setSearchIndex] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const lastTypingSentRef = useRef(0);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   // Conversation info — useQuery so we can seed from list cache
   const { data: conv } = useQuery({
@@ -276,6 +279,17 @@ export default function ChatScreen() {
       return true;
     });
   }, [data]);
+
+  // Map server search result IDs to local FlatList indices
+  const searchResultIndices = useMemo(() => {
+    if (!searchResultIds.length) return [];
+    const idSet = new Set(searchResultIds);
+    const indices: number[] = [];
+    allMessages.forEach((m, i) => {
+      if (idSet.has(m.id)) indices.push(i);
+    });
+    return indices;
+  }, [searchResultIds, allMessages]);
 
   
 
@@ -480,16 +494,24 @@ export default function ChatScreen() {
   const handlePickImage = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      quality: 0.8,
+      allowsEditing: false,
+      quality: 0.7,
     });
     if (result.canceled || !result.assets[0]) return;
 
     const asset = result.assets[0];
+
+    // Resize large images to max 1600px for faster uploads
+    // TODO: Install expo-image-manipulator for proper resize; for now relying on quality compression
+    let finalUri = asset.uri;
+    let finalName = asset.fileName || `image-${Date.now()}.jpg`;
+    let finalType = asset.mimeType || "image/jpeg";
+
     const formData = new FormData();
     formData.append("file", {
-      uri: asset.uri,
-      name: asset.fileName || `image-${Date.now()}.jpg`,
-      type: asset.mimeType || "image/jpeg",
+      uri: finalUri,
+      name: finalName,
+      type: finalType,
     } as unknown as Blob);
 
     try {
@@ -682,7 +704,7 @@ export default function ChatScreen() {
             message={item}
             isMe={item.senderId === (user?.id ?? 1)}
             userId={user?.id ?? 0}
-            highlighted={searchMode && searchResults.includes(index)}
+            highlighted={searchMode && searchResultIndices.includes(index)}
             onReply={handleReply}
             onForward={handleForward}
             onReaction={handleReaction}
@@ -696,7 +718,7 @@ export default function ChatScreen() {
         </>
       );
     },
-    [allMessages, user?.id, searchMode, searchResults, isGroup, isDark,
+    [allMessages, user?.id, searchMode, searchResultIndices, isGroup, isDark,
      handleReply, handleForward, handleReaction, handleToggleReaction,
      handleStartEdit, handleDelete, handleImagePreview]
   );
@@ -713,8 +735,9 @@ export default function ChatScreen() {
         onSearchPress={() => {
           setSearchMode(true);
           setSearchQuery("");
-          setSearchResults([]);
+          setSearchResultIds([]);
           setSearchIndex(0);
+          setIsSearching(false);
         }}
       />
 
@@ -817,38 +840,47 @@ export default function ChatScreen() {
               onChangeText={(text) => {
                 setSearchQuery(text);
                 if (!text.trim()) {
-                  setSearchResults([]);
+                  setSearchResultIds([]);
                   setSearchIndex(0);
+                  setIsSearching(false);
+                  if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
                   return;
                 }
-                const q = text.toLowerCase();
-                const indices: number[] = [];
-                allMessages.forEach((m, i) => {
-                  if (
-                    !m.isDeleted &&
-                    m.content.toLowerCase().includes(q)
-                  ) {
-                    indices.push(i);
+                if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+                setIsSearching(true);
+                searchDebounceRef.current = setTimeout(async () => {
+                  try {
+                    const results = await searchMessages(id!, text.trim(), { limit: 100 });
+                    const ids = results.map((m) => m.id);
+                    setSearchResultIds(ids);
+                    setSearchIndex(0);
+                    setIsSearching(false);
+                    if (ids.length > 0) {
+                      const firstIdx = allMessages.findIndex((m) => ids.includes(m.id));
+                      if (firstIdx >= 0) {
+                        flatListRef.current?.scrollToIndex({ index: firstIdx, animated: true });
+                      }
+                    }
+                  } catch {
+                    setIsSearching(false);
                   }
-                });
-                setSearchResults(indices);
-                setSearchIndex(0);
-                if (indices.length > 0) {
-                  flatListRef.current?.scrollToIndex({ index: indices[0], animated: true });
-                }
+                }, 300);
               }}
               autoFocus
             />
-            {searchResults.length > 0 && (
+            {isSearching && (
+              <Text style={{ color: colors.textMuted, fontSize: 12 }}>...</Text>
+            )}
+            {!isSearching && searchResultIndices.length > 0 && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
                 <Text style={{ color: colors.textMuted, fontSize: 12 }}>
-                  {searchIndex + 1}/{searchResults.length}
+                  {searchIndex + 1}/{searchResultIndices.length}
                 </Text>
                 <AnimatedPressable
                   onPress={() => {
-                    const next = (searchIndex + 1) % searchResults.length;
+                    const next = (searchIndex + 1) % searchResultIndices.length;
                     setSearchIndex(next);
-                    flatListRef.current?.scrollToIndex({ index: searchResults[next], animated: true });
+                    flatListRef.current?.scrollToIndex({ index: searchResultIndices[next], animated: true });
                   }}
                   haptic="light"
                   style={{ padding: 4 }}
@@ -857,9 +889,9 @@ export default function ChatScreen() {
                 </AnimatedPressable>
                 <AnimatedPressable
                   onPress={() => {
-                    const prev = searchIndex === 0 ? searchResults.length - 1 : searchIndex - 1;
+                    const prev = searchIndex === 0 ? searchResultIndices.length - 1 : searchIndex - 1;
                     setSearchIndex(prev);
-                    flatListRef.current?.scrollToIndex({ index: searchResults[prev], animated: true });
+                    flatListRef.current?.scrollToIndex({ index: searchResultIndices[prev], animated: true });
                   }}
                   haptic="light"
                   style={{ padding: 4 }}
@@ -868,11 +900,21 @@ export default function ChatScreen() {
                 </AnimatedPressable>
               </View>
             )}
+            {!isSearching && searchQuery.trim() && searchResultIndices.length === 0 && searchResultIds.length > 0 && (
+              <Text style={{ color: colors.textMuted, fontSize: 11 }}>
+                {searchResultIds.length} resultado{searchResultIds.length !== 1 ? "s" : ""} (cargar más)
+              </Text>
+            )}
+            {!isSearching && searchQuery.trim() && searchResultIds.length === 0 && (
+              <Text style={{ color: colors.textMuted, fontSize: 11 }}>Sin resultados</Text>
+            )}
             <AnimatedPressable
               onPress={() => {
                 setSearchMode(false);
                 setSearchQuery("");
-                setSearchResults([]);
+                setSearchResultIds([]);
+                setIsSearching(false);
+                if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
               }}
               haptic="light"
             >
@@ -954,10 +996,12 @@ export default function ChatScreen() {
       <ForwardMessageModal
         visible={!!forwardMessage}
         message={forwardMessage}
+        currentConversationId={id}
         onClose={() => setForwardMessage(null)}
-        onForwarded={() => {
+        onForwarded={(_convId, convName) => {
           haptics.success();
           setForwardMessage(null);
+          Alert.alert("Mensaje reenviado", `Enviado a ${convName}`);
         }}
       />
 

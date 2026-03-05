@@ -19,13 +19,15 @@ import type { Message, Conversation } from "@/types/chat";
 interface Props {
   visible: boolean;
   message: Message | null;
+  currentConversationId?: string;
   onClose: () => void;
-  onForwarded: (conversationId: string) => void;
+  onForwarded: (conversationId: string, conversationName: string) => void;
 }
 
 export default function ForwardMessageModal({
   visible,
   message,
+  currentConversationId,
   onClose,
   onForwarded,
 }: Props) {
@@ -41,7 +43,12 @@ export default function ForwardMessageModal({
   });
 
   const conversations = useMemo(() => {
-    const list = data?.conversations ?? [];
+    const list = (data?.conversations ?? []).filter((c) => {
+      // Exclude current conversation and bot conversations
+      if (c.id === currentConversationId) return false;
+      if (c.isSystemBot) return false;
+      return true;
+    });
     if (!search.trim()) return list;
     const q = search.toLowerCase();
     return list.filter((c) => {
@@ -51,7 +58,7 @@ export default function ForwardMessageModal({
           : c.name || "";
       return name.toLowerCase().includes(q);
     });
-  }, [data, search, user?.id]);
+  }, [data, search, user?.id, currentConversationId]);
 
   const getConvName = (c: Conversation) => {
     if (c.type === "DIRECT") {
@@ -86,9 +93,10 @@ export default function ForwardMessageModal({
         fileDuration: message.fileDuration || undefined,
       });
 
-      onForwarded(conv.id);
-      onClose();
+      const convName = getConvName(conv);
       setSearch("");
+      onForwarded(conv.id, convName);
+      onClose();
     } catch {
       Alert.alert("Error", "No se pudo reenviar el mensaje");
     } finally {

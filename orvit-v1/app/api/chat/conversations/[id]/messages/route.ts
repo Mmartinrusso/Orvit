@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 async function verifyMembership(userId: number, conversationId: string) {
   const member = await prisma.conversationMember.findUnique({
     where: { conversationId_userId: { conversationId, userId } },
-    select: { leftAt: true, conversationId: true },
+    select: { leftAt: true, conversationId: true, role: true },
   });
   return member && !member.leftAt ? member : null;
 }
@@ -64,11 +64,16 @@ export async function GET(
   const { searchParams } = new URL(request.url);
   const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10), 100);
   const cursor = searchParams.get("cursor"); // ISO date string
+  const search = searchParams.get("search");
 
   const messages = await prisma.message.findMany({
     where: {
       conversationId,
+      isDeleted: false,
       ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
+      ...(search
+        ? { content: { contains: search, mode: "insensitive" as const } }
+        : {}),
     },
     orderBy: { createdAt: "desc" },
     take: limit,
@@ -114,6 +119,18 @@ export async function POST(
   const membership = await verifyMembership(auth.userId, conversationId);
   if (!membership) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  // Check onlyAdminsPost restriction
+  const convSettings = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    select: { onlyAdminsPost: true },
+  });
+  if (convSettings?.onlyAdminsPost && membership.role !== "admin") {
+    return NextResponse.json(
+      { error: "Solo los administradores pueden enviar mensajes en este grupo" },
+      { status: 403 }
+    );
   }
 
   const body = await request.json();

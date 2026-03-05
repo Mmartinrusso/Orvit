@@ -149,6 +149,91 @@ export async function POST(
   return NextResponse.json({ added });
 }
 
+// ── PATCH — Update member role ───────────────────────────────────────
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await getAuthPayload(request);
+  if (!auth || !auth.companyId) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
+  const { id: conversationId } = await params;
+
+  // Verify caller is admin
+  const adminMember = await verifyAdmin(auth.userId, conversationId);
+  if (!adminMember) {
+    return NextResponse.json(
+      { error: "Solo administradores pueden cambiar roles" },
+      { status: 403 }
+    );
+  }
+
+  const body = await request.json();
+  const { userId, role } = body as { userId?: number; role?: string };
+
+  if (!userId || !role || !["admin", "member"].includes(role)) {
+    return NextResponse.json(
+      { error: "userId y role ('admin' | 'member') son requeridos" },
+      { status: 400 }
+    );
+  }
+
+  // Cannot change own role
+  if (userId === auth.userId) {
+    return NextResponse.json(
+      { error: "No podés cambiar tu propio rol" },
+      { status: 400 }
+    );
+  }
+
+  // Verify target is active member
+  const targetMembership = await verifyMembership(userId, conversationId);
+  if (!targetMembership) {
+    return NextResponse.json(
+      { error: "El usuario no es miembro activo" },
+      { status: 404 }
+    );
+  }
+
+  await prisma.conversationMember.update({
+    where: { conversationId_userId: { conversationId, userId } },
+    data: { role },
+  });
+
+  // Get names for system message
+  const targetUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  });
+
+  const newRoleLabel = role === "admin" ? "administrador" : "miembro";
+  const systemMessage = `${targetUser?.name || "Usuario"} ahora es ${newRoleLabel}`;
+
+  await prisma.message.create({
+    data: {
+      conversationId,
+      senderId: null,
+      companyId: auth.companyId,
+      type: "system",
+      content: systemMessage,
+    },
+  });
+
+  // Broadcast via Pusher
+  getPusher()
+    .trigger(chatChannel(conversationId), "members:updated", {
+      action: "role_changed",
+      userId,
+      role,
+    })
+    .catch(() => {});
+
+  return NextResponse.json({ ok: true, role });
+}
+
 // ── DELETE — Remove member / leave ──────────────────────────────────
 
 export async function DELETE(
