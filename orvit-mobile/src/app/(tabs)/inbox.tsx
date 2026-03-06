@@ -12,23 +12,19 @@ import {
 } from "react-native";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { router, useNavigation } from "expo-router";
+import { router, useNavigation, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Ionicons } from "@expo/vector-icons";
 import { getConversations, getBotConversation, updateConversation } from "@/api/chat";
+import { getPusherClient } from "@/lib/pusher";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useHaptics } from "@/hooks/useHaptics";
 import AnimatedPressable from "@/components/ui/AnimatedPressable";
-import Avatar from "@/components/ui/Avatar";
 import { SkeletonConversation } from "@/components/ui/Skeleton";
+import { fonts } from "@/lib/fonts";
 import type { Conversation } from "@/types/chat";
-
-// No mock data — real API only
-// (removed MOCK_CONVERSATIONS — app uses getConversations API)
-
-
 
 // ── Helpers ─────────────────────────────────────────────────
 function formatTime(dateStr: string): string {
@@ -47,10 +43,24 @@ function formatTime(dateStr: string): string {
   return date.toLocaleDateString("es", { day: "numeric", month: "short" });
 }
 
-type FilterChip = "all" | "unread" | "groups" | "direct";
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
 
-// ── Types ───────────────────────────────────────────────────
-type InboxItem = any & { _subgroups?: any[]; _isSubgroup?: boolean };
+type FilterChip = "ordered" | "unordered" | "groups" | "direct";
+type InboxItem = any & {
+  _subgroups?: any[];
+  _isSubgroup?: boolean;
+  _depth?: number;
+  _isLastInGroup?: boolean;
+  _sectionHeader?: string;
+  _parentName?: string;
+};
 
 // ── Conversation Item ───────────────────────────────────────
 const ConversationItem = React.memo(function ConversationItem({
@@ -58,235 +68,413 @@ const ConversationItem = React.memo(function ConversationItem({
   userId,
   onLongPress,
   isSubgroup,
-  hasSubgroups,
+  isLastInGroup,
+  hasChildren,
   isExpanded,
   onToggleExpand,
-  totalUnread,
 }: {
   item: any;
   userId: number;
   onLongPress: (conv: any) => void;
   isSubgroup?: boolean;
-  hasSubgroups?: boolean;
+  isLastInGroup?: boolean;
+  hasChildren?: boolean;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
-  totalUnread?: number;
 }) {
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
 
-  const displayName =
-    item.type === "DIRECT"
+  const displayName = item.isSystemBot
+    ? "M6 Assistant"
+    : item.type === "DIRECT"
       ? item.members?.find((m: any) => m.userId !== userId)?.user?.name || "Chat directo"
       : item.name || "Sin nombre";
 
-  const unreadCount = totalUnread ?? (item.unreadCount ?? 0);
+  const unreadCount = item.unreadCount ?? 0;
   const hasUnread = unreadCount > 0;
-  const isGroup = item.type === "CHANNEL";
+  const isDirect = item.type === "DIRECT";
+  const isOnline = isDirect && item.members?.find((m: any) => m.userId !== userId)?.user?.isOnline;
 
-  const dividerColor = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
-  const subgroupBorderColor = `${colors.primary}90`;
-  const depth = (item as any)._depth ?? (isSubgroup ? 1 : 0);
-  const indentLeft = depth > 0 ? 20 + (depth - 1) * 16 : 0;
+  const depth = item._depth ?? 0;
+  const treeColor = isDark ? "#262626" : "#E5E5E5";
+  const dividerColor = isDark ? "#141414" : "#F5F5F5";
+  const parentName = item._parentName;
+
+  // Figma sizes per depth: top=44/14, L1=38/12, L2=34/10
+  const avatarSize = depth === 0 ? 44 : depth === 1 ? 38 : 34;
+  const avatarRadius = depth === 0 ? 14 : depth === 1 ? 12 : 10;
+  const iconSize = depth === 0 ? 20 : depth === 1 ? 16 : 14;
+  const nameFontSize = depth === 0 ? 13 : depth === 1 ? 12 : 11;
+  // Figma left offsets: top=20, L1=44, L2=60
+  const avatarLeft = depth === 0 ? 20 : depth === 1 ? 44 : 60;
+  const contentLeft = avatarLeft + avatarSize + 12;
+  const rowHeight = depth === 0 ? 64 : depth === 1 ? 59 : 55;
 
   return (
     <View>
-      <View style={{ flexDirection: "row" }}>
-        {/* Subgroup left accent border */}
-        {isSubgroup && (
+      <AnimatedPressable
+        style={{ height: rowHeight, justifyContent: "center" }}
+        onPress={() => router.push(`/chat/${item.id}`)}
+        onLongPress={() => onLongPress(item)}
+        haptic="selection"
+      >
+        {/* Tree lines depth 1 */}
+        {isSubgroup && depth === 1 && (
+          <>
+            <View
+              style={{
+                position: "absolute",
+                left: 30,
+                top: 0,
+                bottom: isLastInGroup ? rowHeight / 2 : 0,
+                width: 1.5,
+                backgroundColor: treeColor,
+                borderRadius: 1,
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                left: 30,
+                top: Math.round(rowHeight / 2),
+                width: 10,
+                height: 1.5,
+                backgroundColor: treeColor,
+                borderRadius: 1,
+              }}
+            />
+          </>
+        )}
+
+        {/* Depth-1 continuation line for depth 2+ (only if parent is not last sibling) */}
+        {isSubgroup && depth >= 2 && !item._parentIsLast && (
           <View
             style={{
-              width: 3,
-              backgroundColor: subgroupBorderColor,
-              borderRadius: 1.5,
-              marginLeft: 20 + indentLeft,
+              position: "absolute",
+              left: 30,
+              top: 0,
+              bottom: 0,
+              width: 1.5,
+              backgroundColor: treeColor,
+              borderRadius: 1,
             }}
           />
         )}
-        <View style={{ flex: 1 }}>
-          <AnimatedPressable
+
+        {/* Tree lines depth 2+ */}
+        {isSubgroup && depth >= 2 && (
+          <>
+            <View
+              style={{
+                position: "absolute",
+                left: 46,
+                top: 0,
+                bottom: isLastInGroup ? rowHeight / 2 : 0,
+                width: 1.5,
+                backgroundColor: treeColor,
+                borderRadius: 1,
+              }}
+            />
+            <View
+              style={{
+                position: "absolute",
+                left: 46,
+                top: Math.round(rowHeight / 2),
+                width: 10,
+                height: 1.5,
+                backgroundColor: treeColor,
+                borderRadius: 1,
+              }}
+            />
+          </>
+        )}
+
+        {/* Avatar */}
+        <View style={{ position: "absolute", left: avatarLeft, top: 10 }}>
+          {item.isSystemBot ? (
+            <View
+              style={{
+                width: avatarSize,
+                height: avatarSize,
+                borderRadius: avatarRadius,
+                backgroundColor: isDark ? "#FFFFFF" : "#0A0A0A",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons
+                name="sparkles"
+                size={iconSize}
+                color={isDark ? "#0A0A0A" : "#FFFFFF"}
+              />
+            </View>
+          ) : isDirect ? (
+            <View
+              style={{
+                width: avatarSize,
+                height: avatarSize,
+                borderRadius: avatarRadius,
+                backgroundColor: isDark ? "#171717" : "#FAFAFA",
+                borderWidth: 1,
+                borderColor: isDark ? "#262626" : "#E5E5E5",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: "700",
+                  fontFamily: fonts.bold,
+                  color: isDark ? "#E5E5E5" : "#0A0A0A",
+                }}
+              >
+                {getInitials(displayName)}
+              </Text>
+            </View>
+          ) : (
+            <View
+              style={{
+                width: avatarSize,
+                height: avatarSize,
+                borderRadius: avatarRadius,
+                backgroundColor: isDark ? "#171717" : "#FAFAFA",
+                borderWidth: 1,
+                borderColor: isDark ? "#262626" : "#E5E5E5",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons
+                name="people-outline"
+                size={iconSize}
+                color={isDark ? "#E5E5E5" : "#0A0A0A"}
+              />
+            </View>
+          )}
+          {/* Online indicator */}
+          {isOnline && (
+            <View
+              style={{
+                position: "absolute",
+                right: -1,
+                bottom: -1,
+                width: 10,
+                height: 10,
+                borderRadius: 5,
+                backgroundColor: "#10b981",
+                borderWidth: 2,
+                borderColor: isDark ? "#0A0A0A" : "#FFFFFF",
+              }}
+            />
+          )}
+        </View>
+
+        {/* Content */}
+        <View
+          style={{
+            position: "absolute",
+            left: contentLeft,
+            top: 0,
+            bottom: 0,
+            right: 66,
+            justifyContent: "center",
+          }}
+        >
+          {/* Name row */}
+          <View
             style={{
               flexDirection: "row",
               alignItems: "center",
-              paddingHorizontal: isSubgroup ? 12 : 20,
-              paddingLeft: isSubgroup ? 16 : 20,
-              paddingVertical: isSubgroup ? 8 : 10,
+              marginBottom: 2,
+              gap: 4,
             }}
-            onPress={() => router.push(`/chat/${item.id}`)}
-            onLongPress={() => onLongPress(item)}
-            haptic="selection"
           >
-            {/* Chevron for groups with subgroups */}
-            {hasSubgroups && (
-              <AnimatedPressable
-                onPress={() => {
-                  onToggleExpand?.();
-                }}
-                haptic="selection"
-                style={{
-                  width: 28,
-                  height: 28,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  marginRight: 4,
-                }}
-              >
-                <Ionicons
-                  name={isExpanded ? "chevron-down" : "chevron-forward"}
-                  size={18}
-                  color={colors.textMuted}
-                />
-              </AnimatedPressable>
-            )}
-
-            {/* Avatar */}
-            {item.isSystemBot ? (
+            <Text
+              style={{
+                fontSize: nameFontSize,
+                fontWeight: "600",
+                fontFamily: fonts.semiBold,
+                color: isDark ? "#E5E5E5" : "#0A0A0A",
+                flexShrink: 1,
+              }}
+              numberOfLines={1}
+            >
+              {displayName}
+            </Text>
+            {/* IA badge */}
+            {item.isSystemBot && (
               <View
                 style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 26,
-                  backgroundColor: colors.primary,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Ionicons name="sparkles" size={24} color="#fff" />
-              </View>
-            ) : isGroup ? (
-              <View
-                style={{
-                  width: isSubgroup ? 40 : 52,
-                  height: isSubgroup ? 40 : 52,
-                  borderRadius: isSubgroup ? 20 : 26,
-                  backgroundColor: isSubgroup ? `${colors.primary}30` : colors.primary,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Ionicons
-                  name={isSubgroup ? "chatbubble" : "people"}
-                  size={isSubgroup ? 18 : 24}
-                  color={isSubgroup ? colors.primary : "#fff"}
-                />
-              </View>
-            ) : (
-              <Avatar name={displayName} size={isSubgroup ? "sm" : "md"} />
-            )}
-
-            {/* Content */}
-            <View style={{ flex: 1, marginLeft: isSubgroup ? 10 : 14 }}>
-              {/* Top row: name + time */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: isSubgroup ? 2 : 4,
+                  backgroundColor: isDark ? "#1A1A1A" : "#F5F5F5",
+                  borderRadius: 4,
+                  paddingHorizontal: 5,
+                  paddingVertical: 1,
                 }}
               >
                 <Text
                   style={{
-                    fontSize: isSubgroup ? 14 : 16,
-                    fontWeight: hasUnread ? "700" : "500",
-                    color: colors.textPrimary,
-                    flex: 1,
-                    marginRight: 8,
+                    fontSize: 8,
+                    fontWeight: "700",
+                    fontFamily: fonts.bold,
+                    color: isDark ? "#555555" : "#A3A3A3",
+                    letterSpacing: 0.32,
+                    textTransform: "uppercase",
                   }}
-                  numberOfLines={1}
                 >
-                  {displayName}
+                  IA
                 </Text>
-                {item.lastMessageAt && (
-                  <Text
-                    style={{
-                      fontSize: isSubgroup ? 11 : 12,
-                      color: hasUnread ? colors.primary : colors.textMuted,
-                      fontWeight: hasUnread ? "600" : "400",
-                    }}
-                  >
-                    {formatTime(item.lastMessageAt)}
-                  </Text>
-                )}
               </View>
-
-              {/* Bottom row: preview + badges */}
+            )}
+            {/* Parent group badge (Desordenado view) */}
+            {parentName && (
               <View
                 style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
+                  backgroundColor: isDark ? "#1A1A1A" : "#F5F5F5",
+                  borderRadius: 4,
+                  paddingHorizontal: 5,
+                  paddingVertical: 1,
                 }}
               >
                 <Text
                   style={{
-                    fontSize: isSubgroup ? 13 : 14,
-                    color: hasUnread ? colors.textSecondary : colors.textMuted,
-                    flex: 1,
-                    marginRight: 8,
+                    fontSize: 8,
+                    fontWeight: "700",
+                    fontFamily: fonts.bold,
+                    color: isDark ? "#555555" : "#A3A3A3",
+                    letterSpacing: 0.32,
                   }}
                   numberOfLines={1}
                 >
-                  {item.lastMessageText || "Sin mensajes"}
+                  {parentName}
                 </Text>
-
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  {(item.isMuted || item.muted) && (
-                    <Ionicons
-                      name="volume-mute"
-                      size={isSubgroup ? 14 : 16}
-                      color={colors.textMuted}
-                    />
-                  )}
-                  {item.isPinned && (
-                    <Ionicons name="pin" size={14} color={colors.textMuted} />
-                  )}
-                  {hasUnread && (
-                    <View
-                      style={{
-                        backgroundColor: colors.primary,
-                        borderRadius: 12,
-                        minWidth: isSubgroup ? 18 : 22,
-                        height: isSubgroup ? 18 : 22,
-                        justifyContent: "center",
-                        alignItems: "center",
-                        paddingHorizontal: isSubgroup ? 4 : 6,
-                      }}
-                    >
-                      <Text style={{ color: "#fff", fontSize: isSubgroup ? 10 : 11, fontWeight: "700" }}>
-                        {unreadCount}
-                      </Text>
-                    </View>
-                  )}
-                </View>
               </View>
-            </View>
-          </AnimatedPressable>
+            )}
+          </View>
+
+          {/* Preview */}
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: "400",
+              fontFamily: fonts.regular,
+              color: isDark ? "#555555" : "#A3A3A3",
+            }}
+            numberOfLines={1}
+          >
+            {item.lastMessageText || "Sin mensajes"}
+          </Text>
         </View>
-      </View>
-      {/* Divider — starts after avatar */}
-      <View
-        style={{
-          height: 0.5,
-          backgroundColor: dividerColor,
-          marginLeft: isSubgroup ? 106 : 86,
-          marginRight: 20,
-        }}
-      />
+
+        {/* Right column: time + badge */}
+        <View
+          style={{
+            position: "absolute",
+            right: 20,
+            top: 0,
+            bottom: 0,
+            alignItems: "flex-end",
+            justifyContent: "center",
+            gap: 4,
+          }}
+        >
+          {item.lastMessageAt && (
+            <Text
+              style={{
+                fontSize: 10,
+                fontWeight: "500",
+                fontFamily: fonts.monoMedium,
+                color: isDark ? "#555555" : "#A3A3A3",
+                fontVariant: ["tabular-nums"],
+              }}
+            >
+              {formatTime(item.lastMessageAt)}
+            </Text>
+          )}
+          {hasUnread ? (
+            <View
+              style={{
+                backgroundColor: "#EF4444",
+                borderRadius: 9,
+                minWidth: 18,
+                height: 18,
+                justifyContent: "center",
+                alignItems: "center",
+                paddingHorizontal: 5,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: 9,
+                  fontWeight: "700",
+                  fontFamily: fonts.monoBold,
+                  fontVariant: ["tabular-nums"],
+                }}
+              >
+                {unreadCount}
+              </Text>
+            </View>
+          ) : null}
+          {hasChildren && (
+            <AnimatedPressable
+              onPress={(e: any) => {
+                e?.stopPropagation?.();
+                onToggleExpand?.();
+              }}
+              haptic="selection"
+              style={{
+                paddingHorizontal: 8,
+                paddingVertical: 6,
+                marginRight: -8,
+                marginBottom: -6,
+              }}
+            >
+              <Ionicons
+                name={isExpanded ? "chevron-up" : "chevron-down"}
+                size={12}
+                color={isDark ? "#404040" : "#A3A3A3"}
+              />
+            </AnimatedPressable>
+          )}
+        </View>
+      </AnimatedPressable>
     </View>
   );
 });
 
+// ── Section Header ──────────────────────────────────────────
+function SectionHeader({ title, isDark }: { title: string; isDark: boolean }) {
+  return (
+    <View style={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 6 }}>
+      <Text
+        style={{
+          fontSize: 9,
+          fontWeight: "700",
+          fontFamily: fonts.bold,
+          letterSpacing: 0.72,
+          textTransform: "uppercase",
+          color: isDark ? "#404040" : "#CCCCCC",
+        }}
+      >
+        {title}
+      </Text>
+    </View>
+  );
+}
+
 // ── Main Screen ─────────────────────────────────────────────
 export default function InboxScreen() {
   const { user } = useAuth();
-  const { colors, isDark } = useTheme();
+  const { isDark } = useTheme();
   const haptics = useHaptics();
   const queryClient = useQueryClient();
   const navigation = useNavigation();
-  const [activeFilter, setActiveFilter] = useState<FilterChip>("all");
+  const [activeFilter, setActiveFilter] = useState<FilterChip>("ordered");
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [autoExpandedOnce, setAutoExpandedOnce] = useState(false);
 
   // Real data query
   const { data, isLoading, refetch, isRefetching } = useQuery({
@@ -295,7 +483,6 @@ export default function InboxScreen() {
     enabled: !!user,
   });
 
-  // Auto-create/fetch bot conversation
   const { data: botConv } = useQuery({
     queryKey: ["bot-conversation"],
     queryFn: getBotConversation,
@@ -303,12 +490,38 @@ export default function InboxScreen() {
     staleTime: Infinity,
   });
 
+  // Refetch conversations when screen comes back into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (user) refetch();
+    }, [user])
+  );
+
+  // Pusher: listen for new messages to update inbox in real-time
+  useEffect(() => {
+    if (!user) return;
+    const pusher = getPusherClient();
+
+    // Subscribe to user's private channel for inbox updates
+    const channel = pusher.subscribe(`private-user-${user.id}`);
+
+    channel.bind("conversation:updated", () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    });
+
+    channel.bind("message:new", () => {
+      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    });
+
+    return () => {
+      pusher.unsubscribe(`private-user-${user.id}`);
+    };
+  }, [user?.id, queryClient]);
+
   const rawConversations = useMemo(() => {
     const convs = data?.conversations || [];
-    // Ensure bot conversation is always first and not duplicated
     if (botConv) {
       const withoutBot = convs.filter((c: any) => c.id !== botConv.id);
-      // Merge unread/muted from inbox data if available
       const inboxBot = convs.find((c: any) => c.id === botConv.id);
       const mergedBot = inboxBot || botConv;
       return [mergedBot, ...withoutBot];
@@ -316,7 +529,6 @@ export default function InboxScreen() {
     return convs;
   }, [data?.conversations, botConv]);
 
-  // Total unread badge on tab
   const totalUnread = useMemo(
     () => rawConversations.reduce((sum: number, c: any) => sum + (c.unreadCount ?? 0), 0),
     [rawConversations]
@@ -326,20 +538,9 @@ export default function InboxScreen() {
     navigation.setParams({ unreadBadge: totalUnread > 0 ? totalUnread : undefined } as any);
   }, [totalUnread, navigation]);
 
-  // Filter
-  const filteredConversations = useMemo(() => {
+  // Search filter
+  const searchFiltered = useMemo(() => {
     let convs = rawConversations;
-
-    // Apply filter chip
-    if (activeFilter === "unread") {
-      convs = convs.filter((c: any) => (c.unreadCount ?? 0) > 0);
-    } else if (activeFilter === "groups") {
-      convs = convs.filter((c: any) => c.type === "CHANNEL");
-    } else if (activeFilter === "direct") {
-      convs = convs.filter((c: any) => c.type === "DIRECT");
-    }
-
-    // Apply search
     if (search.trim()) {
       const q = search.toLowerCase();
       convs = convs.filter((c: any) => {
@@ -347,90 +548,133 @@ export default function InboxScreen() {
           c.type === "DIRECT"
             ? c.members?.find((m: any) => m.userId !== (user?.id ?? 1))?.user?.name || ""
             : c.name || "";
-        return (
-          name.toLowerCase().includes(q) ||
-          (c.lastMessageText || "").toLowerCase().includes(q)
-        );
+        return name.toLowerCase().includes(q) || (c.lastMessageText || "").toLowerCase().includes(q);
       });
     }
-
     return convs;
-  }, [rawConversations, activeFilter, search, user?.id]);
+  }, [rawConversations, search, user?.id]);
 
-  // Group conversations into recursive hierarchy
-  const groupedConversations = useMemo((): InboxItem[] => {
-    const allIds = new Set(filteredConversations.map((c: any) => c.id));
+  // Type filter
+  const typeFiltered = useMemo(() => {
+    if (activeFilter === "groups") return searchFiltered.filter((c: any) => c.type === "CHANNEL" || c.isSystemBot);
+    if (activeFilter === "direct") return searchFiltered.filter((c: any) => c.type === "DIRECT" || c.isSystemBot);
+    return searchFiltered;
+  }, [searchFiltered, activeFilter]);
+
+  // Build parent name map
+  const parentNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of rawConversations) {
+      if (c.id && c.name) map.set(c.id, c.name);
+    }
+    return map;
+  }, [rawConversations]);
+
+  // Auto-expand all groups that have children on first load
+  useEffect(() => {
+    if (autoExpandedOnce || rawConversations.length === 0) return;
+    const parentIds = new Set<string>();
+    for (const c of rawConversations) {
+      if (c.parentId) parentIds.add(c.parentId);
+    }
+    if (parentIds.size > 0) {
+      setExpandedGroups(parentIds);
+      setAutoExpandedOnce(true);
+    }
+  }, [rawConversations, autoExpandedOnce]);
+
+  // ── "Ordenado" — hierarchical with tree lines + sections ──
+  const orderedFlatData = useMemo(() => {
+    const bots = typeFiltered.filter((c: any) => c.isSystemBot);
+    const groups = typeFiltered.filter((c: any) => c.type === "CHANNEL" && !c.parentId && !c.isSystemBot);
+    const directs = typeFiltered.filter((c: any) => c.type === "DIRECT" && !c.isSystemBot);
+
+    const allIds = new Set(typeFiltered.map((c: any) => c.id));
     const childrenMap = new Map<string, any[]>();
-    const topLevel: any[] = [];
-
-    for (const conv of filteredConversations) {
+    for (const conv of typeFiltered) {
       if (conv.parentId && allIds.has(conv.parentId)) {
         const existing = childrenMap.get(conv.parentId) || [];
         existing.push(conv);
         childrenMap.set(conv.parentId, existing);
-      } else {
-        topLevel.push(conv);
       }
     }
 
-    // Recursively attach subgroups
-    function attachChildren(items: any[]): InboxItem[] {
-      return items.map((conv) => {
-        const subs = childrenMap.get(conv.id);
-        if (subs && subs.length > 0) {
-          return { ...conv, _subgroups: attachChildren(subs) };
-        }
-        return conv;
-      });
-    }
-
-    return attachChildren(topLevel);
-  }, [filteredConversations]);
-
-  // Flatten recursively for FlatList
-  const flatData = useMemo((): InboxItem[] => {
     const result: InboxItem[] = [];
-    function flatten(items: InboxItem[], depth: number) {
-      for (const item of items) {
-        if (depth > 0) {
-          result.push({ ...item, _isSubgroup: true, _depth: depth });
-        } else {
-          result.push(item);
-        }
-        if (item._subgroups && expandedGroups.has(item.id)) {
-          flatten(item._subgroups, depth + 1);
+
+    // Bots first
+    for (const b of bots) result.push(b);
+
+    // Groups section
+    if (groups.length > 0 || childrenMap.size > 0) {
+      result.push({ _sectionHeader: "Grupos" });
+
+      function flattenGroup(items: any[], depth: number, parentIsLast?: boolean) {
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          const children = childrenMap.get(item.id) || [];
+          const isLastSibling = i === items.length - 1;
+          const hasKids = children.length > 0;
+          const expanded = hasKids && expandedGroups.has(item.id);
+          if (depth > 0) {
+            result.push({
+              ...item,
+              _isSubgroup: true,
+              _depth: depth,
+              _isLastInGroup: isLastSibling,
+              _hasChildren: hasKids,
+              _isExpanded: expanded,
+              _parentIsLast: parentIsLast,
+            });
+          } else {
+            result.push({ ...item, _hasChildren: hasKids, _isExpanded: expanded });
+          }
+          if (expanded) {
+            flattenGroup(children, depth + 1, isLastSibling);
+          }
         }
       }
+      flattenGroup(groups, 0);
     }
-    flatten(groupedConversations, 0);
-    return result;
-  }, [groupedConversations, expandedGroups]);
 
-  // Calculate total unread recursively
-  const getTotalUnread = useCallback((item: InboxItem): number => {
-    const own = item.unreadCount ?? 0;
-    if (!item._subgroups) return own;
-    const subsUnread = item._subgroups.reduce(
-      (sum: number, sub: any) => sum + getTotalUnread(sub),
-      0
-    );
-    return own + subsUnread;
-  }, []);
+    // Direct messages section
+    if (directs.length > 0) {
+      result.push({ _sectionHeader: "Mensajes directos" });
+      for (const dm of directs) result.push(dm);
+    }
+
+    return result;
+  }, [typeFiltered, expandedGroups]);
+
+  // ── "Desordenado" — flat list sorted by lastMessageAt, with parent badges ──
+  const unorderedFlatData = useMemo(() => {
+    const bots = typeFiltered.filter((c: any) => c.isSystemBot);
+    const rest = typeFiltered.filter((c: any) => !c.isSystemBot);
+
+    const sorted = [...rest].sort((a, b) => {
+      const ta = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+      const tb = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+      return tb - ta;
+    });
+
+    return [...bots, ...sorted].map((c) => {
+      if (c.parentId && parentNameMap.has(c.parentId)) {
+        return { ...c, _parentName: parentNameMap.get(c.parentId) };
+      }
+      return c;
+    });
+  }, [typeFiltered, parentNameMap]);
+
+  // Choose which data to show
+  const flatData = activeFilter === "unordered" ? unorderedFlatData : orderedFlatData;
 
   const toggleExpand = useCallback((id: string) => {
     haptics.selection();
     setExpandedGroups((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
   }, [haptics]);
-
-  const archivedCount = 0;
 
   const handleLongPress = useCallback(
     (conv: any) => {
@@ -463,81 +707,136 @@ export default function InboxScreen() {
   );
 
   const filterChips: { key: FilterChip; label: string }[] = [
-    { key: "all", label: "Todos" },
-    { key: "unread", label: "No leídos" },
+    { key: "ordered", label: "Ordenado" },
+    { key: "unordered", label: "Desordenado" },
     { key: "groups", label: "Grupos" },
     { key: "direct", label: "Directos" },
   ];
 
-  const bgColor = isDark ? "#000000" : "#ffffff";
-  const searchBg = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)";
-  const chipBg = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)";
-  const chipActiveBg = colors.primary;
-  const chipText = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.5)";
-  const archivedBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)";
+  const inboxKeyExtractor = useCallback(
+    (item: any) =>
+      item._sectionHeader
+        ? `section-${item._sectionHeader}`
+        : item.id,
+    []
+  );
+
+  const inboxRenderItem = useCallback(
+    ({ item }: { item: any }) => {
+      if (item._sectionHeader) {
+        return <SectionHeader title={item._sectionHeader} isDark={isDark} />;
+      }
+
+      return (
+        <ConversationItem
+          item={item}
+          userId={user?.id ?? 1}
+          onLongPress={handleLongPress}
+          isSubgroup={!!item._isSubgroup}
+          isLastInGroup={item._isLastInGroup}
+          hasChildren={!!item._hasChildren}
+          isExpanded={!!item._isExpanded}
+          onToggleExpand={item._hasChildren ? () => toggleExpand(item.id) : undefined}
+        />
+      );
+    },
+    [isDark, user?.id, handleLongPress, toggleExpand]
+  );
+
+  // m6 colors
+  const bgColor = isDark ? "#0A0A0A" : "#FFFFFF";
+  const searchBg = isDark ? "#171717" : "#FAFAFA";
+  const searchBorder = isDark ? "#262626" : "#E5E5E5";
+  const searchIcon = isDark ? "#555555" : "#A3A3A3";
+  const chipActiveBg = isDark ? "#FFFFFF" : "#0A0A0A";
+  const chipActiveText = isDark ? "#0A0A0A" : "#FFFFFF";
+  const chipActiveBorder = isDark ? "#FFFFFF" : "#0A0A0A";
+  const chipInactiveBg = isDark ? "#171717" : "#FAFAFA";
+  const chipInactiveBorder = isDark ? "#262626" : "#E5E5E5";
+  const chipInactiveText = isDark ? "#555555" : "#A3A3A3";
+  const btnBg = isDark ? "#171717" : "#FAFAFA";
+  const btnBorder = isDark ? "#262626" : "#E5E5E5";
+  const btnIcon = isDark ? "#A3A3A3" : "#737373";
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: bgColor }} edges={["top"]}>
-      {/* Header */}
-      <View
-        style={{
-          paddingHorizontal: 20,
-          paddingTop: 8,
-          paddingBottom: 12,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 26,
-            fontWeight: "700",
-            color: colors.textPrimary,
-            letterSpacing: -0.3,
-          }}
-        >
-          Chats
-        </Text>
-        <AnimatedPressable
-          onPress={() => router.push("/new-chat")}
-          haptic="light"
-          style={{
-            width: 30,
-            height: 30,
-            borderRadius: 15,
-            backgroundColor: colors.primary,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Ionicons name="add" size={18} color="#fff" />
-        </AnimatedPressable>
-      </View>
+      {/* Header + Search */}
+      <View style={{ paddingHorizontal: 20, paddingTop: 8, gap: 14 }}>
+        {/* Title row */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <Text
+            style={{
+              fontSize: 28,
+              fontWeight: "800",
+              fontFamily: fonts.extraBold,
+              color: isDark ? "#E5E5E5" : "#0A0A0A",
+              letterSpacing: -0.84,
+            }}
+          >
+            Chats
+          </Text>
+          <View style={{ flexDirection: "row", gap: 6 }}>
+            <AnimatedPressable
+              onPress={() => {}}
+              haptic="light"
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                backgroundColor: btnBg,
+                borderWidth: 1,
+                borderColor: btnBorder,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons name="search-outline" size={18} color={btnIcon} />
+            </AnimatedPressable>
+            <AnimatedPressable
+              onPress={() => router.push("/new-chat")}
+              haptic="light"
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                backgroundColor: btnBg,
+                borderWidth: 1,
+                borderColor: btnBorder,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons name="add" size={18} color={btnIcon} />
+            </AnimatedPressable>
+          </View>
+        </View>
 
-      {/* Search */}
-      <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+        {/* Search bar */}
         <View
           style={{
             flexDirection: "row",
             alignItems: "center",
             backgroundColor: searchBg,
             borderRadius: 10,
-            paddingHorizontal: 10,
-            height: 34,
+            borderWidth: 1,
+            borderColor: searchBorder,
+            paddingLeft: 14,
+            height: 38,
+            gap: 10,
           }}
         >
-          <Ionicons name="search" size={15} color={colors.textMuted} />
+          <Ionicons name="search-outline" size={16} color={searchIcon} />
           <TextInput
             style={{
               flex: 1,
-              fontSize: 14,
-              color: colors.textPrimary,
-              marginLeft: 8,
+              fontSize: 13,
+              fontWeight: "400",
+              fontFamily: fonts.regular,
+              color: isDark ? "#E5E5E5" : "#0A0A0A",
               outlineStyle: "none",
             } as any}
-            placeholder="Buscar"
-            placeholderTextColor={colors.textMuted}
+            placeholder="Buscar conversacion..."
+            placeholderTextColor={isDark ? "#555555" : "#A3A3A3"}
             value={search}
             onChangeText={setSearch}
             autoCapitalize="none"
@@ -545,8 +844,8 @@ export default function InboxScreen() {
             onBlur={() => setSearchFocused(false)}
           />
           {search.length > 0 && (
-            <AnimatedPressable onPress={() => setSearch("")} haptic="light">
-              <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+            <AnimatedPressable onPress={() => setSearch("")} haptic="light" style={{ paddingRight: 12 }}>
+              <Ionicons name="close-circle" size={16} color={searchIcon} />
             </AnimatedPressable>
           )}
         </View>
@@ -558,8 +857,9 @@ export default function InboxScreen() {
         showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }}
         contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingBottom: 4,
+          paddingHorizontal: 20,
+          paddingTop: 8,
+          paddingBottom: 0,
           gap: 6,
         }}
       >
@@ -572,16 +872,20 @@ export default function InboxScreen() {
               haptic="selection"
               style={{
                 paddingHorizontal: 12,
-                paddingVertical: 5,
-                borderRadius: 16,
-                backgroundColor: isActive ? chipActiveBg : chipBg,
+                height: 26,
+                justifyContent: "center",
+                borderRadius: 13,
+                backgroundColor: isActive ? chipActiveBg : chipInactiveBg,
+                borderWidth: 1,
+                borderColor: isActive ? chipActiveBorder : chipInactiveBorder,
               }}
             >
               <Text
                 style={{
-                  fontSize: 12,
-                  fontWeight: isActive ? "600" : "500",
-                  color: isActive ? "#fff" : chipText,
+                  fontSize: 11,
+                  fontWeight: "600",
+                  fontFamily: fonts.semiBold,
+                  color: isActive ? chipActiveText : chipInactiveText,
                 }}
               >
                 {chip.label}
@@ -591,82 +895,25 @@ export default function InboxScreen() {
         })}
       </ScrollView>
 
-      {/* Archivados row */}
-      {archivedCount > 0 && activeFilter === "all" && (
-        <AnimatedPressable
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            paddingHorizontal: 20,
-            paddingVertical: 4,
-          }}
-          haptic="light"
-        >
-          <View
-            style={{
-              width: 22,
-              height: 22,
-              borderRadius: 11,
-              backgroundColor: chipBg,
-              justifyContent: "center",
-              alignItems: "center",
-              marginRight: 8,
-            }}
-          >
-            <Ionicons
-              name="archive-outline"
-              size={12}
-              color={colors.textMuted}
-            />
-          </View>
-          <Text
-            style={{
-              flex: 1,
-              fontSize: 13,
-              fontWeight: "500",
-              color: colors.textSecondary,
-            }}
-          >
-            Archivados
-          </Text>
-          <Text
-            style={{
-              fontSize: 13,
-              color: colors.textMuted,
-            }}
-          >
-            {archivedCount}
-          </Text>
-        </AnimatedPressable>
-      )}
-
       {/* Conversation list */}
       <FlatList
         style={{ flex: 1 }}
         data={flatData}
-        keyExtractor={(item: any, index: number) => `${item.id}-${item._isSubgroup ? 'sub' : 'top'}-${index}`}
+        keyExtractor={inboxKeyExtractor}
         removeClippedSubviews={Platform.OS !== "web"}
         maxToRenderPerBatch={10}
         windowSize={7}
         initialNumToRender={15}
-        renderItem={({ item }) => {
-          const hasSubgroups = !!(item._subgroups && item._subgroups.length > 0);
-          const isSubgroup = !!item._isSubgroup;
-          const isExpanded = expandedGroups.has(item.id);
-
-          return (
-            <ConversationItem
-              item={item}
-              userId={user?.id ?? 1}
-              onLongPress={handleLongPress}
-              isSubgroup={isSubgroup}
-              hasSubgroups={hasSubgroups}
-              isExpanded={isExpanded}
-              onToggleExpand={() => toggleExpand(item.id)}
-              totalUnread={hasSubgroups ? getTotalUnread(item) : undefined}
-            />
-          );
-        }}
+        renderItem={inboxRenderItem}
+        ItemSeparatorComponent={() => (
+          <View
+            style={{
+              height: 1,
+              backgroundColor: isDark ? "#141414" : "#F5F5F5",
+              marginLeft: 76,
+            }}
+          />
+        )}
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
@@ -674,7 +921,7 @@ export default function InboxScreen() {
               haptics.light();
               refetch();
             }}
-            tintColor={colors.primary}
+            tintColor={isDark ? "#555555" : "#A3A3A3"}
           />
         }
         contentContainerStyle={{ paddingBottom: 20, flexGrow: 1 }}
@@ -686,56 +933,52 @@ export default function InboxScreen() {
               ))}
             </View>
           ) : (
-          <View
-            style={{
-              alignItems: "center",
-              paddingTop: 40,
-            }}
-          >
-            <View
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 32,
-                backgroundColor: chipBg,
-                justifyContent: "center",
-                alignItems: "center",
-                marginBottom: 16,
-              }}
-            >
-              <Ionicons
-                name={search ? "search-outline" : "chatbubbles-outline"}
-                size={28}
-                color={colors.textMuted}
-              />
+            <View style={{ alignItems: "center", paddingTop: 60 }}>
+              <View
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 14,
+                  backgroundColor: isDark ? "#171717" : "#FAFAFA",
+                  borderWidth: 1,
+                  borderColor: isDark ? "#262626" : "#E5E5E5",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <Ionicons
+                  name={search ? "search-outline" : "chatbubbles-outline"}
+                  size={24}
+                  color={isDark ? "#555555" : "#A3A3A3"}
+                />
+              </View>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "600",
+                  fontFamily: fonts.semiBold,
+                  color: isDark ? "#E5E5E5" : "#0A0A0A",
+                  marginBottom: 6,
+                }}
+              >
+                {search ? "Sin resultados" : "No hay conversaciones"}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontFamily: fonts.regular,
+                  color: isDark ? "#555555" : "#A3A3A3",
+                  textAlign: "center",
+                  paddingHorizontal: 40,
+                }}
+              >
+                {search ? "Probá con otro término" : "Tocá + para iniciar una conversación"}
+              </Text>
             </View>
-            <Text
-              style={{
-                fontSize: 18,
-                fontWeight: "600",
-                color: colors.textPrimary,
-                marginBottom: 6,
-              }}
-            >
-              {search ? "Sin resultados" : "No hay conversaciones"}
-            </Text>
-            <Text
-              style={{
-                fontSize: 14,
-                color: colors.textMuted,
-                textAlign: "center",
-                paddingHorizontal: 40,
-              }}
-            >
-              {search
-                ? "Probá con otro término"
-                : "Tocá + para iniciar una conversación"}
-            </Text>
-          </View>
           )
         }
       />
-
     </SafeAreaView>
   );
 }

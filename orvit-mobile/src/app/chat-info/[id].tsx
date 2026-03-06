@@ -7,7 +7,6 @@ import {
   ScrollView,
   Modal,
   FlatList,
-  StyleSheet,
   TouchableOpacity,
   Switch,
   ActionSheetIOS,
@@ -21,6 +20,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useHaptics } from "@/hooks/useHaptics";
+import { fonts } from "@/lib/fonts";
 import {
   getConversation,
   getMembers,
@@ -31,88 +31,28 @@ import {
   getCompanyUsers,
 } from "@/api/chat";
 import Avatar from "@/components/ui/Avatar";
+import AnimatedPressable from "@/components/ui/AnimatedPressable";
 import type { Conversation, ConversationMember } from "@/types/chat";
 
-// ── Component ─────────────────────────────────────────────
 export default function ChatInfoScreen() {
   const { colors, isDark } = useTheme();
-
-  // Dynamic palette derived from theme
-  const C = useMemo(() => ({
-    bg: colors.chatBg,
-    card: colors.chatHeaderBg,
-    textPrimary: colors.textPrimary,
-    textSecondary: colors.textMuted,
-    accent: colors.primary,
-    danger: colors.error,
-    success: colors.success,
-    divider: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)",
-    actionBg: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
-  }), [colors, isDark]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const haptics = useHaptics();
   const queryClient = useQueryClient();
 
-  // Dynamic styles
-  const s = useMemo(() => StyleSheet.create({
-    container: { flex: 1, backgroundColor: C.bg },
-    scroll: { flex: 1 },
-    scrollContent: { paddingBottom: 20 },
-    header: { flexDirection: "row", alignItems: "center", backgroundColor: C.card, paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
-    backBtn: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
-    headerTitle: { fontSize: 18, fontWeight: "600", color: C.textPrimary, flex: 1 },
-    profileSection: { alignItems: "center", paddingVertical: 28, gap: 8 },
-    avatarLarge: { width: 80, height: 80, borderRadius: 40, backgroundColor: C.actionBg, justifyContent: "center", alignItems: "center" },
-    profileName: { fontSize: 20, fontWeight: "700", color: C.textPrimary, textAlign: "center", paddingHorizontal: 20 },
-    profileSubtitle: { fontSize: 13, color: C.textSecondary },
-    editContainer: { paddingHorizontal: 16, marginBottom: 12 },
-    editInput: { backgroundColor: C.card, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: C.textPrimary, borderWidth: 1, borderColor: C.accent },
-    editActions: { flexDirection: "row", justifyContent: "flex-end", gap: 10, marginTop: 10 },
-    editBtnCancel: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, backgroundColor: C.actionBg },
-    editBtnCancelText: { fontSize: 13, fontWeight: "600", color: C.textSecondary },
-    editBtnSave: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, backgroundColor: C.accent },
-    editBtnSaveText: { fontSize: 13, fontWeight: "600", color: "#fff" },
-    quickActions: { flexDirection: "row", justifyContent: "center", gap: 24, paddingVertical: 8, paddingHorizontal: 16, marginBottom: 16 },
-    quickActionBtn: { alignItems: "center", gap: 6 },
-    quickActionCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.actionBg, justifyContent: "center", alignItems: "center" },
-    quickActionLabel: { fontSize: 11, color: C.textSecondary },
-    card: { marginHorizontal: 16, marginBottom: 12, backgroundColor: C.card, borderRadius: 12, overflow: "hidden" },
-    cardDescription: { fontSize: 14, color: C.textPrimary, padding: 14, lineHeight: 20 },
-    rowItem: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
-    rowText: { fontSize: 14, color: C.textPrimary },
-    rowIconCircle: { width: 36, height: 36, borderRadius: 18, backgroundColor: C.actionBg, justifyContent: "center", alignItems: "center" },
-    sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, marginBottom: 6 },
-    sectionTitle: { fontSize: 13, fontWeight: "600", color: C.textSecondary, textTransform: "uppercase", letterSpacing: 0.5, paddingHorizontal: 16, paddingVertical: 8 },
-    memberRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, gap: 12 },
-    memberRowBorder: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.divider },
-    memberAvatar: { width: 36, height: 36, borderRadius: 18, justifyContent: "center", alignItems: "center" },
-    memberInfo: { flex: 1 },
-    memberName: { fontSize: 15, fontWeight: "500", color: C.textPrimary },
-    memberSub: { fontSize: 12, color: C.textSecondary, marginTop: 1 },
-    badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: `${C.accent}20` },
-    badgeText: { fontSize: 11, fontWeight: "600", color: C.accent },
-    removeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: `${C.danger}15` },
-    removeBadgeText: { fontSize: 11, fontWeight: "600", color: C.danger },
-    dangerCard: { marginHorizontal: 16, marginTop: 8, marginBottom: 12, backgroundColor: C.card, borderRadius: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 14, gap: 8 },
-    dangerText: { fontSize: 15, fontWeight: "500", color: C.danger },
-    emptyCenter: { flex: 1, justifyContent: "center", alignItems: "center", paddingTop: 40 },
-    emptyText: { fontSize: 14, color: C.textSecondary },
-    emptyCard: { alignItems: "center", paddingVertical: 24, gap: 8 },
-    emptyCardText: { fontSize: 13, color: C.textSecondary },
-    modalContainer: { flex: 1, backgroundColor: C.bg },
-    modalHeader: { flexDirection: "row", alignItems: "center", backgroundColor: C.card, paddingHorizontal: 16, paddingVertical: 12, gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.divider },
-    modalSearch: { backgroundColor: C.card, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, color: C.textPrimary, marginHorizontal: 16, marginVertical: 12 },
-    alreadyText: { fontSize: 12, color: C.textSecondary },
-    addMemberBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, backgroundColor: C.accent },
-    addMemberBtnText: { fontSize: 13, fontWeight: "600", color: "#fff" },
-    toggleRow: { flexDirection: "row", alignItems: "center", padding: 14, gap: 12 },
-    toggleRowText: { flex: 1, fontSize: 14, color: C.textPrimary },
-    toggleRowSub: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
-    descEditContainer: { paddingHorizontal: 16, marginBottom: 12 },
-    descEditInput: { backgroundColor: C.card, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, color: C.textPrimary, borderWidth: 1, borderColor: C.accent, minHeight: 60, textAlignVertical: "top" },
-    memberActionBtn: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: C.actionBg },
-  }), [C]);
+  // ── m6 colors ──────────────────────────────────────────────
+  const bg = isDark ? "#0A0A0A" : "#FFFFFF";
+  const surface = isDark ? "#171717" : "#FAFAFA";
+  const border = isDark ? "#262626" : "#E5E5E5";
+  const text = isDark ? "#E5E5E5" : "#0A0A0A";
+  const textMuted = isDark ? "#555555" : "#A3A3A3";
+  const textDim = isDark ? "#404040" : "#737373";
+  const sectionColor = isDark ? "#333333" : "#A3A3A3";
+  const divider = isDark ? "#111111" : "#F0F0F0";
+  const errorColor = "#EF4444";
+
+  // ── State ──────────────────────────────────────────────────
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
   const [editingDescription, setEditingDescription] = useState(false);
@@ -121,6 +61,7 @@ export default function ChatInfoScreen() {
   const [addSearch, setAddSearch] = useState("");
   const [togglingAdminsOnly, setTogglingAdminsOnly] = useState(false);
 
+  // ── Queries ────────────────────────────────────────────────
   const { data: conv } = useQuery({
     queryKey: ["conversation", id],
     queryFn: () => getConversation(id!),
@@ -155,16 +96,16 @@ export default function ChatInfoScreen() {
   }, [conv, user?.id, isOrvitBot]);
 
   const subtitle = useMemo(() => {
-    if (isOrvitBot) return "Asistente de IA · Siempre disponible";
-    if (conv?.type === "DIRECT") return "en línea";
+    if (isOrvitBot) return "Asistente de IA";
+    if (conv?.type === "DIRECT") return "en linea";
     const count = members?.length ?? 0;
-    return `${count} miembro${count !== 1 ? "s" : ""} · Grupo`;
+    return `${count} participante${count !== 1 ? "s" : ""}`;
   }, [conv?.type, members?.length, isOrvitBot]);
 
-  // ── Handlers ────────────────────────────────────────────
+  // ── Handlers ───────────────────────────────────────────────
   const handleToggleMute = useCallback(() => {
     haptics.selection();
-    Alert.alert("Próximamente", "Esta función estará disponible pronto");
+    Alert.alert("Proximamente", "Esta funcion estara disponible pronto");
   }, [haptics]);
 
   const handleToggleArchive = useCallback(async () => {
@@ -178,11 +119,11 @@ export default function ChatInfoScreen() {
       Alert.alert(
         newArchived ? "Archivado" : "Desarchivado",
         newArchived
-          ? "La conversación fue archivada"
-          : "La conversación fue restaurada"
+          ? "La conversacion fue archivada"
+          : "La conversacion fue restaurada"
       );
     } catch {
-      Alert.alert("Error", "No se pudo actualizar la conversación");
+      Alert.alert("Error", "No se pudo actualizar la conversacion");
     }
   }, [conv, haptics, queryClient, id]);
 
@@ -207,7 +148,7 @@ export default function ChatInfoScreen() {
       setEditingDescription(false);
       haptics.success();
     } catch {
-      Alert.alert("Error", "No se pudo actualizar la descripción");
+      Alert.alert("Error", "No se pudo actualizar la descripcion");
     }
   }, [newDescription, id, queryClient, haptics]);
 
@@ -219,7 +160,7 @@ export default function ChatInfoScreen() {
       queryClient.invalidateQueries({ queryKey: ["conversation", id] });
       haptics.selection();
     } catch {
-      Alert.alert("Error", "No se pudo actualizar la configuración");
+      Alert.alert("Error", "No se pudo actualizar la configuracion");
     } finally {
       setTogglingAdminsOnly(false);
     }
@@ -231,7 +172,7 @@ export default function ChatInfoScreen() {
       const actionText = newRole === "admin" ? "hacer administrador" : "quitar como administrador";
       Alert.alert(
         "Cambiar rol",
-        `¿Querés ${actionText} a ${memberName}?`,
+        `Queres ${actionText} a ${memberName}?`,
         [
           { text: "Cancelar", style: "cancel" },
           {
@@ -271,8 +212,8 @@ export default function ChatInfoScreen() {
       Alert.alert(
         isSelf ? "Salir del grupo" : "Remover miembro",
         isSelf
-          ? "¿Querés salir de este grupo?"
-          : `¿Remover a ${memberName} del grupo?`,
+          ? "Queres salir de este grupo?"
+          : `Remover a ${memberName} del grupo?`,
         [
           { text: "Cancelar", style: "cancel" },
           {
@@ -320,7 +261,7 @@ export default function ChatInfoScreen() {
           }
         );
       } else {
-        Alert.alert(memberName, "Elegí una acción", [
+        Alert.alert(memberName, "Elegi una accion", [
           { text: "Cancelar", style: "cancel" },
           {
             text: roleAction,
@@ -341,7 +282,17 @@ export default function ChatInfoScreen() {
     if (isGroup) {
       handleRemoveMember(user!.id, user!.name);
     } else {
-      Alert.alert("Próximamente", "Esta función estará disponible pronto");
+      Alert.alert(
+        "Eliminar chat",
+        "Estas seguro? Esta accion no se puede deshacer.",
+        [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Eliminar", style: "destructive", onPress: () => {
+            // TODO: implement delete
+            Alert.alert("Proximamente", "Esta funcion estara disponible pronto");
+          }},
+        ]
+      );
     }
   }, [isGroup, handleRemoveMember, user]);
 
@@ -355,438 +306,988 @@ export default function ChatInfoScreen() {
         u.email.toLowerCase().includes(addSearch.toLowerCase())
     );
 
-  // ── Quick action buttons config ─────────────────────────
-  const quickActions = useMemo(() => {
-    if (isOrvitBot) {
-      return [
-        { icon: "mic-outline" as const, label: "Audio", onPress: () => Alert.alert("Tip", "Mandá un audio desde el chat y Orvit lo procesa automáticamente") },
-        { icon: "search-outline" as const, label: "Buscar", onPress: () => Alert.alert("Próximamente", "Búsqueda dentro del chat") },
-        { icon: "notifications-off-outline" as const, label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
-        { icon: "help-circle-outline" as const, label: "Ayuda", onPress: () => Alert.alert("Orvit AI", "Podés mandarme:\n\n🎤 Audios para crear fallas, tareas o consultas\n✍️ Texto con instrucciones\n📊 Pedidos de reportes y resúmenes\n\nEjemplos:\n• \"La máquina 5 tiene una falla\"\n• \"Creame una tarea para mañana\"\n• \"Cómo viene la producción?\"") },
-      ];
-    }
-    if (isGroup) {
-      return [
-        ...(isAdmin
-          ? [{ icon: "person-add-outline" as const, label: "Agregar", onPress: () => setShowAddMember(true) }]
-          : []),
-        { icon: "search-outline" as const, label: "Buscar", onPress: () => Alert.alert("Próximamente", "Búsqueda dentro del chat") },
-        { icon: "notifications-off-outline" as const, label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
-        { icon: "ellipsis-horizontal-outline" as const, label: "Más", onPress: handleToggleArchive },
-      ];
-    }
-    return [
-      { icon: "call-outline" as const, label: "Audio", onPress: () => Alert.alert("Próximamente", "Llamadas de voz") },
-      { icon: "videocam-outline" as const, label: "Video", onPress: () => Alert.alert("Próximamente", "Videollamadas") },
-      { icon: "search-outline" as const, label: "Buscar", onPress: () => Alert.alert("Próximamente", "Búsqueda dentro del chat") },
-      { icon: "notifications-off-outline" as const, label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
-    ];
-  }, [isGroup, isAdmin, isOrvitBot, conv?.muted, handleToggleMute, handleToggleArchive]);
+  // ── Quick action button ────────────────────────────────────
+  function renderQuickAction(
+    icon: keyof typeof Ionicons.glyphMap,
+    label: string,
+    onPress: () => void
+  ) {
+    return (
+      <AnimatedPressable
+        key={label}
+        onPress={onPress}
+        haptic="light"
+        style={{ alignItems: "center", gap: 6 }}
+      >
+        <View
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            backgroundColor: surface,
+            borderWidth: 1,
+            borderColor: border,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Ionicons name={icon} size={20} color={text} />
+        </View>
+        <Text
+          style={{
+            fontSize: 11,
+            fontFamily: fonts.regular,
+            color: textMuted,
+          }}
+        >
+          {label}
+        </Text>
+      </AnimatedPressable>
+    );
+  }
 
+  // ── Menu item renderer (settings style) ────────────────────
+  function renderMenuItem(
+    icon: keyof typeof Ionicons.glyphMap,
+    title: string,
+    options?: {
+      subtitle?: string;
+      trailing?: React.ReactNode;
+      onPress?: () => void;
+      showDivider?: boolean;
+      iconColor?: string;
+      textColor?: string;
+    }
+  ) {
+    const content = (
+      <View
+        style={{
+          height: 52,
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 20,
+          gap: 14,
+        }}
+      >
+        <View
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            backgroundColor: options?.iconColor
+              ? `${options.iconColor}15`
+              : surface,
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Ionicons
+            name={icon}
+            size={17}
+            color={options?.iconColor || text}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontSize: 13,
+              fontFamily: fonts.semiBold,
+              color: options?.textColor || text,
+            }}
+          >
+            {title}
+          </Text>
+          {options?.subtitle && (
+            <Text
+              style={{
+                fontSize: 11,
+                fontFamily: fonts.regular,
+                color: textDim,
+                marginTop: 1,
+              }}
+            >
+              {options.subtitle}
+            </Text>
+          )}
+        </View>
+        {options?.trailing || (
+          <Ionicons name="chevron-forward" size={16} color={textMuted} />
+        )}
+      </View>
+    );
+
+    const dividerView = options?.showDivider !== false ? (
+      <View
+        style={{
+          height: 1,
+          backgroundColor: divider,
+          marginLeft: 66,
+        }}
+      />
+    ) : null;
+
+    if (options?.onPress) {
+      return (
+        <View key={title}>
+          <AnimatedPressable onPress={options.onPress} haptic="light">
+            {content}
+          </AnimatedPressable>
+          {dividerView}
+        </View>
+      );
+    }
+
+    return (
+      <View key={title}>
+        {content}
+        {dividerView}
+      </View>
+    );
+  }
+
+  // ── Section header ─────────────────────────────────────────
+  function renderSectionHeader(label: string) {
+    return (
+      <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 6 }}>
+        <Text
+          style={{
+            fontSize: 9,
+            fontFamily: fonts.bold,
+            fontWeight: "700",
+            letterSpacing: 0.72,
+            textTransform: "uppercase",
+            color: sectionColor,
+          }}
+        >
+          {label}
+        </Text>
+      </View>
+    );
+  }
+
+  // ── Loading ────────────────────────────────────────────────
   if (!conv) {
     return (
-      <SafeAreaView style={s.container} edges={["top"]}>
-        <View style={s.header}>
-          <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-            <Ionicons name="arrow-back-outline" size={22} color={C.textPrimary} />
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>Info</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: bg }} edges={["top"]}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            height: 48,
+            gap: 12,
+          }}
+        >
+          <AnimatedPressable onPress={() => router.back()} haptic="light">
+            <Ionicons name="arrow-back" size={22} color={text} />
+          </AnimatedPressable>
+          <Text
+            style={{
+              fontSize: 16,
+              fontFamily: fonts.semiBold,
+              color: text,
+            }}
+          >
+            Info
+          </Text>
         </View>
-        <View style={s.emptyCenter}>
-          <Text style={s.emptyText}>Cargando...</Text>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <Text
+            style={{
+              fontSize: 13,
+              fontFamily: fonts.regular,
+              color: textMuted,
+            }}
+          >
+            Cargando...
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  // ── Build quick actions based on type ──────────────────────
+  const quickActions: {
+    icon: keyof typeof Ionicons.glyphMap;
+    label: string;
+    onPress: () => void;
+  }[] = [];
+
+  if (isOrvitBot) {
+    quickActions.push(
+      { icon: "search-outline", label: "Buscar", onPress: () => Alert.alert("Proximamente", "Busqueda dentro del chat") },
+      { icon: "notifications-off-outline", label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
+      { icon: "help-circle-outline", label: "Ayuda", onPress: () => Alert.alert("Orvit AI", "Podes mandarme:\n\nAudios para crear fallas, tareas o consultas\nTexto con instrucciones\nPedidos de reportes y resumenes") },
+    );
+  } else if (isGroup) {
+    if (isAdmin) {
+      quickActions.push({
+        icon: "person-add-outline",
+        label: "Agregar",
+        onPress: () => setShowAddMember(true),
+      });
+    }
+    quickActions.push(
+      { icon: "search-outline", label: "Buscar", onPress: () => Alert.alert("Proximamente", "Busqueda dentro del chat") },
+      { icon: "notifications-off-outline", label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
+    );
+  } else {
+    // Direct chat — only search + mute (no calls)
+    quickActions.push(
+      { icon: "search-outline", label: "Buscar", onPress: () => Alert.alert("Proximamente", "Busqueda dentro del chat") },
+      { icon: "notifications-off-outline", label: conv?.muted ? "Activar" : "Silenciar", onPress: handleToggleMute },
+    );
+  }
+
   return (
-    <SafeAreaView style={s.container} edges={["top"]}>
-      {/* ── Header ─────────────────────────────────────── */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
-          <Ionicons name="arrow-back-outline" size={22} color={C.textPrimary} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Info</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: bg }} edges={["top"]}>
+      {/* ── Header ─────────────────────────────────────────── */}
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 16,
+          height: 48,
+          gap: 12,
+        }}
+      >
+        <AnimatedPressable onPress={() => router.back()} haptic="light">
+          <Ionicons name="arrow-back" size={22} color={text} />
+        </AnimatedPressable>
+        <Text
+          style={{
+            fontSize: 16,
+            fontFamily: fonts.semiBold,
+            color: text,
+          }}
+        >
+          Info
+        </Text>
       </View>
 
-      <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent}>
-        {/* ── Profile ────────────────────────────────────── */}
-        <View style={s.profileSection}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Profile section ──────────────────────────────── */}
+        <View style={{ alignItems: "center", paddingVertical: 24, gap: 8 }}>
           {isOrvitBot ? (
-            <View style={[s.avatarLarge, { backgroundColor: C.accent }]}>
-              <Ionicons name="sparkles-outline" size={36} color="#fff" />
+            <View
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                backgroundColor: text,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons name="sparkles" size={36} color={bg} />
             </View>
           ) : isGroup ? (
-            <View style={s.avatarLarge}>
-              <Ionicons
-                name={(conv.iconName as keyof typeof Ionicons.glyphMap) || "people"}
-                size={36}
-                color={C.textPrimary}
-              />
+            <View
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 40,
+                backgroundColor: surface,
+                borderWidth: 1,
+                borderColor: border,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Ionicons name="people" size={36} color={text} />
             </View>
           ) : (
             <Avatar name={displayName} size="xl" />
           )}
-          <Text style={s.profileName}>{displayName}</Text>
-          <Text style={s.profileSubtitle}>{subtitle}</Text>
+          <Text
+            style={{
+              fontSize: 20,
+              fontFamily: fonts.bold,
+              fontWeight: "700",
+              letterSpacing: -0.3,
+              color: text,
+              textAlign: "center",
+              paddingHorizontal: 20,
+              marginTop: 4,
+            }}
+          >
+            {displayName}
+          </Text>
+          <Text
+            style={{
+              fontSize: 13,
+              fontFamily: fonts.regular,
+              color: textMuted,
+            }}
+          >
+            {subtitle}
+          </Text>
         </View>
 
-        {/* ── Edit name (inline) ─────────────────────────── */}
+        {/* ── Quick actions ────────────────────────────────── */}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "center",
+            gap: 28,
+            paddingVertical: 4,
+            paddingHorizontal: 16,
+          }}
+        >
+          {quickActions.map((a) => renderQuickAction(a.icon, a.label, a.onPress))}
+        </View>
+
+        {/* ── Divider ──────────────────────────────────────── */}
+        <View
+          style={{
+            height: 1,
+            backgroundColor: divider,
+            marginHorizontal: 20,
+            marginTop: 20,
+          }}
+        />
+
+        {/* ── Edit name (inline — group admin only) ────────── */}
         {editingName && (
-          <Animated.View entering={FadeInDown.duration(200)} style={s.editContainer}>
-            <TextInput
-              style={s.editInput}
-              value={newName}
-              onChangeText={setNewName}
-              placeholder="Nombre del grupo"
-              placeholderTextColor={C.textSecondary}
-              autoFocus
-            />
-            <View style={s.editActions}>
-              <TouchableOpacity
-                style={s.editBtnCancel}
-                onPress={() => setEditingName(false)}
-                activeOpacity={0.7}
+          <Animated.View entering={FadeInDown.duration(200)}>
+            <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+              <TextInput
+                style={{
+                  backgroundColor: surface,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: border,
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  fontSize: 14,
+                  fontFamily: fonts.regular,
+                  color: text,
+                }}
+                value={newName}
+                onChangeText={setNewName}
+                placeholder="Nombre del grupo"
+                placeholderTextColor={textMuted}
+                autoFocus
+              />
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "flex-end",
+                  gap: 10,
+                  marginTop: 10,
+                }}
               >
-                <Text style={s.editBtnCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={s.editBtnSave}
-                onPress={handleSaveName}
-                activeOpacity={0.7}
-              >
-                <Text style={s.editBtnSaveText}>Guardar</Text>
-              </TouchableOpacity>
+                <AnimatedPressable
+                  onPress={() => setEditingName(false)}
+                  haptic="light"
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 8,
+                    backgroundColor: surface,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontFamily: fonts.semiBold,
+                      color: textMuted,
+                    }}
+                  >
+                    Cancelar
+                  </Text>
+                </AnimatedPressable>
+                <AnimatedPressable
+                  onPress={handleSaveName}
+                  haptic="medium"
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 8,
+                    backgroundColor: text,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontFamily: fonts.semiBold,
+                      color: bg,
+                    }}
+                  >
+                    Guardar
+                  </Text>
+                </AnimatedPressable>
+              </View>
             </View>
           </Animated.View>
         )}
 
-        {/* ── Quick actions ──────────────────────────────── */}
-        <View style={s.quickActions}>
-          {quickActions.map((action) => (
-            <TouchableOpacity
-              key={action.label}
-              style={s.quickActionBtn}
-              onPress={action.onPress}
-              activeOpacity={0.7}
-            >
-              <View style={s.quickActionCircle}>
-                <Ionicons name={action.icon} size={20} color={C.textPrimary} />
-              </View>
-              <Text style={s.quickActionLabel}>{action.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* ── Description (group or Orvit bot) ─────────────── */}
-        {(isGroup || isOrvitBot) && (
-          <>
-            {editingDescription ? (
-              <Animated.View entering={FadeInDown.duration(200)} style={s.descEditContainer}>
-                <TextInput
-                  style={s.descEditInput}
-                  value={newDescription}
-                  onChangeText={setNewDescription}
-                  placeholder="Descripción del grupo"
-                  placeholderTextColor={C.textSecondary}
-                  multiline
-                  autoFocus
-                />
-                <View style={s.editActions}>
-                  <TouchableOpacity
-                    style={s.editBtnCancel}
-                    onPress={() => setEditingDescription(false)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={s.editBtnCancelText}>Cancelar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={s.editBtnSave}
-                    onPress={handleSaveDescription}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={s.editBtnSaveText}>Guardar</Text>
-                  </TouchableOpacity>
-                </View>
-              </Animated.View>
-            ) : conv.description ? (
-              <TouchableOpacity
-                style={s.card}
-                onPress={isAdmin && isGroup ? () => {
-                  setNewDescription(conv.description || "");
-                  setEditingDescription(true);
-                } : undefined}
-                activeOpacity={isAdmin && isGroup ? 0.7 : 1}
-                disabled={!isAdmin || !isGroup}
-              >
-                <Text style={s.cardDescription}>{conv.description}</Text>
-              </TouchableOpacity>
-            ) : isAdmin && isGroup ? (
-              <TouchableOpacity
-                style={s.card}
-                onPress={() => {
-                  setNewDescription("");
-                  setEditingDescription(true);
+        {/* ── Description edit (inline) ────────────────────── */}
+        {editingDescription && (
+          <Animated.View entering={FadeInDown.duration(200)}>
+            <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+              <TextInput
+                style={{
+                  backgroundColor: surface,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: border,
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  fontSize: 14,
+                  fontFamily: fonts.regular,
+                  color: text,
+                  minHeight: 60,
+                  textAlignVertical: "top",
                 }}
-                activeOpacity={0.7}
+                value={newDescription}
+                onChangeText={setNewDescription}
+                placeholder="Descripcion del grupo"
+                placeholderTextColor={textMuted}
+                multiline
+                autoFocus
+              />
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "flex-end",
+                  gap: 10,
+                  marginTop: 10,
+                }}
               >
-                <View style={s.rowItem}>
-                  <Ionicons name="document-text-outline" size={18} color={C.accent} />
-                  <Text style={[s.rowText, { color: C.accent }]}>Agregar descripción</Text>
-                </View>
-              </TouchableOpacity>
-            ) : null}
+                <AnimatedPressable
+                  onPress={() => setEditingDescription(false)}
+                  haptic="light"
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 8,
+                    backgroundColor: surface,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontFamily: fonts.semiBold,
+                      color: textMuted,
+                    }}
+                  >
+                    Cancelar
+                  </Text>
+                </AnimatedPressable>
+                <AnimatedPressable
+                  onPress={handleSaveDescription}
+                  haptic="medium"
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 8,
+                    backgroundColor: text,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontFamily: fonts.semiBold,
+                      color: bg,
+                    }}
+                  >
+                    Guardar
+                  </Text>
+                </AnimatedPressable>
+              </View>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* ── Description (read only) ──────────────────────── */}
+        {!editingDescription && (isGroup || isOrvitBot) && conv.description ? (
+          <AnimatedPressable
+            onPress={
+              isAdmin && isGroup
+                ? () => {
+                    setNewDescription(conv.description || "");
+                    setEditingDescription(true);
+                  }
+                : undefined
+            }
+            haptic="light"
+            disabled={!isAdmin || !isGroup}
+          >
+            <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontFamily: fonts.regular,
+                  color: textDim,
+                  lineHeight: 19,
+                }}
+              >
+                {conv.description}
+              </Text>
+            </View>
+          </AnimatedPressable>
+        ) : null}
+
+        {/* ── Group settings section ───────────────────────── */}
+        {isGroup && isAdmin && !editingName && !editingDescription && (
+          <>
+            {renderSectionHeader("AJUSTES")}
+            {renderMenuItem("pencil-outline", "Editar nombre", {
+              onPress: () => {
+                setNewName(conv?.name || "");
+                setEditingName(true);
+              },
+            })}
+            {!conv.description
+              ? renderMenuItem("document-text-outline", "Agregar descripcion", {
+                  onPress: () => {
+                    setNewDescription("");
+                    setEditingDescription(true);
+                  },
+                })
+              : renderMenuItem("document-text-outline", "Editar descripcion", {
+                  onPress: () => {
+                    setNewDescription(conv.description || "");
+                    setEditingDescription(true);
+                  },
+                })}
+            {renderMenuItem("shield-checkmark-outline", "Solo admins escriben", {
+              subtitle: conv?.onlyAdminsPost
+                ? "Solo administradores"
+                : "Todos los miembros",
+              trailing: (
+                <Switch
+                  value={conv?.onlyAdminsPost ?? false}
+                  onValueChange={handleToggleAdminsOnly}
+                  disabled={togglingAdminsOnly}
+                  trackColor={{ false: "#333333", true: "#FFFFFF" }}
+                  thumbColor={isDark ? "#0A0A0A" : "#FFFFFF"}
+                  ios_backgroundColor="#333333"
+                  style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
+                />
+              ),
+              showDivider: false,
+            })}
           </>
         )}
 
-        {/* ── Edit name row (admin) ──────────────────────── */}
-        {isGroup && isAdmin && !editingName && (
-          <TouchableOpacity
-            style={s.card}
-            onPress={() => {
-              setNewName(conv?.name || "");
-              setEditingName(true);
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={s.rowItem}>
-              <Ionicons name="pencil-outline" size={18} color={C.accent} />
-              <Text style={[s.rowText, { color: C.accent }]}>Editar nombre del grupo</Text>
-            </View>
-          </TouchableOpacity>
-        )}
+        {/* ── Media ────────────────────────────────────────── */}
+        {renderSectionHeader("ARCHIVOS")}
+        {renderMenuItem("image-outline", "Archivos, enlaces y documentos", {
+          onPress: () =>
+            Alert.alert("Proximamente", "Archivos multimedia"),
+          showDivider: false,
+        })}
 
-        {/* ── Admin-only mode toggle ──────────────────────── */}
-        {isGroup && isAdmin && (
-          <View style={s.card}>
-            <View style={s.toggleRow}>
-              <Ionicons name="shield-checkmark-outline" size={18} color={C.accent} />
-              <View style={{ flex: 1 }}>
-                <Text style={s.toggleRowText}>Solo admins pueden enviar</Text>
-                <Text style={s.toggleRowSub}>Solo administradores pueden escribir mensajes</Text>
-              </View>
-              <Switch
-                value={conv?.onlyAdminsPost ?? false}
-                onValueChange={handleToggleAdminsOnly}
-                disabled={togglingAdminsOnly}
-                trackColor={{ false: C.actionBg, true: `${C.accent}60` }}
-                thumbColor={conv?.onlyAdminsPost ? C.accent : C.textSecondary}
-              />
-            </View>
-          </View>
-        )}
-
-        {/* ── Media placeholder ──────────────────────────── */}
-        <TouchableOpacity
-          style={s.card}
-          onPress={() => Alert.alert("Próximamente", "Archivos multimedia")}
-          activeOpacity={0.7}
-        >
-          <View style={s.rowItem}>
-            <Ionicons name="image-outline" size={18} color={C.textSecondary} />
-            <Text style={[s.rowText, { flex: 1 }]}>Archivos, enlaces y documentos</Text>
-            <Ionicons name="chevron-forward-outline" size={16} color={C.textSecondary} />
-          </View>
-        </TouchableOpacity>
-
-        {/* ── Parent group link ──────────────────────────── */}
+        {/* ── Parent group ─────────────────────────────────── */}
         {conv.parent && (
           <>
-            <Text style={s.sectionTitle}>Grupo padre</Text>
-            <TouchableOpacity
-              style={s.card}
-              onPress={() => router.push(`/chat/${conv.parent!.id}`)}
-              activeOpacity={0.7}
-            >
-              <View style={s.rowItem}>
-                <View style={s.rowIconCircle}>
-                  <Ionicons
-                    name={(conv.parent.iconName as keyof typeof Ionicons.glyphMap) || "people"}
-                    size={16}
-                    color={C.accent}
-                  />
-                </View>
-                <Text style={[s.rowText, { flex: 1 }]}>{conv.parent.name || "Sin nombre"}</Text>
-                <Ionicons name="chevron-forward-outline" size={16} color={C.textSecondary} />
-              </View>
-            </TouchableOpacity>
+            {renderSectionHeader("GRUPO PADRE")}
+            {renderMenuItem("people-outline", conv.parent.name || "Sin nombre", {
+              onPress: () => router.push(`/chat/${conv.parent!.id}`),
+              showDivider: false,
+            })}
           </>
         )}
 
-        {/* ── Members ────────────────────────────────────── */}
+        {/* ── Participants ─────────────────────────────────── */}
         {members && members.length > 0 && (
           <>
-            <View style={s.sectionHeader}>
-              <Text style={s.sectionTitle}>
-                {isGroup ? `${members.length} miembros` : "Participantes"}
-              </Text>
-              {isGroup && isAdmin && (
-                <TouchableOpacity onPress={() => setShowAddMember(true)} activeOpacity={0.7}>
-                  <Ionicons name="search-outline" size={18} color={C.textSecondary} />
-                </TouchableOpacity>
-              )}
-            </View>
-            <View style={s.card}>
-              {/* Add member row (admin only) */}
-              {isGroup && isAdmin && (
-                <TouchableOpacity
-                  style={[s.memberRow, s.memberRowBorder]}
-                  onPress={() => setShowAddMember(true)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[s.memberAvatar, { backgroundColor: C.success }]}>
-                    <Ionicons name="person-add-outline" size={16} color="#fff" />
-                  </View>
-                  <Text style={[s.memberName, { color: C.textPrimary }]}>Agregar miembro</Text>
-                </TouchableOpacity>
-              )}
+            {renderSectionHeader(
+              `PARTICIPANTES${isGroup ? ` (${members.length})` : ""}`
+            )}
 
-              {members.map((member, index) => (
+            {/* Add member row — admin only */}
+            {isGroup && isAdmin && (
+              <AnimatedPressable
+                onPress={() => setShowAddMember(true)}
+                haptic="light"
+              >
                 <View
-                  key={member.userId}
-                  style={[
-                    s.memberRow,
-                    index < members.length - 1 && s.memberRowBorder,
-                  ]}
+                  style={{
+                    height: 52,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingHorizontal: 20,
+                    gap: 14,
+                  }}
                 >
-                  <Avatar name={member.user?.name || "?"} size="sm" />
-                  <View style={s.memberInfo}>
-                    <Text style={s.memberName}>{member.user?.name || "Usuario"}</Text>
-                    {member.role === "admin" && (
-                      <Text style={[s.memberSub, { color: C.accent }]}>Administrador</Text>
-                    )}
+                  <View
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: surface,
+                      borderWidth: 1,
+                      borderColor: border,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons name="person-add-outline" size={16} color={text} />
                   </View>
-                  {member.userId === user?.id && (
-                    <View style={[s.badge, { backgroundColor: `${C.success}20` }]}>
-                      <Text style={[s.badgeText, { color: C.success }]}>Tú</Text>
-                    </View>
-                  )}
-                  {isAdmin && member.userId !== user?.id && (
-                    <TouchableOpacity
-                      style={s.memberActionBtn}
-                      onPress={() => handleMemberActions(member.userId, member.user?.name || "", member.role)}
-                      activeOpacity={0.7}
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontFamily: fonts.semiBold,
+                      color: text,
+                    }}
+                  >
+                    Agregar miembro
+                  </Text>
+                </View>
+              </AnimatedPressable>
+            )}
+
+            {members.map((member, index) => (
+              <View
+                key={member.userId}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingHorizontal: 20,
+                  height: 56,
+                  gap: 14,
+                }}
+              >
+                <Avatar name={member.user?.name || "?"} size="sm" />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontFamily: fonts.semiBold,
+                      color: text,
+                    }}
+                  >
+                    {member.user?.name || "Usuario"}
+                  </Text>
+                  {member.role === "admin" && (
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontFamily: fonts.regular,
+                        color: textDim,
+                        marginTop: 1,
+                      }}
                     >
-                      <Ionicons name="ellipsis-vertical-outline" size={18} color={C.textSecondary} />
-                    </TouchableOpacity>
+                      Administrador
+                    </Text>
                   )}
                 </View>
-              ))}
-            </View>
+                {member.userId === user?.id ? (
+                  <View
+                    style={{
+                      paddingHorizontal: 8,
+                      paddingVertical: 3,
+                      borderRadius: 6,
+                      backgroundColor: isDark ? "#1a2a1a" : "#f0fdf4",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontFamily: fonts.semiBold,
+                        color: "#22c55e",
+                      }}
+                    >
+                      Tu
+                    </Text>
+                  </View>
+                ) : isAdmin ? (
+                  <AnimatedPressable
+                    onPress={() =>
+                      handleMemberActions(
+                        member.userId,
+                        member.user?.name || "",
+                        member.role
+                      )
+                    }
+                    haptic="light"
+                    style={{
+                      width: 30,
+                      height: 30,
+                      borderRadius: 15,
+                      justifyContent: "center",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name="ellipsis-vertical"
+                      size={16}
+                      color={textMuted}
+                    />
+                  </AnimatedPressable>
+                ) : null}
+                {index < members.length - 1 && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      bottom: 0,
+                      left: 70,
+                      right: 20,
+                      height: 1,
+                      backgroundColor: divider,
+                    }}
+                  />
+                )}
+              </View>
+            ))}
           </>
         )}
 
-        {/* ── Subgroups ──────────────────────────────────── */}
+        {/* ── Subgroups ────────────────────────────────────── */}
         {isGroup && conv.type === "CHANNEL" && (conv.depth ?? 0) < 4 && (
           <>
-            <View style={s.sectionHeader}>
-              <Text style={s.sectionTitle}>
-                Subgrupos{conv.children && conv.children.length > 0 ? ` (${conv.children.length})` : ""}
-              </Text>
-              {isAdmin && (
-                <TouchableOpacity
-                  onPress={() => router.push(`/new-chat?parentId=${conv.id}`)}
-                  activeOpacity={0.7}
+            {renderSectionHeader(
+              `SUBGRUPOS${conv.children?.length ? ` (${conv.children.length})` : ""}`
+            )}
+
+            {(!conv.children || conv.children.length === 0) ? (
+              <View
+                style={{
+                  alignItems: "center",
+                  paddingVertical: 20,
+                  gap: 6,
+                }}
+              >
+                <Ionicons
+                  name="folder-open-outline"
+                  size={24}
+                  color={textMuted}
+                />
+                <Text
+                  style={{
+                    fontSize: 12,
+                    fontFamily: fonts.regular,
+                    color: textMuted,
+                  }}
                 >
-                  <Ionicons name="add-circle-outline" size={22} color={C.accent} />
-                </TouchableOpacity>
-              )}
-            </View>
-            <View style={s.card}>
-              {(!conv.children || conv.children.length === 0) ? (
-                <View style={s.emptyCard}>
-                  <Ionicons name="folder-open-outline" size={24} color={C.textSecondary} />
-                  <Text style={s.emptyCardText}>No hay subgrupos</Text>
-                </View>
-              ) : (
-                conv.children.map((child, index) => (
-                  <TouchableOpacity
-                    key={child.id}
-                    style={[
-                      s.memberRow,
-                      index < (conv.children?.length ?? 0) - 1 && s.memberRowBorder,
-                    ]}
-                    onPress={() => router.push(`/chat/${child.id}`)}
-                    activeOpacity={0.7}
+                  No hay subgrupos
+                </Text>
+              </View>
+            ) : (
+              conv.children.map((child, index) => (
+                <AnimatedPressable
+                  key={child.id}
+                  onPress={() => router.push(`/chat/${child.id}`)}
+                  haptic="light"
+                >
+                  <View
+                    style={{
+                      height: 52,
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingHorizontal: 20,
+                      gap: 14,
+                    }}
                   >
-                    <View style={s.rowIconCircle}>
-                      <Ionicons
-                        name={(child.iconName as keyof typeof Ionicons.glyphMap) || "people"}
-                        size={16}
-                        color={C.accent}
-                      />
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        backgroundColor: surface,
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Ionicons name="people-outline" size={16} color={text} />
                     </View>
-                    <View style={s.memberInfo}>
-                      <Text style={s.memberName}>{child.name || "Sin nombre"}</Text>
-                      <Text style={s.memberSub}>
-                        {child.memberCount} miembro{child.memberCount !== 1 ? "s" : ""}
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          fontFamily: fonts.semiBold,
+                          color: text,
+                        }}
+                      >
+                        {child.name || "Sin nombre"}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontFamily: fonts.regular,
+                          color: textDim,
+                          marginTop: 1,
+                        }}
+                      >
+                        {child.memberCount} miembro
+                        {child.memberCount !== 1 ? "s" : ""}
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward-outline" size={16} color={C.textSecondary} />
-                  </TouchableOpacity>
-                ))
-              )}
+                    <Ionicons
+                      name="chevron-forward"
+                      size={16}
+                      color={textMuted}
+                    />
+                  </View>
+                  {index < (conv.children?.length ?? 0) - 1 && (
+                    <View
+                      style={{
+                        height: 1,
+                        backgroundColor: divider,
+                        marginLeft: 66,
+                      }}
+                    />
+                  )}
+                </AnimatedPressable>
+              ))
+            )}
 
-              {isAdmin && (
-                <TouchableOpacity
-                  style={[s.memberRow, { justifyContent: "center" }]}
-                  onPress={() => router.push(`/new-chat?parentId=${conv.id}`)}
-                  activeOpacity={0.7}
+            {isAdmin && (
+              <AnimatedPressable
+                onPress={() => router.push(`/new-chat?parentId=${conv.id}`)}
+                haptic="light"
+              >
+                <View
+                  style={{
+                    height: 52,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    paddingHorizontal: 20,
+                    gap: 8,
+                  }}
                 >
-                  <Ionicons name="add-outline" size={18} color={C.accent} />
-                  <Text style={[s.memberName, { color: C.accent, flex: 0, marginLeft: 6 }]}>
+                  <Ionicons name="add-outline" size={18} color={text} />
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontFamily: fonts.semiBold,
+                      color: text,
+                    }}
+                  >
                     Crear subgrupo
                   </Text>
-                </TouchableOpacity>
-              )}
-            </View>
+                </View>
+              </AnimatedPressable>
+            )}
           </>
         )}
 
-        {/* ── Danger zone ────────────────────────────────── */}
-        <TouchableOpacity style={s.dangerCard} onPress={handleDangerAction} activeOpacity={0.7}>
-          <Ionicons
-            name={isGroup ? "exit-outline" : "trash-outline"}
-            size={18}
-            color={C.danger}
+        {/* ── Danger zone ──────────────────────────────────── */}
+        <View style={{ marginTop: 24 }}>
+          <View
+            style={{
+              height: 1,
+              backgroundColor: divider,
+              marginHorizontal: 20,
+            }}
           />
-          <Text style={s.dangerText}>
-            {isGroup ? "Salir del grupo" : "Eliminar chat"}
-          </Text>
-        </TouchableOpacity>
+          <AnimatedPressable onPress={handleDangerAction} haptic="medium">
+            <View
+              style={{
+                height: 56,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                paddingHorizontal: 20,
+                gap: 8,
+              }}
+            >
+              <Ionicons
+                name={isGroup ? "exit-outline" : "trash-outline"}
+                size={17}
+                color={errorColor}
+              />
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontFamily: fonts.semiBold,
+                  color: errorColor,
+                }}
+              >
+                {isGroup ? "Salir del grupo" : "Eliminar chat"}
+              </Text>
+            </View>
+          </AnimatedPressable>
+        </View>
 
-        <View style={{ height: 40 }} />
+        {/* ── Footer ───────────────────────────────────────── */}
+        <View style={{ alignItems: "center", paddingTop: 16 }}>
+          <Text
+            style={{
+              fontSize: 11,
+              fontFamily: fonts.regular,
+              color: isDark ? "#262626" : "#A3A3A3",
+            }}
+          >
+            m6 Chat v1.0.0
+          </Text>
+        </View>
       </ScrollView>
 
-      {/* ── Add member modal ─────────────────────────────── */}
+      {/* ── Add member modal ───────────────────────────────── */}
       <Modal
         visible={showAddMember}
         animationType="slide"
         onRequestClose={() => setShowAddMember(false)}
       >
-        <SafeAreaView style={s.modalContainer} edges={["top", "bottom"]}>
-          <View style={s.modalHeader}>
-            <TouchableOpacity
+        <SafeAreaView
+          style={{ flex: 1, backgroundColor: bg }}
+          edges={["top", "bottom"]}
+        >
+          {/* Modal header */}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 16,
+              height: 48,
+              gap: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: divider,
+            }}
+          >
+            <AnimatedPressable
               onPress={() => {
                 setShowAddMember(false);
                 setAddSearch("");
               }}
-              style={s.backBtn}
-              activeOpacity={0.7}
+              haptic="light"
             >
-              <Ionicons name="arrow-back-outline" size={22} color={C.textPrimary} />
-            </TouchableOpacity>
-            <Text style={s.headerTitle}>Agregar miembro</Text>
+              <Ionicons name="arrow-back" size={22} color={text} />
+            </AnimatedPressable>
+            <Text
+              style={{
+                fontSize: 16,
+                fontFamily: fonts.semiBold,
+                color: text,
+                flex: 1,
+              }}
+            >
+              Agregar miembro
+            </Text>
           </View>
 
-          <TextInput
-            style={s.modalSearch}
-            placeholder="Buscar por nombre o email..."
-            placeholderTextColor={C.textSecondary}
-            value={addSearch}
-            onChangeText={setAddSearch}
-            autoCapitalize="none"
-          />
+          {/* Search */}
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+            <TextInput
+              style={{
+                backgroundColor: surface,
+                borderRadius: 10,
+                borderWidth: 1,
+                borderColor: border,
+                paddingHorizontal: 14,
+                paddingVertical: 10,
+                fontSize: 13,
+                fontFamily: fonts.regular,
+                color: text,
+              }}
+              placeholder="Buscar por nombre o email..."
+              placeholderTextColor={textMuted}
+              value={addSearch}
+              onChangeText={setAddSearch}
+              autoCapitalize="none"
+            />
+          </View>
 
           <FlatList
             data={availableUsers}
@@ -794,30 +1295,89 @@ export default function ChatInfoScreen() {
             renderItem={({ item }) => {
               const isMember = memberIds.includes(item.id);
               return (
-                <View style={[s.memberRow, s.memberRowBorder, { paddingHorizontal: 16 }]}>
-                  <Avatar name={item.name} size="md" />
-                  <View style={s.memberInfo}>
-                    <Text style={s.memberName}>{item.name}</Text>
-                    <Text style={s.memberSub}>{item.email}</Text>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingHorizontal: 20,
+                    height: 56,
+                    gap: 14,
+                  }}
+                >
+                  <Avatar name={item.name} size="sm" />
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontFamily: fonts.semiBold,
+                        color: text,
+                      }}
+                    >
+                      {item.name}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontFamily: fonts.regular,
+                        color: textDim,
+                        marginTop: 1,
+                      }}
+                    >
+                      {item.email}
+                    </Text>
                   </View>
                   {isMember ? (
-                    <Text style={s.alreadyText}>Ya es miembro</Text>
-                  ) : (
-                    <TouchableOpacity
-                      style={s.addMemberBtn}
-                      onPress={() => handleAddMember(item.id)}
-                      activeOpacity={0.7}
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontFamily: fonts.regular,
+                        color: textMuted,
+                      }}
                     >
-                      <Text style={s.addMemberBtnText}>Agregar</Text>
-                    </TouchableOpacity>
+                      Ya es miembro
+                    </Text>
+                  ) : (
+                    <AnimatedPressable
+                      onPress={() => handleAddMember(item.id)}
+                      haptic="medium"
+                      style={{
+                        paddingHorizontal: 14,
+                        paddingVertical: 6,
+                        borderRadius: 8,
+                        backgroundColor: text,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          fontFamily: fonts.semiBold,
+                          color: bg,
+                        }}
+                      >
+                        Agregar
+                      </Text>
+                    </AnimatedPressable>
                   )}
                 </View>
               );
             }}
             keyboardShouldPersistTaps="handled"
             ListEmptyComponent={
-              <View style={s.emptyCenter}>
-                <Text style={s.emptyText}>
+              <View
+                style={{
+                  flex: 1,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingTop: 40,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontFamily: fonts.regular,
+                    color: textMuted,
+                  }}
+                >
                   {addSearch ? "Sin resultados" : "Cargando..."}
                 </Text>
               </View>
@@ -828,4 +1388,3 @@ export default function ChatInfoScreen() {
     </SafeAreaView>
   );
 }
-

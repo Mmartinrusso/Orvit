@@ -47,10 +47,14 @@ import MessageBubble from "@/components/chat/MessageBubble";
 import ChatInputBar from "@/components/chat/ChatInputBar";
 import ForwardMessageModal from "@/components/chat/ForwardMessageModal";
 import TypingIndicator from "@/components/chat/TypingIndicator";
+import BotThinkingIndicator from "@/components/chat/BotThinkingIndicator";
+import BotSuggestedPrompts from "@/components/chat/BotSuggestedPrompts";
+import BotWelcomeMessage from "@/components/chat/BotWelcomeMessage";
 import MentionList from "@/components/MentionList";
 import ReactionPicker from "@/components/ReactionPicker";
 import AnimatedPressable from "@/components/ui/AnimatedPressable";
 import { SkeletonMessage } from "@/components/ui/Skeleton";
+import { fonts } from "@/lib/fonts";
 import type { Message } from "@/types/chat";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
@@ -76,22 +80,18 @@ const DateSeparator = React.memo(function DateSeparator({ date, isDark }: { date
     <View style={{ alignItems: "center", marginVertical: 10 }}>
       <View
         style={{
-          backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.9)",
-          borderRadius: 8,
-          paddingHorizontal: 12,
-          paddingVertical: 5,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isDark ? 0.2 : 0.06,
-          shadowRadius: 2,
-          elevation: 1,
+          backgroundColor: isDark ? "#151515" : "#F5F5F5",
+          borderRadius: 10,
+          paddingHorizontal: 10,
+          paddingVertical: 3,
         }}
       >
         <Text
           style={{
-            fontSize: 12,
+            fontSize: 10,
             fontWeight: "500",
-            color: isDark ? "rgba(233,237,239,0.6)" : "rgba(0,0,0,0.5)",
+            fontFamily: fonts.medium,
+            color: isDark ? "#404040" : "#A3A3A3",
           }}
         >
           {formatDateSeparator(date)}
@@ -101,59 +101,6 @@ const DateSeparator = React.memo(function DateSeparator({ date, isDark }: { date
   );
 });
 
-// ── Chat background texture (lightweight pattern) ──
-const ChatBackgroundPattern = React.memo(function ChatBackgroundPattern({ isDark }: { isDark: boolean }) {
-  const icons = [
-    "heart-outline", "camera-outline", "star-outline", "chatbubble-outline",
-    "globe-outline", "lock-closed-outline", "bulb-outline", "compass-outline",
-    "cafe-outline", "cloud-outline", "diamond-outline", "flame-outline",
-    "flower-outline", "home-outline", "leaf-outline", "paper-plane-outline",
-    "rocket-outline", "sparkles-outline", "trophy-outline", "musical-notes-outline",
-  ] as const;
-  const rows = 18;
-  const cols = 6;
-  const items = [];
-  const rand = (r: number, c: number) => ((r * 131 + c * 97 + 37) % 256) / 256;
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const idx = Math.floor(rand(r, c) * icons.length) % icons.length;
-      const rot = Math.floor(rand(r + 5, c + 3) * 360) - 180;
-      items.push(
-        <View
-          key={`${r}-${c}`}
-          style={{
-            width: `${100 / cols}%` as any,
-            height: 44,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Ionicons
-            name={icons[idx]}
-            size={13}
-            color={isDark ? "#ffffff" : "#000000"}
-            style={{ transform: [{ rotate: `${rot}deg` }] }}
-          />
-        </View>
-      );
-    }
-  }
-  return (
-    <View
-      style={{
-        position: "absolute",
-        top: 0, left: 0, right: 0, bottom: 0,
-        flexDirection: "row",
-        flexWrap: "wrap",
-        opacity: 0.03,
-        zIndex: 0,
-      }}
-      pointerEvents="none"
-    >
-      {items}
-    </View>
-  );
-});
 
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -178,11 +125,21 @@ export default function ChatScreen() {
   const [searchResultIds, setSearchResultIds] = useState<string[]>([]);
   const [searchIndex, setSearchIndex] = useState(0);
   const [isSearching, setIsSearching] = useState(false);
+  const [isBotThinking, setIsBotThinking] = useState(false);
+  const botThinkingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const lastTypingSentRef = useRef(0);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const typingTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+
+  // Clean up search debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, []);
 
   // Conversation info — useQuery so we can seed from list cache
   const { data: conv } = useQuery({
@@ -207,7 +164,7 @@ export default function ChatScreen() {
     const isBotConv = conv.isSystemBot === true;
     if (isBotConv) {
       return {
-        title: conv.name || "ORVIT",
+        title: "M6 Assistant",
         isGroup: false,
         memberCount: 0,
         isOrvitBot: true,
@@ -310,6 +267,13 @@ export default function ChatScreen() {
         };
       });
 
+      // If this is a bot conversation, show thinking indicator immediately
+      if (isOrvitBot) {
+        setIsBotThinking(true);
+        if (botThinkingTimeoutRef.current) clearTimeout(botThinkingTimeoutRef.current);
+        botThinkingTimeoutRef.current = setTimeout(() => setIsBotThinking(false), 30000);
+      }
+
       return { optimisticId: optimisticMsg.id };
     },
     onSuccess: (newMessage, _vars, context) => {
@@ -340,6 +304,8 @@ export default function ChatScreen() {
           };
         });
       }
+      Alert.alert("Error", "No se pudo enviar el mensaje. Intenta de nuevo.");
+      setIsBotThinking(false);
     },
   });
 
@@ -355,6 +321,11 @@ export default function ChatScreen() {
     const channel = pusher.subscribe(`private-chat-${id}`);
 
     channel.bind("message:new", (evt: { message: Message }) => {
+      // If the new message is NOT from the current user, clear bot thinking
+      if (evt.message.senderId !== user?.id) {
+        setIsBotThinking(false);
+        if (botThinkingTimeoutRef.current) clearTimeout(botThinkingTimeoutRef.current);
+      }
       queryClient.setQueryData(["messages", id], (old: typeof data) => {
         if (!old || !("pages" in old)) return old;
         const typedOld = old as { pages: Message[][]; pageParams: unknown[] };
@@ -424,7 +395,6 @@ export default function ChatScreen() {
     });
 
     // Typing indicator
-    const typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
     channel.bind(
       "typing",
       (evt: { userId: number; userName: string }) => {
@@ -434,21 +404,21 @@ export default function ChatScreen() {
           return [...prev, evt.userName];
         });
         // Reset timer for this user
-        const existing = typingTimers.get(evt.userName);
+        const existing = typingTimersRef.current.get(evt.userName);
         if (existing) clearTimeout(existing);
-        typingTimers.set(
+        typingTimersRef.current.set(
           evt.userName,
           setTimeout(() => {
             setTypingUsers((prev) => prev.filter((n) => n !== evt.userName));
-            typingTimers.delete(evt.userName);
+            typingTimersRef.current.delete(evt.userName);
           }, 5000)
         );
       }
     );
 
     return () => {
-      typingTimers.forEach((t) => clearTimeout(t));
-      typingTimers.clear();
+      typingTimersRef.current.forEach((t) => clearTimeout(t));
+      typingTimersRef.current.clear();
       pusher.unsubscribe(`private-chat-${id}`);
     };
   }, [id, queryClient, user?.id]);
@@ -750,13 +720,29 @@ export default function ChatScreen() {
 
   const keyExtractor = useCallback((item: Message) => item.id, []);
 
+  // Store search state in refs to avoid re-creating renderItem on every keystroke
+  const searchModeRef = useRef(searchMode);
+  const searchQueryRef = useRef(searchQuery);
+  const searchResultIndicesRef = useRef(searchResultIndices);
+  searchModeRef.current = searchMode;
+  searchQueryRef.current = searchQuery;
+  searchResultIndicesRef.current = searchResultIndices;
+
+  // Use a ref for allMessages to avoid it being a renderItem dependency
+  const allMessagesRef = useRef(allMessages);
+  allMessagesRef.current = allMessages;
+
   const renderItem = useCallback(
     ({ item, index }: { item: Message; index: number }) => {
-      const nextMsg = allMessages[index + 1];
+      const msgs = allMessagesRef.current;
+      const nextMsg = msgs[index + 1];
       const showDate =
         !nextMsg ||
         new Date(item.createdAt).toDateString() !==
           new Date(nextMsg.createdAt).toDateString();
+
+      const isHighlighted = searchModeRef.current && searchResultIndicesRef.current.includes(index);
+      const query = searchModeRef.current ? searchQueryRef.current : undefined;
 
       return (
         <>
@@ -764,7 +750,8 @@ export default function ChatScreen() {
             message={item}
             isMe={item.senderId === (user?.id ?? 1)}
             userId={user?.id ?? 0}
-            highlighted={searchMode && searchResultIndices.includes(index)}
+            highlighted={isHighlighted}
+            searchQuery={query}
             onReply={handleReply}
             onForward={handleForward}
             onReaction={handleReaction}
@@ -773,12 +760,13 @@ export default function ChatScreen() {
             onDelete={handleDelete}
             onImagePreview={handleImagePreview}
             showSender={isGroup}
+            isBot={isOrvitBot && item.senderId !== (user?.id ?? 1)}
           />
           {showDate && <DateSeparator date={item.createdAt} isDark={isDark} />}
         </>
       );
     },
-    [allMessages, user?.id, searchMode, searchResultIndices, isGroup, isDark,
+    [user?.id, isGroup, isDark, isOrvitBot,
      handleReply, handleForward, handleReaction, handleToggleReaction,
      handleStartEdit, handleDelete, handleImagePreview]
   );
@@ -805,28 +793,25 @@ export default function ChatScreen() {
         style={{ flex: 1, backgroundColor: colors.chatBg }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-      >
-        <View style={{ flex: 1, position: "relative" }}>
-        <ChatBackgroundPattern isDark={isDark} />
+      ><View style={{ flex: 1, position: "relative" }}>
         <FlatList
           ref={flatListRef}
-          style={{ zIndex: 1 }}
           data={allMessages}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           inverted
           removeClippedSubviews={Platform.OS !== "web"}
           maxToRenderPerBatch={15}
-          windowSize={11}
+          windowSize={21}
           initialNumToRender={20}
+          extraData={searchResultIndices}
           onEndReached={() => {
             if (hasNextPage && !isFetchingNextPage) fetchNextPage();
           }}
           onEndReachedThreshold={0.3}
-          contentContainerStyle={{ paddingHorizontal: 4, paddingVertical: 6 }}
+          contentContainerStyle={{ paddingHorizontal: 4, paddingVertical: 6, flexGrow: 1, justifyContent: "flex-end" }}
           onScroll={handleScroll}
           scrollEventThrottle={250}
-          ListHeaderComponent={null}
           ListEmptyComponent={
             messagesLoading ? (
               <View style={{ paddingVertical: 8, transform: [{ scaleY: -1 }] }}>
@@ -834,6 +819,8 @@ export default function ChatScreen() {
                   <SkeletonMessage key={i} isMe={isMe} />
                 ))}
               </View>
+            ) : isOrvitBot ? (
+              <BotWelcomeMessage />
             ) : null
           }
         />
@@ -870,11 +857,9 @@ export default function ChatScreen() {
               <Ionicons name="chevron-down" size={22} color={colors.textPrimary} />
             </AnimatedPressable>
           </Animated.View>
-        )}
-        </View>
-
-        {/* Search bar overlay */}
-        {searchMode && (
+        )}</View>{isBotThinking && isOrvitBot && (
+          <BotThinkingIndicator />
+        )}{searchMode && (
           <Animated.View
             entering={FadeIn.duration(200)}
             style={{
@@ -987,10 +972,7 @@ export default function ChatScreen() {
               <Ionicons name="close-outline" size={22} color={colors.textPrimary} />
             </AnimatedPressable>
           </Animated.View>
-        )}
-
-        {/* Mention list */}
-        {mentionFilter !== null && members && (
+        )}{mentionFilter !== null && members && (
           <View style={{ position: "relative" }}>
             <MentionList
               members={members}
@@ -998,15 +980,9 @@ export default function ChatScreen() {
               onSelect={handleMentionSelect}
             />
           </View>
-        )}
-
-        {/* Typing indicator — always visible above input */}
-        {typingUsers.length > 0 && (
+        )}{typingUsers.length > 0 && (
           <TypingIndicator names={typingUsers} />
-        )}
-
-        {/* Edit message bar */}
-        {editingMessage && (
+        )}{editingMessage && (
           <Animated.View
             entering={FadeIn.duration(200)}
             exiting={FadeOut.duration(150)}
@@ -1046,9 +1022,17 @@ export default function ChatScreen() {
               <Ionicons name="checkmark-outline" size={22} color={colors.primary} />
             </AnimatedPressable>
           </Animated.View>
-        )}
-
-        {!editingMessage && (
+        )}{isOrvitBot && !editingMessage && !searchMode && (
+          <BotSuggestedPrompts
+            onSelect={(msg) => {
+              setInputText("");
+              sendMutation.mutate({
+                content: msg,
+                type: "text",
+              });
+            }}
+          />
+        )}{!editingMessage && (
           <ChatInputBar
             inputText={inputText}
             onChangeText={handleTextChange}
@@ -1061,8 +1045,7 @@ export default function ChatScreen() {
             onCancelReply={() => setReplyTo(null)}
             bottomInset={insets.bottom}
           />
-        )}
-      </KeyboardAvoidingView>
+        )}</KeyboardAvoidingView>
 
       <ForwardMessageModal
         visible={!!forwardMessage}

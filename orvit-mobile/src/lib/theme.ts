@@ -1,103 +1,129 @@
-// ─── Color Palettes ──────────────────────────────────────────
+// ─── m6 Color Palettes (Monochrome) ─────────────────────────
 
 export const darkPalette = {
   // Backgrounds
-  bg: "#0c111d",
-  bgSecondary: "#161d2e",
-  bgTertiary: "#1f2a3d",
-  bgInput: "#1a2336",
+  bg: "#0A0A0A",
+  bgSecondary: "#171717",
+  bgTertiary: "#1A1A1A",
+  bgInput: "#171717",
 
   // Borders
-  border: "#263040",
-  borderLight: "#2d3a4e",
+  border: "#262626",
+  borderLight: "#333333",
 
   // Text
-  textPrimary: "#f0f4f8",
-  textSecondary: "#8b9bb4",
-  textMuted: "#5b6b82",
+  textPrimary: "#E5E5E5",
+  textSecondary: "#A3A3A3",
+  textMuted: "#555555",
 
-  // Primary (dark navy)
-  primary: "#1a3a6b",
-  primaryDark: "#122b52",
-  primaryBg: "rgba(26, 58, 107, 0.12)",
+  // Primary (white on dark)
+  primary: "#FFFFFF",
+  primaryDark: "#E5E5E5",
+  primaryBg: "rgba(255, 255, 255, 0.08)",
 
   // Semantic
   success: "#34d399",
   error: "#f87171",
   warning: "#fbbf24",
 
-  // Message bubbles
-  bubbleMeBg: "#0b3d6e",
-  bubbleMeText: "#ffffff",
-  bubbleOtherBg: "#1f2c34",
-  bubbleOtherText: "#ffffff",
-  chatBg: "#0b141a",
-  chatHeaderBg: "#111820",
-  chatInputBg: "#2a2f38",
+  // Message bubbles (Figma m6)
+  bubbleMeBg: "#E5E5E5",
+  bubbleMeText: "#0A0A0A",
+  bubbleOtherBg: "#151515",
+  bubbleOtherText: "#D4D4D4",
+  bubbleSenderName: "#737373",
+  bubbleTimeMe: "#737373",
+  bubbleTimeOther: "#555555",
+  chatBg: "#0A0A0A",
+  chatHeaderBg: "#0A0A0A",
+  chatHeaderBorder: "#151515",
+  chatInputBg: "#151515",
+  chatInputBorder: "#1F1F1F",
+  chatInputPlaceholder: "#333333",
+  chatButtonBg: "#151515",
+  chatDateBg: "#151515",
+  chatDateText: "#404040",
 
   // Misc
   overlay: "rgba(0, 0, 0, 0.6)",
-  skeleton: "#1f2a3d",
-  skeletonShimmer: "#2d3a4e",
+  skeleton: "#171717",
+  skeletonShimmer: "#262626",
   online: "#34d399",
   recording: "#f87171",
-  badge: "#1a3a6b",
+  badge: "#FFFFFF",
 
   // Tab bar
-  tabBarBg: "#0c111d",
-  tabBarBorder: "#1a2336",
-  tabActive: "#1a3a6b",
-  tabInactive: "#5b6b82",
+  tabBarBg: "#0A0A0A",
+  tabBarBorder: "#262626",
+  tabActive: "#FFFFFF",
+  tabInactive: "#555555",
 
   // Header
-  headerGradientStart: "#161d2e",
-  headerGradientEnd: "#0c111d",
+  headerGradientStart: "#0A0A0A",
+  headerGradientEnd: "#0A0A0A",
 };
 
 export const lightPalette: typeof darkPalette = {
-  bg: "#f8fafc",
-  bgSecondary: "#ffffff",
-  bgTertiary: "#f1f5f9",
-  bgInput: "#f1f5f9",
+  // Backgrounds
+  bg: "#FFFFFF",
+  bgSecondary: "#FAFAFA",
+  bgTertiary: "#F5F5F5",
+  bgInput: "#FAFAFA",
 
-  border: "#e2e8f0",
-  borderLight: "#cbd5e1",
+  // Borders
+  border: "#E5E5E5",
+  borderLight: "#CCCCCC",
 
-  textPrimary: "#0f172a",
-  textSecondary: "#475569",
-  textMuted: "#94a3b8",
+  // Text
+  textPrimary: "#0A0A0A",
+  textSecondary: "#737373",
+  textMuted: "#A3A3A3",
 
-  primary: "#152e54",
-  primaryDark: "#0f2240",
-  primaryBg: "rgba(21, 46, 84, 0.08)",
+  // Primary (black on light)
+  primary: "#0A0A0A",
+  primaryDark: "#000000",
+  primaryBg: "rgba(10, 10, 10, 0.05)",
 
+  // Semantic
   success: "#10b981",
   error: "#ef4444",
   warning: "#f59e0b",
 
-  // Message bubbles
-  bubbleMeBg: "#d9fdd3",
-  bubbleMeText: "#111b21",
-  bubbleOtherBg: "#ffffff",
-  bubbleOtherText: "#111b21",
-  chatBg: "#efeae2",
-  chatHeaderBg: "#f0f2f5",
-  chatInputBg: "#ffffff",
+  // Message bubbles (Figma m6)
+  bubbleMeBg: "#0A0A0A",
+  bubbleMeText: "#E5E5E5",
+  bubbleOtherBg: "#F5F5F5",
+  bubbleOtherText: "#333333",
+  bubbleSenderName: "#737373",
+  bubbleTimeMe: "#737373",
+  bubbleTimeOther: "#A3A3A3",
+  chatBg: "#FFFFFF",
+  chatHeaderBg: "#FFFFFF",
+  chatHeaderBorder: "#F0F0F0",
+  chatInputBg: "#F5F5F5",
+  chatInputBorder: "#E5E5E5",
+  chatInputPlaceholder: "#A3A3A3",
+  chatButtonBg: "#F5F5F5",
+  chatDateBg: "#F5F5F5",
+  chatDateText: "#A3A3A3",
 
+  // Misc
   overlay: "rgba(0, 0, 0, 0.4)",
-  skeleton: "#e2e8f0",
-  skeletonShimmer: "#f1f5f9",
+  skeleton: "#F5F5F5",
+  skeletonShimmer: "#E5E5E5",
   online: "#10b981",
   recording: "#ef4444",
-  badge: "#152e54",
+  badge: "#0A0A0A",
 
-  tabBarBg: "#ffffff",
-  tabBarBorder: "#e2e8f0",
-  tabActive: "#152e54",
-  tabInactive: "#94a3b8",
+  // Tab bar
+  tabBarBg: "#FFFFFF",
+  tabBarBorder: "#E5E5E5",
+  tabActive: "#0A0A0A",
+  tabInactive: "#A3A3A3",
 
-  headerGradientStart: "#ffffff",
-  headerGradientEnd: "#f8fafc",
+  // Header
+  headerGradientStart: "#FFFFFF",
+  headerGradientEnd: "#FFFFFF",
 };
 
 export type ColorPalette = typeof darkPalette;
@@ -135,8 +161,8 @@ export type Spacing = typeof spacing;
 
 export const radius = {
   sm: 8,
-  md: 12,
-  lg: 16,
+  md: 10,
+  lg: 14,
   xl: 20,
   xxl: 24,
   full: 999,

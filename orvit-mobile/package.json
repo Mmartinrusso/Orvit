@@ -20,6 +20,8 @@
     "update:dev": "eas update --channel development --message"
   },
   "dependencies": {
+    "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
+    "@expo-google-fonts/inter": "^0.4.2",
     "@expo/vector-icons": "^15.1.1",
     "@react-native-community/netinfo": "11.5.2",
     "@tanstack/react-query": "^5.90.21",
@@ -29,10 +31,12 @@
     "expo-device": "^55.0.9",
     "expo-document-picker": "^55.0.8",
     "expo-file-system": "~55.0.10",
+    "expo-font": "~55.0.4",
     "expo-haptics": "~55.0.8",
     "expo-image-picker": "^55.0.10",
     "expo-linear-gradient": "~55.0.8",
     "expo-linking": "~55.0.7",
+    "expo-local-authentication": "~55.0.8",
     "expo-notifications": "^55.0.10",
     "expo-router": "^55.0.3",
     "expo-secure-store": "^55.0.8",

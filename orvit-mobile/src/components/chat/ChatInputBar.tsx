@@ -1,27 +1,19 @@
 import { useCallback, useState } from "react";
-import { View, TextInput } from "react-native";
+import { View, Text, TextInput, Platform } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  FadeInDown,
   FadeIn,
+  FadeInDown,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useHaptics } from "@/hooks/useHaptics";
+import { fonts } from "@/lib/fonts";
 import AnimatedPressable from "@/components/ui/AnimatedPressable";
 import AudioRecorder from "@/components/AudioRecorder";
 import type { Message } from "@/types/chat";
-
-const SENDER_COLORS = [
-  "#25D366", "#00a884", "#53bdeb", "#e07c5c",
-  "#7c5ce0", "#e05c8f", "#5ce0c4", "#e0c45c",
-  "#5c8fe0", "#c45ce0", "#5ce07c", "#e0875c",
-];
-function getSenderColor(senderId: number | null): string {
-  return SENDER_COLORS[(senderId ?? 0) % SENDER_COLORS.length];
-}
 
 interface Props {
   inputText: string;
@@ -53,7 +45,7 @@ export default function ChatInputBar({
   onCancelReply,
   bottomInset = 0,
 }: Props) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const haptics = useHaptics();
   const [showAttachments, setShowAttachments] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -74,27 +66,15 @@ export default function ChatInputBar({
     transform: [{ scale: sendScale.value }],
   }));
 
-  const barBg = colors.chatHeaderBg;
-  const inputBg = colors.chatInputBg;
-  const accentBlue = colors.primary;
-  const iconColor = colors.textPrimary;
-
-  // ── Recording mode: full-width AudioRecorder with autoStart ──
-  if (isRecording) {
-    return (
-      <View style={{ backgroundColor: barBg, paddingBottom: bottomInset }}>
-        <AudioRecorder
-          onAudioReady={onAudioReady}
-          onRecordingChange={setIsRecording}
-          autoStart
-        />
-      </View>
-    );
-  }
-
   // ── Normal input mode ──
   return (
-    <View style={{ backgroundColor: barBg }}>
+    <View
+      style={{
+        backgroundColor: colors.chatHeaderBg,
+        borderTopWidth: 1,
+        borderTopColor: colors.chatHeaderBorder,
+      }}
+    >
       {/* Attachment menu */}
       {showAttachments && (
         <Animated.View
@@ -102,7 +82,7 @@ export default function ChatInputBar({
           style={{
             flexDirection: "row",
             gap: 12,
-            paddingHorizontal: 16,
+            paddingHorizontal: 14,
             paddingVertical: 10,
           }}
         >
@@ -113,12 +93,12 @@ export default function ChatInputBar({
               borderRadius: 12,
               justifyContent: "center",
               alignItems: "center",
-              backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
+              backgroundColor: colors.chatButtonBg,
             }}
             onPress={() => { setShowAttachments(false); onPickFile(); }}
             haptic="light"
           >
-            <Ionicons name="document-outline" size={24} color={iconColor} />
+            <Ionicons name="document-outline" size={24} color={colors.textMuted} />
           </AnimatedPressable>
           <AnimatedPressable
             style={{
@@ -127,55 +107,55 @@ export default function ChatInputBar({
               borderRadius: 12,
               justifyContent: "center",
               alignItems: "center",
-              backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)",
+              backgroundColor: colors.chatButtonBg,
             }}
             onPress={() => { setShowAttachments(false); onPickImage(); }}
             haptic="light"
           >
-            <Ionicons name="image-outline" size={24} color={iconColor} />
+            <Ionicons name="image-outline" size={24} color={colors.textMuted} />
           </AnimatedPressable>
         </Animated.View>
       )}
 
       {/* Reply preview */}
       {replyTo && (
-        <Animated.View
-          entering={FadeInDown.duration(200)}
+        <View
           style={{
             flexDirection: "row",
             alignItems: "center",
-            marginHorizontal: 8,
-            marginTop: 8,
-            marginBottom: 0,
-            backgroundColor: isDark ? "#1a1f2a" : colors.bgTertiary,
-            borderRadius: 12,
-            overflow: "hidden",
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
             paddingRight: 12,
           }}
         >
           <View
             style={{
-              width: 4,
+              width: 3,
               alignSelf: "stretch",
-              backgroundColor: getSenderColor(replyTo.senderId),
+              backgroundColor: "#ef4444",
             }}
           />
           <View style={{ flex: 1, paddingHorizontal: 12, paddingVertical: 10 }}>
-            <Animated.Text
+            <Text
               style={{
-                fontSize: 14,
-                fontWeight: "700",
-                color: getSenderColor(replyTo.senderId),
+                fontFamily: fonts.semiBold,
+                fontSize: 13,
+                color: colors.textSecondary,
               }}
             >
               {replyTo.sender?.name || ""}
-            </Animated.Text>
-            <Animated.Text
-              style={{ fontSize: 14, color: colors.textPrimary, marginTop: 2 }}
+            </Text>
+            <Text
+              style={{
+                fontFamily: fonts.regular,
+                fontSize: 13,
+                color: colors.textMuted,
+                marginTop: 1,
+              }}
               numberOfLines={1}
             >
-              {replyTo.type === "audio" ? "🎤 Audio" : replyTo.content}
-            </Animated.Text>
+              {replyTo.type === "audio" ? "Audio" : replyTo.content}
+            </Text>
           </View>
           <AnimatedPressable
             onPress={onCancelReply}
@@ -188,118 +168,113 @@ export default function ChatInputBar({
               alignItems: "center",
             }}
           >
-            <Ionicons name="close-circle-outline" size={26} color={colors.textMuted} />
+            <Ionicons name="close" size={20} color={colors.textMuted} />
           </AnimatedPressable>
-        </Animated.View>
+        </View>
       )}
 
-      {/* Input row: [+] [input] [camera] [mic/send] */}
+      {/* Input row or recording bar */}
       <View
         style={{
-          flexDirection: "row",
-          alignItems: "center",
-          paddingHorizontal: 8,
-          paddingTop: replyTo ? 6 : 12,
-          paddingBottom: 14 + bottomInset,
-          gap: 8,
+          paddingBottom: bottomInset > 0 ? bottomInset : 28,
         }}
       >
-        {/* + button */}
-        <AnimatedPressable
-          onPress={() => {
-            haptics.light();
-            setShowAttachments(!showAttachments);
-          }}
-          haptic="none"
-          style={{
-            width: 32,
-            height: 36,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Ionicons
-            name={showAttachments ? "close-outline" : "add-outline"}
-            size={26}
-            color={iconColor}
+        {isRecording ? (
+          <AudioRecorder
+            onAudioReady={onAudioReady}
+            onRecordingChange={setIsRecording}
+            autoStart
           />
-        </AnimatedPressable>
-
-        {/* Input pill */}
-        <View
-          style={{
-            flex: 1,
-            flexDirection: "row",
-            alignItems: "flex-end",
-            backgroundColor: inputBg,
-            borderRadius: 20,
-            borderWidth: isDark ? 0 : 1,
-            borderColor: colors.border,
-            paddingHorizontal: 14,
-            minHeight: 36,
-            maxHeight: 100,
-          }}
-        >
-          <TextInput
+        ) : (
+          <View
             style={{
-              flex: 1,
-              fontSize: 14,
-              color: colors.textPrimary,
-              minHeight: 36,
-              maxHeight: 100,
-              textAlignVertical: "center",
-              includeFontPadding: false,
-              paddingTop: 8,
-              paddingBottom: 8,
-            } as any}
-            placeholder="Mensaje"
-            placeholderTextColor={colors.textMuted}
-            value={inputText}
-            onChangeText={onChangeText}
-            maxLength={4000}
-            multiline
-          />
-        </View>
-
-        {/* Camera */}
-        <AnimatedPressable
-          onPress={onPickImage}
-          haptic="light"
-          style={{
-            width: 32,
-            height: 36,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <Ionicons name="camera-outline" size={22} color={iconColor} />
-        </AnimatedPressable>
-
-        {/* Mic / Send */}
-        {hasInput ? (
-          <Animated.View entering={FadeIn.duration(100)} style={sendButtonStyle}>
+              flexDirection: "row",
+              alignItems: "center",
+              paddingHorizontal: 14,
+              paddingTop: 6,
+              gap: 8,
+            }}
+          >
+            {/* + button */}
             <AnimatedPressable
+              onPress={() => {
+                haptics.light();
+                setShowAttachments(!showAttachments);
+              }}
+              haptic="none"
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: 18,
-                backgroundColor: accentBlue,
+                width: 34,
+                height: 34,
+                borderRadius: 17,
+                backgroundColor: colors.chatButtonBg,
                 justifyContent: "center",
                 alignItems: "center",
               }}
-              onPress={handleSend}
-              disabled={isSending}
-              haptic="none"
             >
-              <Ionicons name="send-outline" size={18} color="#fff" />
+              <Ionicons
+                name={showAttachments ? "close" : "add"}
+                size={18}
+                color={colors.textMuted}
+              />
             </AnimatedPressable>
-          </Animated.View>
-        ) : (
-          <AudioRecorder
-            onAudioReady={onAudioReady}
-            disabled={isSending}
-            onRecordingChange={setIsRecording}
-          />
+
+            {/* Input pill */}
+            <View
+              style={{
+                flex: 1,
+                backgroundColor: colors.chatInputBg,
+                borderRadius: 17,
+                borderWidth: 1,
+                borderColor: colors.chatInputBorder,
+                paddingHorizontal: 15,
+                height: 34,
+                justifyContent: "center",
+              }}
+            >
+              <TextInput
+                style={{
+                  fontFamily: fonts.regular,
+                  fontSize: 13,
+                  color: colors.textPrimary,
+                  includeFontPadding: false,
+                  padding: 0,
+                  margin: 0,
+                } as any}
+                placeholder="Mensaje..."
+                placeholderTextColor={colors.chatInputPlaceholder}
+                value={inputText}
+                onChangeText={onChangeText}
+                maxLength={4000}
+              />
+            </View>
+
+            {/* Mic / Send */}
+            {hasInput ? (
+              <Animated.View entering={FadeIn.duration(100)} style={sendButtonStyle}>
+                <AnimatedPressable
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 17,
+                    backgroundColor: colors.textPrimary,
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                  onPress={handleSend}
+                  disabled={isSending}
+                  haptic="none"
+                >
+                  <Ionicons name="send" size={16} color={colors.bg} />
+                </AnimatedPressable>
+              </Animated.View>
+            ) : (
+              <AudioRecorder
+                onAudioReady={onAudioReady}
+                disabled={isSending}
+                onRecordingChange={setIsRecording}
+              />
+            )}
+          </View>
         )}
       </View>
     </View>

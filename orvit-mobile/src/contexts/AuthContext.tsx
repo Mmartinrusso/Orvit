@@ -8,6 +8,7 @@ import {
 } from "@/lib/storage";
 import { mobileLogin } from "@/api/chat";
 import { apiFetch } from "@/api/client";
+import { disconnectPusher } from "@/lib/pusher";
 import type { AuthUser } from "@/types/chat";
 
 interface AuthState {
@@ -62,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    disconnectPusher();
     await clearTokens();
     setUser(null);
   }, []);

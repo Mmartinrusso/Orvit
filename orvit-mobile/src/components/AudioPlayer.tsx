@@ -86,11 +86,15 @@ export default function AudioPlayer({ uri, duration = 0, isMe }: AudioPlayerProp
     transform: [{ scale: iconScale.value }],
   }));
 
+  // Unload sound on unmount or when URI changes
   useEffect(() => {
     return () => {
-      soundRef.current?.unloadAsync();
+      if (soundRef.current) {
+        soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
     };
-  }, []);
+  }, [uri]);
 
   const onPlaybackStatusUpdate = useCallback((status: AVPlaybackStatus) => {
     if (!status.isLoaded) return;

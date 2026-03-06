@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/contexts/ThemeContext";
 import AnimatedPressable from "@/components/ui/AnimatedPressable";
-import Avatar from "@/components/ui/Avatar";
+import { fonts } from "@/lib/fonts";
 
 interface Props {
   title: string;
@@ -14,6 +14,16 @@ interface Props {
   memberCount?: number;
   typingNames?: string[];
   onSearchPress?: () => void;
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 export default function ChatHeader({
@@ -28,10 +38,6 @@ export default function ChatHeader({
 }: Props) {
   const { colors, isDark } = useTheme();
 
-  const headerBg = colors.chatHeaderBg;
-  const headerText = colors.textPrimary;
-  const headerSubtext = colors.textMuted;
-
   const hasTyping = typingNames && typingNames.length > 0;
   let statusText: string;
   if (hasTyping) {
@@ -44,15 +50,21 @@ export default function ChatHeader({
       subtitle || (isGroup && memberCount ? `${memberCount} miembros` : "en línea");
   }
 
+  // Online count for subtitle (reuse memberCount or default)
+  const onlineText =
+    subtitle || (isGroup && memberCount ? `${memberCount} miembros` : "en línea");
+
   return (
     <View
       style={{
-        backgroundColor: headerBg,
-        paddingTop: 4,
-        paddingBottom: 8,
-        paddingHorizontal: 6,
+        backgroundColor: colors.chatHeaderBg,
+        borderBottomWidth: 1,
+        borderBottomColor: colors.chatHeaderBorder,
+        paddingHorizontal: 16,
+        height: 51,
         flexDirection: "row",
         alignItems: "center",
+        gap: 10,
       }}
     >
       {/* Back button */}
@@ -66,13 +78,12 @@ export default function ChatHeader({
         }}
         haptic="light"
         style={{
-          width: 36,
-          height: 44,
+          width: 22,
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        <Ionicons name="arrow-back-outline" size={22} color={headerText} />
+        <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
       </AnimatedPressable>
 
       {/* Avatar + Title — takes all remaining space */}
@@ -83,75 +94,114 @@ export default function ChatHeader({
           flex: 1,
           flexDirection: "row",
           alignItems: "center",
-          marginLeft: 2,
           gap: 10,
         }}
       >
+        {/* Avatar 32px */}
         {isOrvitBot ? (
           <View
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: colors.primary,
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: isDark ? "#FFFFFF" : "#000000",
               justifyContent: "center",
               alignItems: "center",
             }}
           >
-            <Ionicons name="sparkles-outline" size={20} color="#fff" />
-          </View>
-        ) : isGroup ? (
-          <View
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Ionicons name="people-outline" size={20} color={headerText} />
+            <Ionicons
+              name="sparkles"
+              size={16}
+              color={isDark ? "#000000" : "#FFFFFF"}
+            />
           </View>
         ) : (
-          <Avatar name={title} size="sm" />
+          <View
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: isDark ? "#1A1A1A" : "#F5F5F5",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fonts.bold,
+                fontSize: 11,
+                color: "#737373",
+              }}
+            >
+              {getInitials(title)}
+            </Text>
+          </View>
         )}
+
+        {/* Title + subtitle */}
         <View style={{ flex: 1 }}>
           <Text
-            style={{ fontSize: 15, fontWeight: "600", color: headerText }}
+            style={{
+              fontFamily: fonts.bold,
+              fontSize: 14,
+              letterSpacing: -0.14,
+              color: isDark ? "#E5E5E5" : colors.textPrimary,
+            }}
             numberOfLines={1}
           >
             {title}
           </Text>
-          <Text
-            style={{
-              fontSize: 11,
-              color: hasTyping ? colors.success : headerSubtext,
-              fontStyle: hasTyping ? "italic" : "normal",
-            }}
-            numberOfLines={1}
-          >
-            {statusText}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 3, marginTop: 1 }}>
+            {hasTyping ? (
+              <Text
+                style={{
+                  fontFamily: fonts.regular,
+                  fontSize: 10,
+                  color: "#10B981",
+                }}
+                numberOfLines={1}
+              >
+                {statusText}
+              </Text>
+            ) : (
+              <>
+                <View
+                  style={{
+                    width: 5,
+                    height: 5,
+                    borderRadius: 2.5,
+                    backgroundColor: "#10B981",
+                  }}
+                />
+                <Text
+                  style={{
+                    fontFamily: fonts.regular,
+                    fontSize: 10,
+                    color: isDark ? "#404040" : "#A3A3A3",
+                  }}
+                  numberOfLines={1}
+                >
+                  {onlineText}
+                </Text>
+              </>
+            )}
+          </View>
         </View>
       </TouchableOpacity>
 
-      {/* Search — always at far right */}
-      <TouchableOpacity
+      {/* Ellipsis menu — far right */}
+      <AnimatedPressable
         onPress={onSearchPress}
-        disabled={!onSearchPress}
-        activeOpacity={0.6}
+        haptic="light"
         style={{
-          width: 44,
+          width: 22,
           height: 44,
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        {onSearchPress && (
-          <Ionicons name="search-outline" size={20} color={headerText} />
-        )}
-      </TouchableOpacity>
+        <Ionicons name="ellipsis-vertical" size={18} color={colors.textMuted} />
+      </AnimatedPressable>
     </View>
   );
 }

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ORVIT",
+    "name": "M6",
     "slug": "orvit-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -17,9 +17,9 @@
       "bundleIdentifier": "com.orvit.chat",
       "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "ORVIT necesita acceso a la cámara para enviar fotos en el chat.",
-        "NSMicrophoneUsageDescription": "ORVIT necesita acceso al micrófono para grabar mensajes de audio.",
-        "NSPhotoLibraryUsageDescription": "ORVIT necesita acceso a tus fotos para enviar imágenes en el chat.",
+        "NSCameraUsageDescription": "M6 necesita acceso a la cámara para enviar fotos en el chat.",
+        "NSMicrophoneUsageDescription": "M6 necesita acceso al micrófono para grabar mensajes de audio.",
+        "NSPhotoLibraryUsageDescription": "M6 necesita acceso a tus fotos para enviar imágenes en el chat.",
         "UIBackgroundModes": [
           "remote-notification"
         ]
@@ -65,16 +65,17 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "ORVIT necesita acceso a tus fotos para enviar imágenes en el chat.",
-          "cameraPermission": "ORVIT necesita acceso a la cámara para enviar fotos en el chat."
+          "photosPermission": "M6 necesita acceso a tus fotos para enviar imágenes en el chat.",
+          "cameraPermission": "M6 necesita acceso a la cámara para enviar fotos en el chat."
         }
       ],
       [
         "expo-av",
         {
-          "microphonePermission": "ORVIT necesita acceso al micrófono para grabar mensajes de audio."
+          "microphonePermission": "M6 necesita acceso al micrófono para grabar mensajes de audio."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {

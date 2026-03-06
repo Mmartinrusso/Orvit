@@ -1,5 +1,5 @@
 import "react-native-reanimated";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { Platform } from "react-native";
 import { Slot, router } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -10,9 +10,25 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
+import * as SplashScreen from "expo-splash-screen";
+import { useFonts } from "expo-font";
+import {
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from "@expo-google-fonts/inter";
+import {
+  IBMPlexMono_500Medium,
+  IBMPlexMono_700Bold,
+} from "@expo-google-fonts/ibm-plex-mono";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import BiometricLock from "@/components/BiometricLock";
 import { registerDevice } from "@/api/chat";
 import { getAccessToken } from "@/lib/storage";
+
+SplashScreen.preventAutoHideAsync();
 
 if (Platform.OS !== "web") {
   Notifications.setNotificationHandler({
@@ -63,6 +79,8 @@ function useNotificationSetup() {
   const responseListener = useRef<Notifications.Subscription>(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     (async () => {
       if (Platform.OS === "web" || !Device.isDevice) return;
 
@@ -72,13 +90,13 @@ function useNotificationSetup() {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
-      if (finalStatus !== "granted") return;
+      if (finalStatus !== "granted" || !isMounted) return;
 
       const token = await Notifications.getExpoPushTokenAsync({
         projectId: "000ae057-7558-4995-bd34-d8450e559eab",
       });
       const accessToken = await getAccessToken();
-      if (accessToken && token.data) {
+      if (isMounted && accessToken && token.data) {
         registerDevice(
           token.data,
           Platform.OS as "ios" | "android"
@@ -97,6 +115,7 @@ function useNotificationSetup() {
       });
 
     return () => {
+      isMounted = false;
       if (responseListener.current) {
         responseListener.current.remove();
       }
@@ -112,8 +131,26 @@ function ThemedStatusBar() {
 export default function RootLayout() {
   useNotificationSetup();
 
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+    IBMPlexMono_500Medium,
+    IBMPlexMono_700Bold,
+  });
+
+  const onLayoutReady = useCallback(async () => {
+    if (fontsLoaded) {
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutReady}>
       <ErrorBoundary>
         <SafeAreaProvider>
           <QueryClientProvider client={queryClient}>
@@ -121,6 +158,7 @@ export default function RootLayout() {
               <AuthProvider>
                 <ThemedStatusBar />
                 <Slot />
+                <BiometricLock />
               </AuthProvider>
             </ThemeProvider>
           </QueryClientProvider>

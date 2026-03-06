@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -66,7 +66,7 @@ type FilterStatus = "all" | "active" | "completed";
 
 // ── Task Item ───────────────────────────────────────────────────
 
-function TaskItem({
+const TaskItem = React.memo(function TaskItem({
   item,
   index,
   onLongPress,
@@ -258,7 +258,7 @@ function TaskItem({
       </AnimatedPressable>
     </Animated.View>
   );
-}
+});
 
 // ── Main Screen ─────────────────────────────────────────────────
 
@@ -512,6 +512,20 @@ export default function AgendaScreen() {
     [haptics, queryClient]
   );
 
+  const agendaKeyExtractor = useCallback((item: AgendaTask) => String(item.id), []);
+
+  const agendaRenderItem = useCallback(
+    ({ item, index }: { item: AgendaTask; index: number }) => (
+      <TaskItem
+        item={item}
+        index={index}
+        onLongPress={handleLongPress}
+        onToggleComplete={handleToggleComplete}
+      />
+    ),
+    [handleLongPress, handleToggleComplete]
+  );
+
   // Stats
   const totalTasks = data?.totalCount ?? 0;
   const completedCount = tasks.filter(
@@ -629,15 +643,12 @@ export default function AgendaScreen() {
       ) : (
         <FlatList
           data={tasks}
-          keyExtractor={(item) => String(item.id)}
-          renderItem={({ item, index }) => (
-            <TaskItem
-              item={item}
-              index={index}
-              onLongPress={handleLongPress}
-              onToggleComplete={handleToggleComplete}
-            />
-          )}
+          keyExtractor={agendaKeyExtractor}
+          renderItem={agendaRenderItem}
+          removeClippedSubviews={Platform.OS !== "web"}
+          maxToRenderPerBatch={10}
+          windowSize={7}
+          initialNumToRender={15}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}

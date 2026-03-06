@@ -1,149 +1,151 @@
 import { Tabs } from "expo-router";
-import { Platform, Text, View } from "react-native";
+import { Platform, Text, View, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/contexts/ThemeContext";
+import { fonts } from "@/lib/fonts";
 
-function TabIcon({
-  name,
-  outlineName,
-  label,
-  focused,
-  activeColor,
-  inactiveColor,
-  size = 26,
-  badge,
-}: {
-  name: keyof typeof Ionicons.glyphMap;
-  outlineName: keyof typeof Ionicons.glyphMap;
-  label: string;
-  focused: boolean;
-  activeColor: string;
-  inactiveColor: string;
-  size?: number;
-  badge?: number;
-}) {
-  const color = focused ? activeColor : inactiveColor;
-  const showBadge = badge != null && badge > 0;
-  const badgeText = badge && badge > 99 ? "99+" : String(badge);
+function M6TabBar({ state, descriptors, navigation }: any) {
+  const { isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const bottomPad = Platform.OS === "web" ? 8 : Math.max(insets.bottom, 0);
+
+  const bgColor = isDark ? "#0A0A0A" : "#FFFFFF";
+  const borderColor = isDark ? "#1A1A1A" : "#E5E5E5";
+  const activeColor = isDark ? "#FFFFFF" : "#0A0A0A";
+  const inactiveColor = isDark ? "#404040" : "#A3A3A3";
+  const badgeBorderColor = isDark ? "#0A0A0A" : "#FFFFFF";
+
+  const tabConfig: Record<string, {
+    icon: keyof typeof Ionicons.glyphMap;
+    iconOutline: keyof typeof Ionicons.glyphMap;
+    label: string;
+  }> = {
+    inbox: { icon: "chatbox", iconOutline: "chatbox-outline", label: "Chats" },
+    contacts: { icon: "people", iconOutline: "people-outline", label: "Contactos" },
+    settings: { icon: "settings", iconOutline: "settings-outline", label: "Ajustes" },
+  };
 
   return (
-    <View style={{ alignItems: "center", justifyContent: "center" }}>
-      <View>
-        <Ionicons name={focused ? name : outlineName} size={size} color={color} />
-        {showBadge && (
-          <View
+    <View
+      style={{
+        flexDirection: "row",
+        backgroundColor: bgColor,
+        borderTopWidth: 1,
+        borderTopColor: borderColor,
+        paddingTop: 10,
+        paddingBottom: bottomPad + 8,
+        justifyContent: "space-around",
+        alignItems: "flex-start",
+      }}
+    >
+      {state.routes.map((route: any, index: number) => {
+        const config = tabConfig[route.name];
+        if (!config) return null; // Skip hidden tabs like agenda
+
+        const { options } = descriptors[route.key];
+        const isFocused = state.index === index;
+        const color = isFocused ? activeColor : inactiveColor;
+
+        // Get badge from route params
+        const badge = route.params?.unreadBadge;
+        const showBadge = badge != null && badge > 0;
+        const badgeText = badge && badge > 99 ? "99+" : String(badge);
+
+        const onPress = () => {
+          const event = navigation.emit({
+            type: "tabPress",
+            target: route.key,
+            canPreventDefault: true,
+          });
+          if (!isFocused && !event.defaultPrevented) {
+            navigation.navigate(route.name, route.params);
+          }
+        };
+
+        return (
+          <TouchableOpacity
+            key={route.key}
+            onPress={onPress}
+            activeOpacity={0.7}
             style={{
-              position: "absolute",
-              top: -5,
-              right: -14,
-              backgroundColor: "#ef4444",
-              borderRadius: 9,
-              minWidth: 18,
-              height: 18,
-              justifyContent: "center",
+              width: 72,
+              height: 37,
               alignItems: "center",
-              paddingHorizontal: 4,
             }}
           >
+            {/* Icon container */}
+            <View style={{ position: "relative" }}>
+              <Ionicons
+                name={isFocused ? config.icon : config.iconOutline}
+                size={22}
+                color={color}
+              />
+              {/* Badge */}
+              {showBadge && (
+                <View
+                  style={{
+                    position: "absolute",
+                    top: -3,
+                    left: 16,
+                    backgroundColor: "#EF4444",
+                    borderWidth: 2,
+                    borderColor: badgeBorderColor,
+                    borderRadius: 8,
+                    minWidth: 17,
+                    height: 16,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    paddingHorizontal: 4,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: 8,
+                      fontWeight: "700",
+                      fontFamily: fonts.monoBold,
+                      fontVariant: ["tabular-nums"],
+                      includeFontPadding: false,
+                    }}
+                  >
+                    {badgeText}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Label */}
             <Text
               style={{
-                color: "#fff",
                 fontSize: 10,
-                fontWeight: "700",
-                lineHeight: 13,
+                fontWeight: "600",
+                fontFamily: fonts.semiBold,
+                color,
+                marginTop: 3,
               }}
             >
-              {badgeText}
+              {config.label}
             </Text>
-          </View>
-        )}
-      </View>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
 
 export default function TabsLayout() {
-  const { colors, isDark } = useTheme();
-  const insets = useSafeAreaInsets();
-  const bottomPad = Platform.OS === "web" ? 8 : Math.max(insets.bottom, 8);
-
-  const inactiveColor = isDark ? "rgba(255,255,255,0.5)" : "#8696a0";
-
   return (
     <Tabs
+      tabBar={(props) => <M6TabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: true,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
-          marginTop: 0,
-        },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: inactiveColor,
-        tabBarBadgeStyle: { display: "none" },
-        tabBarStyle: {
-          backgroundColor: colors.tabBarBg,
-          borderTopColor: colors.tabBarBorder,
-          borderTopWidth: 0.5,
-          height: Platform.OS === "web" ? 68 : 56 + bottomPad,
-          paddingTop: 6,
-          paddingBottom: bottomPad,
-          elevation: 8,
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: -3 },
-          shadowOpacity: isDark ? 0.4 : 0.12,
-          shadowRadius: 12,
-        },
-        tabBarItemStyle: {
-          justifyContent: "center" as const,
-          alignItems: "center" as const,
-          overflow: "visible" as const,
-        },
       }}
     >
-      <Tabs.Screen
-        name="inbox"
-        options={({ route }: any) => ({
-          title: "Chats",
-          tabBarIcon: ({ focused }: { focused: boolean }) => (
-            <TabIcon
-              name="chatbubbles"
-              outlineName="chatbubbles-outline"
-              label="Chats"
-              focused={focused}
-              activeColor={colors.primary}
-              inactiveColor={inactiveColor}
-              badge={route.params?.unreadBadge}
-            />
-          ),
-        })}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: "Tú",
-          tabBarIcon: ({ focused }) => (
-            <TabIcon
-              name="person-circle"
-              outlineName="person-circle-outline"
-              label="Tú"
-              focused={focused}
-              activeColor={colors.primary}
-              inactiveColor={inactiveColor}
-              size={28}
-            />
-          ),
-        }}
-      />
-      {/* Hide agenda tab */}
-      <Tabs.Screen
-        name="agenda"
-        options={{
-          href: null,
-        }}
-      />
+      <Tabs.Screen name="inbox" />
+      <Tabs.Screen name="contacts" />
+      <Tabs.Screen name="settings" />
+      <Tabs.Screen name="agenda" options={{ href: null }} />
     </Tabs>
   );
 }
