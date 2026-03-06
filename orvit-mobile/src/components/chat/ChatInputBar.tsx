@@ -227,8 +227,10 @@ export default function ChatInputBar({
                 borderWidth: 1,
                 borderColor: colors.chatInputBorder,
                 paddingHorizontal: 15,
-                height: 34,
+                minHeight: 34,
+                maxHeight: 100,
                 justifyContent: "center",
+                paddingVertical: Platform.OS === "android" ? 4 : 6,
               }}
             >
               <TextInput
@@ -239,12 +241,15 @@ export default function ChatInputBar({
                   includeFontPadding: false,
                   padding: 0,
                   margin: 0,
+                  textAlignVertical: "center",
                 } as any}
                 placeholder="Mensaje..."
                 placeholderTextColor={colors.chatInputPlaceholder}
                 value={inputText}
                 onChangeText={onChangeText}
                 maxLength={4000}
+                multiline
+                blurOnSubmit={false}
               />
             </View>
 

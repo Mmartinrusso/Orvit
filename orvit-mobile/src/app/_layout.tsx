@@ -1,10 +1,10 @@
 import "react-native-reanimated";
 import { useEffect, useRef, useCallback } from "react";
 import { Platform } from "react-native";
-import { Slot, router } from "expo-router";
+import { Stack, router } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -76,8 +76,11 @@ const queryClient = new QueryClient({
 });
 
 function useNotificationSetup() {
+  const { user } = useAuth();
   const responseListener = useRef<Notifications.Subscription>(null);
+  const registeredRef = useRef(false);
 
+  // Register push token — runs on mount AND when user logs in
   useEffect(() => {
     let isMounted = true;
 
@@ -101,9 +104,15 @@ function useNotificationSetup() {
           token.data,
           Platform.OS as "ios" | "android"
         ).catch(() => {});
+        registeredRef.current = true;
       }
     })();
 
+    return () => { isMounted = false; };
+  }, [user?.id]); // Re-run when user changes (login/logout)
+
+  // Notification tap handler
+  useEffect(() => {
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
         const data = response.notification.request.content.data;
@@ -115,7 +124,6 @@ function useNotificationSetup() {
       });
 
     return () => {
-      isMounted = false;
       if (responseListener.current) {
         responseListener.current.remove();
       }
@@ -128,9 +136,13 @@ function ThemedStatusBar() {
   return <StatusBar style={isDark ? "light" : "dark"} />;
 }
 
-export default function RootLayout() {
+/** Must be inside AuthProvider so useAuth() works */
+function NotificationBootstrap() {
   useNotificationSetup();
+  return null;
+}
 
+export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -156,8 +168,16 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <ThemeProvider>
               <AuthProvider>
+                <NotificationBootstrap />
                 <ThemedStatusBar />
-                <Slot />
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    gestureEnabled: true,
+                    gestureDirection: "horizontal",
+                    animation: "slide_from_right",
+                  }}
+                />
                 <BiometricLock />
               </AuthProvider>
             </ThemeProvider>

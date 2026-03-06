@@ -791,7 +791,7 @@ export default function ChatScreen() {
 
       <KeyboardAvoidingView
         style={{ flex: 1, backgroundColor: colors.chatBg }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       ><View style={{ flex: 1, position: "relative" }}>
         <FlatList
@@ -812,6 +812,8 @@ export default function ChatScreen() {
           contentContainerStyle={{ paddingHorizontal: 4, paddingVertical: 6, flexGrow: 1, justifyContent: "flex-end" }}
           onScroll={handleScroll}
           scrollEventThrottle={250}
+          keyboardDismissMode="interactive"
+          keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             messagesLoading ? (
               <View style={{ paddingVertical: 8, transform: [{ scaleY: -1 }] }}>
