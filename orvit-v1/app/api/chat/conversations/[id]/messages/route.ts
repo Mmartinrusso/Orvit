@@ -261,10 +261,10 @@ export async function POST(
           senderName: sender?.name || "Unknown",
           content: preview,
           senderId: auth.userId,
-        }).catch(() => {});
+        }).catch((err) => console.error("[chat-push] Push failed:", err));
       }
     })
-    .catch(() => {});
+    .catch((err) => console.error("[chat-push] Conversation lookup failed:", err));
 
   return response;
 }

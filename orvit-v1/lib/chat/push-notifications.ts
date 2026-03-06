@@ -20,6 +20,8 @@ export async function sendChatPushNotifications(payload: PushPayload) {
     const { conversationId, conversationName, senderName, content, senderId } =
       payload;
 
+    console.log("[chat-push] Sending push for conversation:", conversationId, "from:", senderName);
+
     // Get members who should receive push (not sender, not muted, active)
     const members = await prisma.conversationMember.findMany({
       where: {
@@ -32,6 +34,7 @@ export async function sendChatPushNotifications(payload: PushPayload) {
       select: { userId: true, unreadCount: true },
     });
 
+    console.log("[chat-push] Members to notify:", members.length, "userIds:", members.map(m => m.userId));
     if (members.length === 0) return;
 
     const userIds = members.map((m) => m.userId);
@@ -42,6 +45,7 @@ export async function sendChatPushNotifications(payload: PushPayload) {
       select: { pushToken: true, userId: true },
     });
 
+    console.log("[chat-push] Active devices found:", devices.length, devices.map(d => ({ userId: d.userId, token: d.pushToken.slice(0, 25) })));
     if (devices.length === 0) return;
 
     // Calculate badge count per user (total unread across all conversations)
@@ -75,6 +79,7 @@ export async function sendChatPushNotifications(payload: PushPayload) {
       });
     }
 
+    console.log("[chat-push] Messages to send:", messages.length);
     if (messages.length === 0) return;
 
     // Send in chunks (Expo SDK handles batching)
@@ -84,6 +89,7 @@ export async function sendChatPushNotifications(payload: PushPayload) {
       const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
       tickets.push(...ticketChunk);
     }
+    console.log("[chat-push] Tickets:", JSON.stringify(tickets));
 
     // Process receipts to deactivate invalid tokens
     await processTickets(tickets, devices);
