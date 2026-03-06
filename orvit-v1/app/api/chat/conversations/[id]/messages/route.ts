@@ -240,33 +240,34 @@ export async function POST(
     })
     .catch(() => {});
 
-  // Return response immediately — handle bot/push async
-  const response = NextResponse.json(enrichedMessage, { status: 201 });
+  // Check if bot conversation and handle push/bot BEFORE returning response
+  // (Vercel serverless kills fire-and-forget promises after response is sent)
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: conversationId },
+    select: { name: true, type: true, isSystemBot: true },
+  });
 
-  // Bot check + push notifications (fire-and-forget, does NOT block response)
-  prisma.conversation
-    .findUnique({
-      where: { id: conversationId },
-      select: { name: true, type: true, isSystemBot: true },
-    })
-    .then((conversation) => {
-      if (conversation?.isSystemBot) {
-        processBotResponse(conversationId, auth.companyId, auth.userId, content, type, fileUrl).catch(
-          (err) => console.error("[BOT] Error processing AI response:", err)
-        );
-      } else {
-        sendChatPushNotifications({
-          conversationId,
-          conversationName: conversation?.name || sender?.name || "Chat",
-          senderName: sender?.name || "Unknown",
-          content: preview,
-          senderId: auth.userId,
-        }).catch((err) => console.error("[chat-push] Push failed:", err));
-      }
-    })
-    .catch((err) => console.error("[chat-push] Conversation lookup failed:", err));
+  if (conversation?.isSystemBot) {
+    // Bot response can be fire-and-forget (it sends its own message)
+    processBotResponse(conversationId, auth.companyId, auth.userId, content, type, fileUrl).catch(
+      (err) => console.error("[BOT] Error processing AI response:", err)
+    );
+  } else {
+    // Push notifications MUST complete before response
+    try {
+      await sendChatPushNotifications({
+        conversationId,
+        conversationName: conversation?.name || sender?.name || "Chat",
+        senderName: sender?.name || "Unknown",
+        content: preview,
+        senderId: auth.userId,
+      });
+    } catch (err) {
+      console.error("[chat-push] Push failed:", err);
+    }
+  }
 
-  return response;
+  return NextResponse.json(enrichedMessage, { status: 201 });
 }
 
 // ── Bot AI response processing ───────────────────────────────────
