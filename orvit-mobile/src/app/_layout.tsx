@@ -1,7 +1,7 @@
 import "react-native-reanimated";
 import { useEffect, useRef, useCallback } from "react";
 import { Platform } from "react-native";
-import { Stack, router } from "expo-router";
+import { Slot, router } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -179,14 +179,7 @@ export default function RootLayout() {
               <AuthProvider>
                 <NotificationBootstrap />
                 <ThemedStatusBar />
-                <Stack
-                  screenOptions={{
-                    headerShown: false,
-                    gestureEnabled: true,
-                    gestureDirection: "horizontal",
-                    animation: "slide_from_right",
-                  }}
-                />
+                <Slot />
                 <BiometricLock />
               </AuthProvider>
             </ThemeProvider>
