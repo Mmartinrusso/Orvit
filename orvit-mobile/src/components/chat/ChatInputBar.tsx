@@ -176,7 +176,9 @@ export default function ChatInputBar({
       {/* Input row or recording bar */}
       <View
         style={{
-          paddingBottom: bottomInset > 0 ? bottomInset : 28,
+          paddingBottom: Platform.OS === "android"
+            ? Math.max(bottomInset, 14) + 10
+            : bottomInset > 0 ? bottomInset : 28,
         }}
       >
         {isRecording ? (

@@ -100,11 +100,20 @@ function useNotificationSetup() {
       });
       const accessToken = await getAccessToken();
       if (isMounted && accessToken && token.data) {
+        console.log("[push] Registering device token:", token.data.slice(0, 30) + "...");
         registerDevice(
           token.data,
           Platform.OS as "ios" | "android"
-        ).catch(() => {});
+        )
+          .then(() => console.log("[push] Device registered successfully"))
+          .catch((err) => console.error("[push] Device registration failed:", err));
         registeredRef.current = true;
+      } else {
+        console.log("[push] Skipping registration:", {
+          hasToken: !!token.data,
+          hasAccessToken: !!accessToken,
+          userId: user?.id,
+        });
       }
     })();
 
