@@ -17,11 +17,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
-  // Check if bot conversation already exists for this user
+  // Check if bot conversation already exists for this user (exclude Recordatorios)
   const existing = await prisma.conversation.findFirst({
     where: {
       companyId: auth.companyId,
       isSystemBot: true,
+      name: { not: "Recordatorios" },
       members: {
         some: { userId: auth.userId, leftAt: null },
       },
@@ -49,8 +50,8 @@ export async function GET(request: NextRequest) {
     data: {
       companyId: auth.companyId,
       type: "DIRECT",
-      name: "ORVIT",
-      description: "Asistente inteligente de ORVIT. Enviá mensajes de texto o audio para hacer consultas, crear tareas, reportar fallas y más.",
+      name: "M6 Assistant",
+      description: "Asistente inteligente de M6. Enviá mensajes de texto o audio para hacer consultas, crear tareas, reportar fallas y más.",
       isSystemBot: true,
       iconName: "sparkles",
       retentionDays: 365,
@@ -81,7 +82,7 @@ export async function GET(request: NextRequest) {
       companyId: auth.companyId,
       type: "system",
       content:
-        "¡Hola! Soy ORVIT, tu asistente inteligente. Podés enviarme mensajes de texto o audio para:\n\n• Consultar información de máquinas y equipos\n• Reportar fallas o incidentes\n• Crear órdenes de trabajo\n• Ver el estado de tareas pendientes\n• Analizar tendencias de mantenimiento\n\n¿En qué te puedo ayudar?",
+        "¡Hola! Soy M6, tu asistente inteligente. Podés enviarme mensajes de texto o audio para:\n\n• Consultar información de máquinas y equipos\n• Reportar fallas o incidentes\n• Crear órdenes de trabajo\n• Ver el estado de tareas pendientes\n• Analizar tendencias de mantenimiento\n\n¿En qué te puedo ayudar?",
     },
   });
 
@@ -90,8 +91,8 @@ export async function GET(request: NextRequest) {
     where: { id: conversation.id },
     data: {
       lastMessageAt: new Date(),
-      lastMessageText: "¡Hola! Soy ORVIT, tu asistente inteligente.",
-      lastMessageBy: "ORVIT",
+      lastMessageText: "¡Hola! Soy M6, tu asistente inteligente.",
+      lastMessageBy: "M6",
     },
   });
 
