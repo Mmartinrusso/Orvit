@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Image, Linking, ActionSheetIOS, Platform, Alert } from "react-native";
+import { View, Text, Linking, ActionSheetIOS, Platform, Alert } from "react-native";
+import { Image } from "expo-image";
 import * as Clipboard from "expo-clipboard";
 import Animated, {
   useSharedValue,
@@ -17,6 +18,21 @@ import AudioPlayer from "@/components/AudioPlayer";
 import ReactionPills from "@/components/ReactionPills";
 import SimpleMarkdown from "@/components/chat/SimpleMarkdown";
 import type { Message } from "@/types/chat";
+
+// Cache formatted times to avoid expensive toLocaleTimeString calls
+const timeCache = new Map<string, string>();
+function formatTime(dateStr: string): string {
+  let cached = timeCache.get(dateStr);
+  if (cached) return cached;
+  cached = new Date(dateStr).toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" });
+  timeCache.set(dateStr, cached);
+  // Keep cache bounded
+  if (timeCache.size > 500) {
+    const first = timeCache.keys().next().value;
+    if (first) timeCache.delete(first);
+  }
+  return cached;
+}
 
 function highlightText(content: string, query: string) {
   if (!query.trim()) return content;
@@ -197,10 +213,7 @@ function MessageBubble({
     );
   }
 
-  const timeStr = new Date(message.createdAt).toLocaleTimeString("es", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const timeStr = formatTime(message.createdAt);
 
   const bubbleBg = isMe ? colors.bubbleMeBg : colors.bubbleOtherBg;
   const textColor = isMe ? colors.bubbleMeText : colors.bubbleOtherText;
@@ -315,7 +328,10 @@ function MessageBubble({
               backgroundColor: isDark ? "#C4C4C4" : "#E5E5E5",
               marginBottom: 4,
             }}
-            resizeMode="cover"
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey={message.id}
+            transition={200}
           />
         </AnimatedPressable>
       )}
@@ -551,16 +567,22 @@ function MessageBubble({
 }
 
 export default React.memo(MessageBubble, (prev, next) => {
-  return (
-    prev.message.id === next.message.id &&
-    prev.message.content === next.message.content &&
-    prev.message.isDeleted === next.message.isDeleted &&
-    prev.message.editedAt === next.message.editedAt &&
-    prev.message.reactions === next.message.reactions &&
-    prev.isMe === next.isMe &&
-    prev.isBot === next.isBot &&
-    prev.highlighted === next.highlighted &&
-    prev.showSender === next.showSender &&
-    prev.searchQuery === next.searchQuery
-  );
+  if (prev.message.id !== next.message.id) return false;
+  if (prev.message.content !== next.message.content) return false;
+  if (prev.message.isDeleted !== next.message.isDeleted) return false;
+  if (prev.message.editedAt !== next.message.editedAt) return false;
+  if (prev.isMe !== next.isMe) return false;
+  if (prev.isBot !== next.isBot) return false;
+  if (prev.highlighted !== next.highlighted) return false;
+  if (prev.showSender !== next.showSender) return false;
+  if (prev.searchQuery !== next.searchQuery) return false;
+  // Deep compare reactions (array refs always differ)
+  const pr = prev.message.reactions;
+  const nr = next.message.reactions;
+  if (pr === nr) return true;
+  if (!pr || !nr || pr.length !== nr.length) return false;
+  for (let i = 0; i < pr.length; i++) {
+    if (pr[i].emoji !== nr[i].emoji || pr[i].count !== nr[i].count) return false;
+  }
+  return true;
 });

@@ -11,6 +11,9 @@ export function getPusherClient(): Pusher {
   if (!pusherClient) {
     pusherClient = new Pusher(PUSHER_KEY, {
       cluster: PUSHER_CLUSTER,
+      activityTimeout: 15_000,
+      pongTimeout: 10_000,
+      disableStats: true,
       authorizer: (channel) => ({
         authorize: async (socketId, callback) => {
           try {
@@ -19,13 +22,15 @@ export function getPusherClient(): Pusher {
             formData.append("socket_id", socketId);
             formData.append("channel_name", channel.name);
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5_000);
             const res = await fetch(`${API_URL}/api/chat/pusher/auth`, {
               method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
+              headers: { Authorization: `Bearer ${token}` },
               body: formData,
+              signal: controller.signal,
             });
+            clearTimeout(timeoutId);
 
             if (!res.ok) {
               callback(new Error("Pusher auth failed"), null);

@@ -1,6 +1,6 @@
 import "react-native-reanimated";
 import { useEffect, useRef, useCallback } from "react";
-import { Platform } from "react-native";
+import { Platform, Alert } from "react-native";
 import { Slot, router } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -9,6 +9,7 @@ import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as Notifications from "expo-notifications";
+import * as Updates from "expo-updates";
 import * as Device from "expo-device";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
@@ -69,11 +70,35 @@ if (Platform.OS === "android") {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000,
-      retry: 2,
+      staleTime: 60_000,
+      gcTime: 15 * 60_000,
+      retry: 1,
+      retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 15_000),
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: "always",
     },
   },
 });
+
+// Auto-update: check for OTA updates on app start and apply silently
+function useAutoUpdate() {
+  useEffect(() => {
+    if (__DEV__) return; // Skip in development
+    (async () => {
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          console.log("[update] New update available, downloading...");
+          await Updates.fetchUpdateAsync();
+          console.log("[update] Update downloaded, reloading...");
+          await Updates.reloadAsync();
+        }
+      } catch (e) {
+        console.log("[update] Check failed:", e);
+      }
+    })();
+  }, []);
+}
 
 function useNotificationSetup() {
   const { user } = useAuth();
@@ -146,7 +171,8 @@ function ThemedStatusBar() {
 }
 
 /** Must be inside AuthProvider so useAuth() works */
-function NotificationBootstrap() {
+function AppBootstrap() {
+  useAutoUpdate();
   useNotificationSetup();
   return null;
 }
@@ -177,7 +203,7 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <ThemeProvider>
               <AuthProvider>
-                <NotificationBootstrap />
+                <AppBootstrap />
                 <ThemedStatusBar />
                 <Slot />
                 <BiometricLock />

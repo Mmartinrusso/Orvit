@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { View, Text, TextInput, Platform } from "react-native";
 import Animated, {
   useSharedValue,
@@ -33,7 +33,7 @@ interface Props {
   bottomInset?: number;
 }
 
-export default function ChatInputBar({
+function ChatInputBar({
   inputText,
   onChangeText,
   onSend,
@@ -287,3 +287,5 @@ export default function ChatInputBar({
     </View>
   );
 }
+
+export default React.memo(ChatInputBar);

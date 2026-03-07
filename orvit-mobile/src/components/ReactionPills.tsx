@@ -1,5 +1,5 @@
+import React from "react";
 import { View, Text } from "react-native";
-import Animated, { FadeIn } from "react-native-reanimated";
 import AnimatedPressable from "@/components/ui/AnimatedPressable";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -16,7 +16,7 @@ interface ReactionPillsProps {
   isMe?: boolean;
 }
 
-export default function ReactionPills({
+function ReactionPills({
   reactions,
   userId,
   onToggle,
@@ -34,7 +34,7 @@ export default function ReactionPills({
       {reactions.map((r) => {
         const isMine = r.users.some((u) => u.id === userId);
         return (
-          <Animated.View key={r.emoji} entering={FadeIn.duration(200)}>
+          <View key={r.emoji}>
             <AnimatedPressable
               style={{
                 flexDirection: "row",
@@ -65,9 +65,11 @@ export default function ReactionPills({
                 </Text>
               )}
             </AnimatedPressable>
-          </Animated.View>
+          </View>
         );
       })}
     </View>
   );
 }
+
+export default React.memo(ReactionPills);

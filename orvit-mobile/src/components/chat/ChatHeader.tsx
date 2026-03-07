@@ -1,3 +1,4 @@
+import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -26,7 +27,7 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-export default function ChatHeader({
+function ChatHeader({
   title,
   conversationId,
   subtitle,
@@ -205,3 +206,5 @@ export default function ChatHeader({
     </View>
   );
 }
+
+export default React.memo(ChatHeader);

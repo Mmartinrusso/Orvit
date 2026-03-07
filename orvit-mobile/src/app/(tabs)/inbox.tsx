@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from "react";
 import {
   View,
   Text,
-  FlatList,
+  FlatList as RNFlatList,
   RefreshControl,
   ActionSheetIOS,
   Platform,
@@ -14,9 +14,10 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useNavigation, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { FlashList } from "@shopify/flash-list";
 
 import { Ionicons } from "@expo/vector-icons";
-import { getConversations, getBotConversation, updateConversation } from "@/api/chat";
+import { getConversations, getBotConversation, updateConversation, getMessages } from "@/api/chat";
 import { getPusherClient } from "@/lib/pusher";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -83,12 +84,15 @@ const ConversationItem = React.memo(function ConversationItem({
   onToggleExpand?: () => void;
 }) {
   const { isDark } = useTheme();
+  const queryClient = useQueryClient();
 
   const displayName = item.isSystemBot
-    ? "M6 Assistant"
+    ? (item.name || "M6 Assistant")
     : item.type === "DIRECT"
       ? item.members?.find((m: any) => m.userId !== userId)?.user?.name || "Chat directo"
       : item.name || "Sin nombre";
+  const isRemindersBot = item.isSystemBot && item.name === "Recordatorios";
+  const botIcon: keyof typeof Ionicons.glyphMap = isRemindersBot ? "notifications" : "sparkles";
 
   const unreadCount = item.unreadCount ?? 0;
   const hasUnread = unreadCount > 0;
@@ -116,6 +120,15 @@ const ConversationItem = React.memo(function ConversationItem({
         style={{ height: rowHeight, justifyContent: "center" }}
         onPress={() => router.push(`/chat/${item.id}`)}
         onLongPress={() => onLongPress(item)}
+        onPressIn={() => {
+          // Prefetch messages while the user's finger is still down (WhatsApp-style)
+          queryClient.prefetchInfiniteQuery({
+            queryKey: ["messages", item.id],
+            queryFn: () => getMessages(item.id, { limit: 30 }),
+            initialPageParam: undefined,
+            staleTime: 60_000,
+          });
+        }}
         haptic="selection"
       >
         {/* Tree lines depth 1 */}
@@ -197,15 +210,17 @@ const ConversationItem = React.memo(function ConversationItem({
                 width: avatarSize,
                 height: avatarSize,
                 borderRadius: avatarRadius,
-                backgroundColor: isDark ? "#FFFFFF" : "#0A0A0A",
+                backgroundColor: isRemindersBot
+                  ? (isDark ? "#7C3AED" : "#8B5CF6")
+                  : (isDark ? "#FFFFFF" : "#0A0A0A"),
                 justifyContent: "center",
                 alignItems: "center",
               }}
             >
               <Ionicons
-                name="sparkles"
+                name={botIcon}
                 size={iconSize}
-                color={isDark ? "#0A0A0A" : "#FFFFFF"}
+                color={isRemindersBot ? "#FFFFFF" : (isDark ? "#0A0A0A" : "#FFFFFF")}
               />
             </View>
           ) : isDirect ? (
@@ -302,11 +317,13 @@ const ConversationItem = React.memo(function ConversationItem({
             >
               {displayName}
             </Text>
-            {/* IA badge */}
+            {/* Bot badge */}
             {item.isSystemBot && (
               <View
                 style={{
-                  backgroundColor: isDark ? "#1A1A1A" : "#F5F5F5",
+                  backgroundColor: isRemindersBot
+                    ? (isDark ? "#7C3AED20" : "#8B5CF620")
+                    : (isDark ? "#1A1A1A" : "#F5F5F5"),
                   borderRadius: 4,
                   paddingHorizontal: 5,
                   paddingVertical: 1,
@@ -317,12 +334,14 @@ const ConversationItem = React.memo(function ConversationItem({
                     fontSize: 8,
                     fontWeight: "700",
                     fontFamily: fonts.bold,
-                    color: isDark ? "#555555" : "#A3A3A3",
+                    color: isRemindersBot
+                      ? (isDark ? "#A78BFA" : "#7C3AED")
+                      : (isDark ? "#555555" : "#A3A3A3"),
                     letterSpacing: 0.32,
                     textTransform: "uppercase",
                   }}
                 >
-                  IA
+                  {isRemindersBot ? "BOT" : "IA"}
                 </Text>
               </View>
             )}
@@ -366,78 +385,122 @@ const ConversationItem = React.memo(function ConversationItem({
           </Text>
         </View>
 
-        {/* Right column: time + badge */}
-        <View
-          style={{
-            position: "absolute",
-            right: 20,
-            top: 0,
-            bottom: 0,
-            alignItems: "flex-end",
-            justifyContent: "center",
-            gap: 4,
-          }}
-        >
-          {item.lastMessageAt && (
-            <Text
-              style={{
-                fontSize: 10,
-                fontWeight: "500",
-                fontFamily: fonts.monoMedium,
-                color: isDark ? "#555555" : "#A3A3A3",
-                fontVariant: ["tabular-nums"],
-              }}
-            >
-              {formatTime(item.lastMessageAt)}
-            </Text>
-          )}
-          {hasUnread ? (
-            <View
-              style={{
-                backgroundColor: "#EF4444",
-                borderRadius: 9,
-                minWidth: 18,
-                height: 18,
-                justifyContent: "center",
-                alignItems: "center",
-                paddingHorizontal: 5,
-              }}
-            >
+        {/* Right column: time + badge + chevron */}
+        {hasChildren ? (
+          <AnimatedPressable
+            onPress={(e: any) => {
+              e?.stopPropagation?.();
+              onToggleExpand?.();
+            }}
+            haptic="selection"
+            style={{
+              position: "absolute",
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: 70,
+              alignItems: "flex-end",
+              justifyContent: "center",
+              paddingRight: 20,
+              gap: 4,
+            }}
+          >
+            {item.lastMessageAt && (
               <Text
                 style={{
-                  color: "#FFFFFF",
-                  fontSize: 9,
-                  fontWeight: "700",
-                  fontFamily: fonts.monoBold,
+                  fontSize: 10,
+                  fontWeight: "500",
+                  fontFamily: fonts.monoMedium,
+                  color: isDark ? "#555555" : "#A3A3A3",
                   fontVariant: ["tabular-nums"],
                 }}
               >
-                {unreadCount}
+                {formatTime(item.lastMessageAt)}
               </Text>
-            </View>
-          ) : null}
-          {hasChildren && (
-            <AnimatedPressable
-              onPress={(e: any) => {
-                e?.stopPropagation?.();
-                onToggleExpand?.();
-              }}
-              haptic="selection"
-              style={{
-                paddingHorizontal: 8,
-                paddingVertical: 6,
-                marginRight: -8,
-                marginBottom: -6,
-              }}
-            >
-              <Ionicons
-                name={isExpanded ? "chevron-up" : "chevron-down"}
-                size={12}
-                color={isDark ? "#404040" : "#A3A3A3"}
-              />
-            </AnimatedPressable>
-          )}
-        </View>
+            )}
+            {hasUnread ? (
+              <View
+                style={{
+                  backgroundColor: "#EF4444",
+                  borderRadius: 9,
+                  minWidth: 18,
+                  height: 18,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingHorizontal: 5,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#FFFFFF",
+                    fontSize: 9,
+                    fontWeight: "700",
+                    fontFamily: fonts.monoBold,
+                    fontVariant: ["tabular-nums"],
+                  }}
+                >
+                  {unreadCount}
+                </Text>
+              </View>
+            ) : null}
+            <Ionicons
+              name={isExpanded ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={isDark ? "#A3A3A3" : "#737373"}
+            />
+          </AnimatedPressable>
+        ) : (
+          <View
+            style={{
+              position: "absolute",
+              right: 20,
+              top: 0,
+              bottom: 0,
+              alignItems: "flex-end",
+              justifyContent: "center",
+              gap: 4,
+            }}
+          >
+            {item.lastMessageAt && (
+              <Text
+                style={{
+                  fontSize: 10,
+                  fontWeight: "500",
+                  fontFamily: fonts.monoMedium,
+                  color: isDark ? "#555555" : "#A3A3A3",
+                  fontVariant: ["tabular-nums"],
+                }}
+              >
+                {formatTime(item.lastMessageAt)}
+              </Text>
+            )}
+            {hasUnread ? (
+              <View
+                style={{
+                  backgroundColor: "#EF4444",
+                  borderRadius: 9,
+                  minWidth: 18,
+                  height: 18,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingHorizontal: 5,
+                }}
+              >
+                <Text
+                  style={{
+                    color: "#FFFFFF",
+                    fontSize: 9,
+                    fontWeight: "700",
+                    fontFamily: fonts.monoBold,
+                    fontVariant: ["tabular-nums"],
+                  }}
+                >
+                  {unreadCount}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        )}
       </AnimatedPressable>
     </View>
   );
@@ -472,9 +535,19 @@ export default function InboxScreen() {
   const navigation = useNavigation();
   const [activeFilter, setActiveFilter] = useState<FilterChip>("ordered");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [autoExpandedOnce, setAutoExpandedOnce] = useState(false);
+
+  // Debounce search to avoid filtering on every keystroke
+  useEffect(() => {
+    if (!search.trim()) {
+      setDebouncedSearch("");
+      return;
+    }
+    const timer = setTimeout(() => setDebouncedSearch(search), 200);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // Real data query
   const { data, isLoading, refetch, isRefetching } = useQuery({
@@ -490,10 +563,14 @@ export default function InboxScreen() {
     staleTime: Infinity,
   });
 
-  // Refetch conversations when screen comes back into focus
+  // Only refetch on focus if data is stale (>2 min old), not every time
   useFocusEffect(
     useCallback(() => {
-      if (user) refetch();
+      if (user) {
+        const state = queryClient.getQueryState(["conversations", { archived: false }]);
+        const age = Date.now() - (state?.dataUpdatedAt ?? 0);
+        if (age > 2 * 60_000) refetch();
+      }
     }, [user])
   );
 
@@ -505,12 +582,48 @@ export default function InboxScreen() {
     // Subscribe to user's private channel for inbox updates
     const channel = pusher.subscribe(`private-user-${user.id}`);
 
-    channel.bind("conversation:updated", () => {
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    channel.bind("conversation:updated", (evt: any) => {
+      if (evt?.conversationId) {
+        // Partial cache update — avoid full refetch
+        queryClient.setQueryData(["conversations", { archived: false }], (old: any) => {
+          if (!old?.conversations) return old;
+          return {
+            ...old,
+            conversations: old.conversations.map((c: any) =>
+              c.id === evt.conversationId
+                ? { ...c, ...evt.updates, lastMessageAt: evt.lastMessageAt ?? c.lastMessageAt }
+                : c
+            ),
+          };
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      }
     });
 
-    channel.bind("message:new", () => {
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    channel.bind("message:new", (evt: any) => {
+      if (evt?.conversationId) {
+        // Update just the affected conversation in cache
+        queryClient.setQueryData(["conversations", { archived: false }], (old: any) => {
+          if (!old?.conversations) return old;
+          return {
+            ...old,
+            conversations: old.conversations.map((c: any) =>
+              c.id === evt.conversationId
+                ? {
+                    ...c,
+                    lastMessageText: evt.preview ?? c.lastMessageText,
+                    lastMessageBy: evt.senderName ?? c.lastMessageBy,
+                    lastMessageAt: evt.createdAt ?? new Date().toISOString(),
+                    unreadCount: (c.unreadCount ?? 0) + 1,
+                  }
+                : c
+            ),
+          };
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      }
     });
 
     return () => {
@@ -538,11 +651,11 @@ export default function InboxScreen() {
     navigation.setParams({ unreadBadge: totalUnread > 0 ? totalUnread : undefined } as any);
   }, [totalUnread, navigation]);
 
-  // Search filter
+  // Search filter (uses debounced value to avoid filtering on every keystroke)
   const searchFiltered = useMemo(() => {
     let convs = rawConversations;
-    if (search.trim()) {
-      const q = search.toLowerCase();
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.toLowerCase();
       convs = convs.filter((c: any) => {
         const name =
           c.type === "DIRECT"
@@ -552,7 +665,7 @@ export default function InboxScreen() {
       });
     }
     return convs;
-  }, [rawConversations, search, user?.id]);
+  }, [rawConversations, debouncedSearch, user?.id]);
 
   // Type filter
   const typeFiltered = useMemo(() => {
@@ -570,18 +683,7 @@ export default function InboxScreen() {
     return map;
   }, [rawConversations]);
 
-  // Auto-expand all groups that have children on first load
-  useEffect(() => {
-    if (autoExpandedOnce || rawConversations.length === 0) return;
-    const parentIds = new Set<string>();
-    for (const c of rawConversations) {
-      if (c.parentId) parentIds.add(c.parentId);
-    }
-    if (parentIds.size > 0) {
-      setExpandedGroups(parentIds);
-      setAutoExpandedOnce(true);
-    }
-  }, [rawConversations, autoExpandedOnce]);
+  // Groups start collapsed — user expands them manually
 
   // ── "Ordenado" — hierarchical with tree lines + sections ──
   const orderedFlatData = useMemo(() => {
@@ -896,15 +998,14 @@ export default function InboxScreen() {
       </ScrollView>
 
       {/* Conversation list */}
-      <FlatList
-        style={{ flex: 1 }}
+      <FlashList
         data={flatData}
         keyExtractor={inboxKeyExtractor}
-        removeClippedSubviews={Platform.OS !== "web"}
-        maxToRenderPerBatch={10}
-        windowSize={7}
-        initialNumToRender={15}
+        estimatedItemSize={62}
+        drawDistance={250}
         renderItem={inboxRenderItem}
+        getItemType={(item: any) => item._sectionHeader ? "section" : "conversation"}
+        extraData={expandedGroups}
         ItemSeparatorComponent={() => (
           <View
             style={{
@@ -924,7 +1025,7 @@ export default function InboxScreen() {
             tintColor={isDark ? "#555555" : "#A3A3A3"}
           />
         }
-        contentContainerStyle={{ paddingBottom: 20, flexGrow: 1 }}
+        contentContainerStyle={{ paddingBottom: 20 }}
         ListEmptyComponent={
           isLoading ? (
             <View style={{ paddingTop: 4 }}>

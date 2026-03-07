@@ -11,6 +11,7 @@ import { useHaptics } from "@/hooks/useHaptics";
 interface Props {
   children: React.ReactNode;
   onPress?: () => void;
+  onPressIn?: () => void;
   onLongPress?: () => void;
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
@@ -21,6 +22,7 @@ interface Props {
 export default function AnimatedPressable({
   children,
   onPress,
+  onPressIn,
   onLongPress,
   style,
   disabled,
@@ -36,7 +38,8 @@ export default function AnimatedPressable({
 
   const handlePressIn = useCallback(() => {
     scale.value = withSpring(scaleValue, { damping: 15, stiffness: 200 });
-  }, [scaleValue]);
+    onPressIn?.();
+  }, [scaleValue, onPressIn]);
 
   const handlePressOut = useCallback(() => {
     scale.value = withSpring(1, { damping: 15, stiffness: 200 });

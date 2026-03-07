@@ -8,7 +8,7 @@ import { fonts } from "@/lib/fonts";
 function M6TabBar({ state, descriptors, navigation }: any) {
   const { isDark } = useTheme();
   const insets = useSafeAreaInsets();
-  const bottomPad = Platform.OS === "web" ? 8 : Math.max(insets.bottom, 0);
+  const bottomPad = Platform.OS === "web" ? 8 : Platform.OS === "android" ? Math.max(insets.bottom, 14) : Math.max(insets.bottom, 0);
 
   const bgColor = isDark ? "#0A0A0A" : "#FFFFFF";
   const borderColor = isDark ? "#1A1A1A" : "#E5E5E5";
@@ -143,9 +143,9 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="inbox" />
-      <Tabs.Screen name="contacts" />
-      <Tabs.Screen name="settings" />
-      <Tabs.Screen name="agenda" options={{ href: null }} />
+      <Tabs.Screen name="contacts" options={{ lazy: true }} />
+      <Tabs.Screen name="settings" options={{ lazy: true }} />
+      <Tabs.Screen name="agenda" options={{ href: null, lazy: true }} />
     </Tabs>
   );
 }

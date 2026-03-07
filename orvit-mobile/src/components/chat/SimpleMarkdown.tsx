@@ -69,7 +69,7 @@ function parseInline(text: string, textColor: string, codeColor: string, codeBg:
   return parts;
 }
 
-export default function SimpleMarkdown({
+function SimpleMarkdown({
   content,
   textColor,
   codeColor,
@@ -179,3 +179,5 @@ export default function SimpleMarkdown({
 
   return <View>{elements}</View>;
 }
+
+export default React.memo(SimpleMarkdown);

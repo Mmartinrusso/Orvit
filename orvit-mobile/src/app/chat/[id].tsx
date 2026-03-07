@@ -2,16 +2,16 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import {
   View,
   Text,
-  FlatList,
   KeyboardAvoidingView,
   Platform,
   Alert,
   Modal,
-  Image,
   Dimensions,
   TextInput,
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { FlashList } from "@shopify/flash-list";
+import { Image } from "expo-image";
+import { useLocalSearchParams, router } from "expo-router";
 import {
   useInfiniteQuery,
   useMutation,
@@ -128,7 +128,7 @@ export default function ChatScreen() {
   const [isBotThinking, setIsBotThinking] = useState(false);
   const botThinkingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const insets = useSafeAreaInsets();
-  const flatListRef = useRef<FlatList>(null);
+  const flatListRef = useRef<FlashList<Message>>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const lastTypingSentRef = useRef(0);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -163,11 +163,12 @@ export default function ChatScreen() {
     if (!conv) return { title: "Chat", isGroup: false, memberCount: 0, isOrvitBot: false };
     const isBotConv = conv.isSystemBot === true;
     if (isBotConv) {
+      const isReminders = conv.name === "Recordatorios";
       return {
-        title: "M6 Assistant",
+        title: conv.name || "M6 Assistant",
         isGroup: false,
         memberCount: 0,
-        isOrvitBot: true,
+        isOrvitBot: !isReminders,
       };
     }
     if (conv.type === "DIRECT") {
@@ -199,13 +200,16 @@ export default function ChatScreen() {
     useInfiniteQuery({
       queryKey: ["messages", id],
       queryFn: ({ pageParam }) =>
-        getMessages(id!, { cursor: pageParam, limit: 50 }),
+        getMessages(id!, { cursor: pageParam, limit: 30 }),
       getNextPageParam: (lastPage) =>
-        lastPage.length === 50
+        lastPage.length === 30
           ? lastPage[lastPage.length - 1].createdAt
           : undefined,
       initialPageParam: undefined as string | undefined,
       enabled: !!id,
+      staleTime: 5 * 60_000,
+      gcTime: 30 * 60_000,
+      maxPages: 10,
     });
 
   const allMessages = useMemo(() => {
@@ -490,20 +494,28 @@ export default function ChatScreen() {
     });
   }
 
-  // Handlers
+  // ── Stable refs for handlers (avoid re-renders on keystroke) ──
+  const inputTextRef = useRef(inputText);
+  inputTextRef.current = inputText;
+  const replyToRef = useRef(replyTo);
+  replyToRef.current = replyTo;
+  const mentionIdsRef = useRef(mentionIds);
+  mentionIdsRef.current = mentionIds;
+
+  // Handlers — use refs so callbacks are stable
   const handleSend = useCallback(() => {
-    const text = inputText.trim();
+    const text = inputTextRef.current.trim();
     if (!text) return;
     setInputText("");
     sendMutation.mutate({
       content: text,
       type: "text",
-      replyToId: replyTo?.id,
-      mentions: mentionIds.length > 0 ? mentionIds : undefined,
+      replyToId: replyToRef.current?.id,
+      mentions: mentionIdsRef.current.length > 0 ? mentionIdsRef.current : undefined,
     });
     setReplyTo(null);
     setMentionIds([]);
-  }, [inputText, sendMutation, replyTo, mentionIds]);
+  }, [sendMutation]);
 
   const handleAudioReady = useCallback(
     (audioData: { url: string; fileName: string; fileSize: number; fileDuration: number }) => {
@@ -514,11 +526,11 @@ export default function ChatScreen() {
         fileName: audioData.fileName,
         fileSize: audioData.fileSize,
         fileDuration: audioData.fileDuration,
-        replyToId: replyTo?.id,
+        replyToId: replyToRef.current?.id,
       });
       setReplyTo(null);
     },
-    [sendMutation, replyTo]
+    [sendMutation]
   );
 
   const handlePickImage = useCallback(async () => {
@@ -560,13 +572,13 @@ export default function ChatScreen() {
         fileUrl: uploadData.url,
         fileName: uploadData.fileName,
         fileSize: uploadData.fileSize,
-        replyToId: replyTo?.id,
+        replyToId: replyToRef.current?.id,
       });
       setReplyTo(null);
     } catch {
       Alert.alert("Error", "No se pudo enviar la imagen");
     }
-  }, [sendMutation, replyTo]);
+  }, [sendMutation]);
 
   const handlePickFile = useCallback(async () => {
     const result = await DocumentPicker.getDocumentAsync({ type: "*/*" });
@@ -596,29 +608,34 @@ export default function ChatScreen() {
         fileUrl: uploadData.url,
         fileName: asset.name,
         fileSize: uploadData.fileSize,
-        replyToId: replyTo?.id,
+        replyToId: replyToRef.current?.id,
       });
       setReplyTo(null);
     } catch {
       Alert.alert("Error", "No se pudo enviar el archivo");
     }
-  }, [sendMutation, replyTo]);
+  }, [sendMutation]);
+
+  const userRef = useRef(user);
+  userRef.current = user;
 
   const handleToggleReaction = useCallback(
     async (messageId: string, emoji: string) => {
-      const msg = allMessages.find((m) => m.id === messageId);
+      const msgs = allMessagesRef.current;
+      const currentUser = userRef.current;
+      const msg = msgs.find((m) => m.id === messageId);
       const existing = msg?.reactions?.find((r) => r.emoji === emoji);
-      const isMine = existing?.users.some((u) => u.id === user?.id);
+      const isMine = existing?.users.some((u) => u.id === currentUser?.id);
 
       if (isMine) {
         removeReaction(messageId, emoji).catch(() => {});
-        updateReactionInCache(messageId, emoji, user!.id, "", "remove");
+        updateReactionInCache(messageId, emoji, currentUser!.id, "", "remove");
       } else {
         addReaction(messageId, emoji).catch(() => {});
-        updateReactionInCache(messageId, emoji, user!.id, user!.name, "add");
+        updateReactionInCache(messageId, emoji, currentUser!.id, currentUser!.name, "add");
       }
     },
-    [allMessages, user]
+    []
   );
 
   // Edit message
@@ -689,14 +706,14 @@ export default function ChatScreen() {
 
   const handleMentionSelect = useCallback(
     (member: { userId: number; user: { name: string } }) => {
-      const newText = inputText.replace(/@\w*$/, `@${member.user.name} `);
+      const newText = inputTextRef.current.replace(/@\w*$/, `@${member.user.name} `);
       setInputText(newText);
       setMentionFilter(null);
       setMentionIds((prev) =>
         prev.includes(member.userId) ? prev : [...prev, member.userId]
       );
     },
-    [inputText]
+    []
   );
 
   // ── Stable callbacks for FlatList ──
@@ -732,9 +749,20 @@ export default function ChatScreen() {
   const allMessagesRef = useRef(allMessages);
   allMessagesRef.current = allMessages;
 
+  // Android has system back gesture; custom swipe removed to avoid crash with FlashList
+
+  // Refs for renderItem — keeps it completely stable (no re-renders on typing)
+  const isGroupRef = useRef(isGroup);
+  isGroupRef.current = isGroup;
+  const isDarkRef = useRef(isDark);
+  isDarkRef.current = isDark;
+  const isOrvitBotRef = useRef(isOrvitBot);
+  isOrvitBotRef.current = isOrvitBot;
+
   const renderItem = useCallback(
     ({ item, index }: { item: Message; index: number }) => {
       const msgs = allMessagesRef.current;
+      const uid = userRef.current?.id ?? 0;
       const nextMsg = msgs[index + 1];
       const showDate =
         !nextMsg ||
@@ -748,8 +776,8 @@ export default function ChatScreen() {
         <>
           <MessageBubble
             message={item}
-            isMe={item.senderId === (user?.id ?? 1)}
-            userId={user?.id ?? 0}
+            isMe={item.senderId === uid}
+            userId={uid}
             highlighted={isHighlighted}
             searchQuery={query}
             onReply={handleReply}
@@ -759,16 +787,14 @@ export default function ChatScreen() {
             onEdit={handleStartEdit}
             onDelete={handleDelete}
             onImagePreview={handleImagePreview}
-            showSender={isGroup}
-            isBot={isOrvitBot && item.senderId !== (user?.id ?? 1)}
+            showSender={isGroupRef.current}
+            isBot={isOrvitBotRef.current && item.senderId !== uid}
           />
-          {showDate && <DateSeparator date={item.createdAt} isDark={isDark} />}
+          {showDate && <DateSeparator date={item.createdAt} isDark={isDarkRef.current} />}
         </>
       );
     },
-    [user?.id, isGroup, isDark, isOrvitBot,
-     handleReply, handleForward, handleReaction, handleToggleReaction,
-     handleStartEdit, handleDelete, handleImagePreview]
+    [] // ← ZERO deps: completely stable, never re-creates
   );
 
   return (
@@ -794,22 +820,19 @@ export default function ChatScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       ><View style={{ flex: 1, position: "relative" }}>
-        <FlatList
+        <FlashList
           ref={flatListRef}
           data={allMessages}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
           inverted
-          removeClippedSubviews={Platform.OS !== "web"}
-          maxToRenderPerBatch={15}
-          windowSize={21}
-          initialNumToRender={20}
-          extraData={searchResultIndices}
+          estimatedItemSize={80}
+          drawDistance={300}
           onEndReached={() => {
             if (hasNextPage && !isFetchingNextPage) fetchNextPage();
           }}
           onEndReachedThreshold={0.3}
-          contentContainerStyle={{ paddingHorizontal: 4, paddingVertical: 6, flexGrow: 1, justifyContent: "flex-end" }}
+          contentContainerStyle={{ paddingHorizontal: 4, paddingVertical: 6 }}
           onScroll={handleScroll}
           scrollEventThrottle={250}
           keyboardDismissMode="interactive"
@@ -1104,7 +1127,9 @@ export default function ChatScreen() {
                 width: SCREEN_WIDTH - 32,
                 height: SCREEN_HEIGHT * 0.7,
               }}
-              resizeMode="contain"
+              contentFit="contain"
+              cachePolicy="memory-disk"
+              transition={200}
             />
           )}
         </View>
