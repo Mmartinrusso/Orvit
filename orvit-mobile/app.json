@@ -85,11 +85,8 @@
         "root": "./src/app"
       }
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
     "updates": {
-      "url": "https://u.expo.dev/000ae057-7558-4995-bd34-d8450e559eab"
+      "enabled": false
     },
     "owner": "maartinrusso10"
   }

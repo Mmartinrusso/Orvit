@@ -9,7 +9,6 @@ import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as Notifications from "expo-notifications";
-import * as Updates from "expo-updates";
 import * as Device from "expo-device";
 import * as SplashScreen from "expo-splash-screen";
 import { useFonts } from "expo-font";
@@ -80,25 +79,9 @@ const queryClient = new QueryClient({
   },
 });
 
-// Auto-update: check for OTA updates on app start and apply silently
-function useAutoUpdate() {
-  useEffect(() => {
-    if (__DEV__) return; // Skip in development
-    (async () => {
-      try {
-        const update = await Updates.checkForUpdateAsync();
-        if (update.isAvailable) {
-          console.log("[update] New update available, downloading...");
-          await Updates.fetchUpdateAsync();
-          console.log("[update] Update downloaded, reloading...");
-          await Updates.reloadAsync();
-        }
-      } catch (e) {
-        console.log("[update] Check failed:", e);
-      }
-    })();
-  }, []);
-}
+// OTA auto-update DISABLED — causes the app to load stale JS bundles
+// from the update server, overriding the embedded bundle in the APK.
+// All updates are delivered via new APK builds instead.
 
 function useNotificationSetup() {
   const { user } = useAuth();
@@ -172,7 +155,6 @@ function ThemedStatusBar() {
 
 /** Must be inside AuthProvider so useAuth() works */
 function AppBootstrap() {
-  useAutoUpdate();
   useNotificationSetup();
   return null;
 }
